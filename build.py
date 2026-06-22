@@ -96,6 +96,15 @@ def col_index(header, *needles):
     return -1
 
 
+def col_exact(header, name):
+    """Índice de la columna cuyo encabezado es EXACTAMENTE name (evita coincidencias parciales)."""
+    name = name.strip().lower()
+    for i, h in enumerate(header):
+        if (h or "").strip().lower() == name:
+            return i
+    return -1
+
+
 def drive_id(s):
     """Extrae el ID de archivo de un enlace de Google Drive (formato Forms: open?id=ID)."""
     m = re.search(r"[-\w]{25,}", s or "")
@@ -148,18 +157,22 @@ def process_aseos(rows):
     if not rows:
         return [], []
     h = rows[0]
-    iVeh = col_index(h, "numero interno")
+    # OJO: el formulario quedó con encabezados que NO concuerdan con su contenido.
+    #  · El N° de vehículo llega a la columna titulada "Lugar de Aseo".
+    #  · El origen (FINCA/TALLER PISCUISO/CASA CONDUCTOR/proveedor) llega a la columna
+    #    "Vehiculo" (formulario nuevo) o "Lugar de lavado" (formulario viejo).
+    iVeh = col_index(h, "lugar de aseo")
     if iVeh < 0:
-        iVeh = col_index(h, "interno")
+        iVeh = col_index(h, "numero interno")
+    iOrigen = col_exact(h, "vehiculo")          # origen primario (incl. CASA CONDUCTOR / proveedor)
+    iOrigen2 = col_index(h, "lugar de lavado")  # origen de respaldo (form viejo)
     iCC = col_index(h, "centro de costo")
     iCond = col_index(h, "conductor")
     iDia = col_index(h, "dia de lavado")
     iIni = col_index(h, "hora de inicio")
     iFin = col_index(h, "finaliz")
     iTipo = col_index(h, "tipo de aseo")
-    iLugar = col_index(h, "lugar de lavado")
-    iLugarAseo = col_index(h, "lugar de aseo")
-    iValExt = col_index(h, "valor", "externo")   # col R: valor del aseo si lo hizo un proveedor externo
+    iValExt = col_index(h, "valor", "externo")   # valor del aseo si lo hizo un proveedor externo
     # fotos del vehículo (subidas al Form → enlaces de Drive). Orden fijo = labels en template.html.
     foto_cols = [col_index(h, "foto delantera"), col_index(h, "izquierdo"), col_index(h, "derecho"),
                  col_index(h, "trasera"), col_index(h, "parte interna"), col_index(h, "foto interna")]
@@ -177,6 +190,8 @@ def process_aseos(rows):
         if not fecha:
             continue
         veh = norm_veh(row[iVeh].strip() if 0 <= iVeh < len(row) else "")
+        origen = (row[iOrigen].strip() if 0 <= iOrigen < len(row) else "") \
+            or (row[iOrigen2].strip() if 0 <= iOrigen2 < len(row) else "")
         fch = fecha.strftime("%Y-%m-%d")
         # id estable por-aseo (debe coincidir con processAseos del template.html)
         base_key = f"{fch}|{veh}|{tipo}"
@@ -193,8 +208,8 @@ def process_aseos(rows):
             "tipo": tipo,
             "durMin": dur_min(row[iIni] if 0 <= iIni < len(row) else "",
                               row[iFin] if 0 <= iFin < len(row) else ""),
-            "lugar": (row[iLugar].strip() if 0 <= iLugar < len(row) else ""),
-            "lugarAseo": (row[iLugarAseo].strip() if 0 <= iLugarAseo < len(row) else ""),
+            "lugar": (row[iOrigen2].strip() if 0 <= iOrigen2 < len(row) else ""),
+            "lugarAseo": origen,   # origen resuelto (clasificación lavador/conductor/proveedor)
             "valExt": int("".join(c for c in (row[iValExt] if 0 <= iValExt < len(row) else "") if c.isdigit()) or 0),
         }
         if any(fot):

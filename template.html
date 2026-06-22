@@ -247,8 +247,10 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cal-row{display:flex;gap:2px;align-items:center;width:max-content;margin-bottom:2px;}
 .cal-veh{position:sticky;left:0;z-index:2;flex:0 0 62px;width:62px;background:var(--ios-bg2);border-right:1px solid var(--ios-sep);padding:1px 7px 1px 1px;}
 .cal-head .cal-veh{z-index:3;font-size:10px;font-weight:800;color:var(--ios-label3);text-transform:uppercase;letter-spacing:.3px;}
-.cal-veh b{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;display:block;line-height:1.05;color:var(--ios-label);}
-.cal-veh small{font-size:8.5px;color:var(--ios-label3);display:block;line-height:1.1;}
+.cal-veh b{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;display:block;line-height:1.05;color:var(--ios-label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-veh small{font-size:8.5px;color:var(--ios-label3);display:block;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-row.noact{opacity:.55;}
+.cal-row.extra .cal-veh small{color:var(--orange);font-weight:700;}
 .cal-dh{flex:0 0 14px;width:14px;text-align:center;font-size:7px;color:var(--ios-label3);position:relative;line-height:1;font-variant-numeric:tabular-nums;}
 .cal-dh .mlab{position:absolute;bottom:11px;left:0;font-size:9.5px;font-weight:800;color:var(--tint);white-space:nowrap;letter-spacing:.2px;}
 .cal-dh.mstart{box-shadow:inset 1px 0 0 var(--ios-sep);}
@@ -940,8 +942,36 @@ function showCalDetail(veh,ymd){
            `</div>`;
   }).join('');
   const fnote=anyFoto?`<div class="cd-fnote">Toca una foto para abrirla en Drive. Las miniaturas cargan si tienes sesión en la cuenta de Google con acceso; para verlas siempre, comparte la carpeta como <b>“cualquiera con el enlace puede ver”</b>.</div>`:'';
-  box.innerHTML=`<div class="cd-top"><b>N° ${veh}</b>${recs.length>1?` · ${recs.length} aseos`:''}</div>${rows}${fnote}`;
+  box.innerHTML=`<div class="cd-top"><b>${vehTitulo(veh)}</b>${recs.length>1?` · ${recs.length} aseos`:''}</div>${rows}${fnote}`;
 }
+/* ----- Flota completa (orden fijo). Cada entrada: [placa, número/etiqueta interna] -----
+   El calendario SIEMPRE muestra estos vehículos en este orden, tengan o no aseo. */
+const FLEET=[
+ ["MHQ346","346"],["GJU743","743"],["FRL890","MOTO"],["WHU836","MOTO MANTENIMIENTO"],
+ ["HMN106","106"],["JFX149","JFX149"],["NMQ669","669"],["LFL492","2"],["LFL323","6"],
+ ["GVT393","7"],["LFL289","8"],["GVT717","17"],["GVT734","34"],["TJX779","101"],
+ ["WHU837","115"],["GVT757","200"],["ESY678","201"],["WDL789","202"],["WDM092","208"],
+ ["LFL331","211"],["ESY782","212"],["LFL259","215"],["WDL852","216"],["EQM818","218"],
+ ["ESZ203","220"],["WDL791","222"],["NWR622","226"],["LFL249","228"],["JYX241","241"],
+ ["LFL304","250"],["WDL766","266"],["NQL475","275"],["LFL324","277"],["TZN163","400"],
+ ["TJX867","401"],["TZO228","407"],["WCZ566","413"],["TZO139","414"],["WHS779","417"],
+ ["TZN758","418"],["ZNM657","421"],["EQP975","430"],["TLY131","431"],["EQL832","432"],
+ ["EQL833","433"],["EQK041","435"],["TJX543","443"],["TJX068","453"],["TTZ781","481"],
+ ["WMX011","502"],["WMX012","504"],["EQK671","505"],["LFL267","510"],["TMO578","514"],
+ ["LFL325","515"],["EQL712","516"],["WHU788","518"],["WHU789","519"],["WHV857","520"],
+ ["TJV525","525"],["TJX778","526"],["GVT528","528"],["TMO792","530"],["TJX335","535"],
+ ["WHV858","540"],["WDL741","541"],["WDL744","544"],["EQL717","545"],["TJW306","546"],
+ ["EQL716","548"],["WDL843","550"],["EQM153","553"],["EQM156","556"],["TJX782","559"],
+ ["WDL903","560"],["WDM021","565"],["EQM263","566"],["LFL375","575"],["LFL351","577"],
+ ["VCU060","590"],["EQM846","595"],["WHV620","620"],["ZNN739","976"],["NHQ281","1057"],
+ ["QIS434","1434"],["WCY204","1800"],["LKL460","2460"],["NYK361","2561"],["QIS275","501"],
+ ["KDO564","KDO"],["JPR097","CLAUDIA"],["QCC473","CADILAC"]
+];
+// índice clave-normalizada → {placa,label} para títulos y para detectar "fuera de lista"
+const FLEET_BY_KEY={};
+FLEET.forEach(([placa,label])=>{const k=normVeh(label); if(!(k in FLEET_BY_KEY)) FLEET_BY_KEY[k]={placa,label};});
+function vehTitulo(key){const f=FLEET_BY_KEY[key];return f?`${f.label} · ${f.placa}`:`N° ${key}`;}
+
 function renderCalendar(){
   renderCalFilter();
   const wrap=$('#calWrap'); if(!wrap) return;
@@ -953,25 +983,26 @@ function renderCalendar(){
   const sYmd=ymdOf(start), eYmd=ymdOf(end);
   const filtOn=(calOrigen.size||calTipoFilter.size);
   const inWin=DATA.aseos.records.filter(r=>r.fecha>=sYmd && r.fecha<=eYmd && calMatch(r));
-  // agrupar por vehículo → día
-  const byVeh={};
+  // agrupar por vehículo (clave = N° interno normalizado) → día
+  const byKey={};
   inWin.forEach(r=>{
-    const v=r.vehiculo||'—';
-    const g=byVeh[v]||(byVeh[v]={veh:v,days:{},last:'',nInt:0,nCond:0,nProv:0,valProv:0});
+    const key=r.vehiculo||'—';
+    const g=byKey[key]||(byKey[key]={key,days:{},nInt:0,nCond:0,nProv:0,valProv:0});
     const c=g.days[r.fecha]||(g.days[r.fecha]={int:false,cond:false,ext:false});
     if(esProveedor(r)){c.ext=true;g.nProv++;g.valProv+=valorAseo(r);}
     else if(esConductor(r)){c.cond=true;g.nCond++;}
     else{c.int=true;g.nInt++;}
-    if(r.fecha>g.last) g.last=r.fecha;
   });
-  const vehs=Object.values(byVeh);
+  // filas en ORDEN FIJO de la flota; luego cualquier vehículo con datos fuera de la lista
+  const rows=[]; const usados=new Set();
+  FLEET.forEach(([placa,label])=>{const key=normVeh(label); usados.add(key); rows.push({key,label,placa,g:byKey[key]||null});});
+  Object.keys(byKey).forEach(key=>{ if(!usados.has(key)) rows.push({key,label:key,placa:'fuera de lista',g:byKey[key],extra:true}); });
   // resumen
-  const totInt=vehs.reduce((s,g)=>s+g.nInt,0), totCond=vehs.reduce((s,g)=>s+g.nCond,0), totProv=vehs.reduce((s,g)=>s+g.nProv,0), valProv=vehs.reduce((s,g)=>s+g.valProv,0);
+  const all=Object.values(byKey);
+  const totInt=all.reduce((s,g)=>s+g.nInt,0), totCond=all.reduce((s,g)=>s+g.nCond,0), totProv=all.reduce((s,g)=>s+g.nProv,0), valProv=all.reduce((s,g)=>s+g.valProv,0);
+  const activos=rows.filter(r=>r.g).length;
   const sumEl=$('#calSum');
-  if(sumEl) sumEl.innerHTML=`${filtOn?'<b class="fon">Filtrado</b> · ':''}<b>${vehs.length}</b> vehículos · <b>${totInt}</b> lavador · <b class="cn">${totCond}</b> conductor${totCond!==1?'es':''} · <b class="p">${totProv}</b> proveedor${totProv!==1?'es':''}${valProv?` (<b class="p">${COP(valProv)}</b>)`:''} · periodo de <b>${nDays}</b> días (${fmtDShort(sYmd)} – ${fmtDShort(eYmd)})`;
-  if(!vehs.length){ wrap.innerHTML='<div class="cal-empty">'+(filtOn?'Ningún aseo coincide con el filtro en este periodo.':'Sin aseos en este periodo.')+'</div>'; return; }
-  // orden: último aseo más reciente arriba; desempate por N° de vehículo
-  vehs.sort((a,b)=>{ if(a.last!==b.last) return a.last<b.last?1:-1; const na=parseInt(a.veh,10),nb=parseInt(b.veh,10); if(!isNaN(na)&&!isNaN(nb))return na-nb; return String(a.veh).localeCompare(String(b.veh)); });
+  if(sumEl) sumEl.innerHTML=`${filtOn?'<b class="fon">Filtrado</b> · ':''}<b>${activos}</b> de <b>${rows.length}</b> vehículos con aseo · <b>${totInt}</b> lavador · <b class="cn">${totCond}</b> conductor${totCond!==1?'es':''} · <b class="p">${totProv}</b> proveedor${totProv!==1?'es':''}${valProv?` (<b class="p">${COP(valProv)}</b>)`:''} · ${nDays} día${nDays!==1?'s':''} (${fmtDShort(sYmd)} – ${fmtDShort(eYmd)})`;
   const monthN=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   // cabecera (esquina + días)
   let head='<div class="cal-veh">Vehículo</div>';
@@ -981,17 +1012,19 @@ function renderCalendar(){
     head+=`<div class="cal-dh${d.getDate()===1?' mstart':''}">${ml}${d.getDate()}</div>`;
   });
   let out='<div class="cal-head">'+head+'</div>';
-  vehs.forEach(g=>{
-    let row=`<div class="cal-veh"><b>${g.veh}</b><small>últ: ${g.last?fmtDShort(g.last):'—'}</small></div>`;
+  rows.forEach(rw=>{
+    const g=rw.g;
+    const rowCls='cal-row'+(rw.extra?' extra':'')+(g?'':' noact');
+    let row=`<div class="cal-veh"><b>${rw.label}</b><small>${rw.placa}</small></div>`;
     days.forEach(day=>{
-      const c=g.days[day.ymd]; let cls='cal-cell';
+      const c=g?g.days[day.ymd]:null; let cls='cal-cell';
       if(day.d.getDate()===1) cls+=' mstart';
       let tap='';
-      if(c){const t=(c.int?1:0)+(c.cond?2:0)+(c.ext?4:0);cls+=t===1?' int':t===2?' cond':t===4?' ext':t===3?' int-cond':t===5?' int-ext':t===6?' cond-ext':' both';tap=` data-veh="${encodeURIComponent(g.veh)}" data-ymd="${day.ymd}"`;}
-      const sel=(calSel&&calSel.veh===g.veh&&calSel.ymd===day.ymd)?' sel':'';
+      if(c){const t=(c.int?1:0)+(c.cond?2:0)+(c.ext?4:0);cls+=t===1?' int':t===2?' cond':t===4?' ext':t===3?' int-cond':t===5?' int-ext':t===6?' cond-ext':' both';tap=` data-veh="${encodeURIComponent(rw.key)}" data-ymd="${day.ymd}"`;}
+      const sel=(calSel&&calSel.veh===rw.key&&calSel.ymd===day.ymd)?' sel':'';
       row+=`<div class="${cls}${sel}"${tap}></div>`;
     });
-    out+=`<div class="cal-row">${row}</div>`;
+    out+=`<div class="${rowCls}">${row}</div>`;
   });
   wrap.innerHTML=out;
   // tap → detalle (sin re-render completo)
@@ -1430,6 +1463,8 @@ function colIndex(header,...needles){
   }
   return -1;
 }
+// coincidencia exacta del encabezado (evita que 'vehiculo' matchee 'Conductor … del vehículo')
+function colExact(header,name){name=norm(name);for(let i=0;i<header.length;i++){if(norm(header[i]).trim()===name)return i;}return -1;}
 function parseDate(s){
   s=(s||'').trim(); if(!s) return null; let m;
   if(m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)) return new Date(+m[1],+m[2]-1,+m[3]);
@@ -1461,11 +1496,16 @@ function fotosDe(r){const f=r.fot||[];const out=[];for(let i=0;i<f.length;i++){i
 function processAseos(rows){
   if(!rows||!rows.length) return {records:[],months:[]};
   const h=rows[0];
-  let iVeh=colIndex(h,'numero interno'); if(iVeh<0)iVeh=colIndex(h,'interno');
+  // OJO: el formulario quedó con encabezados que NO concuerdan con su contenido.
+  //  · El N° de vehículo llega a la columna titulada "Lugar de Aseo".
+  //  · El origen (FINCA/TALLER PISCUISO/CASA CONDUCTOR/proveedor) llega a la columna
+  //    "Vehiculo" (formulario nuevo) o "Lugar de lavado" (formulario viejo).
+  let iVeh=colIndex(h,'lugar de aseo'); if(iVeh<0)iVeh=colIndex(h,'numero interno');
+  const iOrigen=colExact(h,'vehiculo'),       // origen primario (incl. CASA CONDUCTOR / proveedor)
+        iOrigen2=colIndex(h,'lugar de lavado'); // origen de respaldo (form viejo)
   const iCC=colIndex(h,'centro de costo'),iCond=colIndex(h,'conductor'),
         iDia=colIndex(h,'dia de lavado'),iIni=colIndex(h,'hora de inicio'),
         iFin=colIndex(h,'finaliz'),iTipo=colIndex(h,'tipo de aseo'),
-        iLugar=colIndex(h,'lugar de lavado'),iLugarAseo=colIndex(h,'lugar de aseo'),
         iValExt=colIndex(h,'valor','externo');
   const fotoCols=[colIndex(h,'foto delantera'),colIndex(h,'izquierdo'),colIndex(h,'derecho'),colIndex(h,'trasera'),colIndex(h,'parte interna'),colIndex(h,'foto interna')];
   const recs=[],months=new Set(),seen={};
@@ -1487,7 +1527,7 @@ function processAseos(rows){
       centro:cell(iCC)||'(sin CC)',
       conductor:cell(iCond), tipo,
       durMin:durMin(cell(iIni),cell(iFin)),
-      lugar:cell(iLugar), lugarAseo:cell(iLugarAseo),
+      lugar:cell(iOrigen2), lugarAseo:(cell(iOrigen)||cell(iOrigen2)),  // origen resuelto (clasificación)
       valExt:parseInt((cell(iValExt)||'').replace(/[^0-9]/g,''),10)||0,
       fot:fotoCols.map(i=>driveId(cell(i))),
     });
