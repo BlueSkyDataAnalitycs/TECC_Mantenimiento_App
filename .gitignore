@@ -1,0 +1,11 @@
+# Archivos generados — se reconstruyen con `python3 build.py`
+index.html
+datos.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS
+.DS_Store

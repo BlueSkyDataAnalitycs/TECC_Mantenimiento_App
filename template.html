@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mantenimiento TECC</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --tecc-azul:#0A2342; --tecc-amarillo:#F2C94C;
+  --ios-bg:#F2F2F7; --ios-bg2:#FFFFFF; --ios-sep:rgba(60,60,67,0.18);
+  --ios-label:#1C1C1E; --ios-label2:#3C3C43; --ios-label3:#8E8E93;
+  --tint:#0A2342; --green:#34C759; --red:#FF3B30; --orange:#FF9500;
+  --radius:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",system-ui,sans-serif;
+  background:var(--ios-bg); color:var(--ios-label);
+  -webkit-font-smoothing:antialiased; padding-bottom:90px;
+}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px;}
+/* ===== Header ===== */
+.top{padding:14px 0 4px;position:relative;}
+.refresh-btn{position:absolute;top:18px;right:0;width:44px;height:44px;border-radius:50%;border:0;background:var(--ios-bg2);box-shadow:0 1px 4px rgba(0,0,0,.12);color:var(--tint);font-size:21px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.refresh-btn:active{transform:scale(.92);}
+.refresh-btn.spin{animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.eyebrow{font-size:13px;font-weight:600;color:var(--ios-label3);letter-spacing:.3px;text-transform:uppercase;}
+h1.big{font-size:34px;line-height:1.1;font-weight:800;letter-spacing:-.5px;margin:2px 0 2px;padding-right:50px;}
+.subtitle{font-size:14px;color:var(--ios-label3);margin-bottom:10px;}
+.brandbar{height:4px;width:54px;border-radius:2px;background:linear-gradient(90deg,var(--tecc-azul),var(--tecc-amarillo));margin:6px 0 14px;}
+/* ===== Segmented control ===== */
+.seg{display:flex;background:#E9E9EB;border-radius:12px;padding:2px;gap:2px;position:sticky;top:8px;z-index:20;box-shadow:0 1px 0 rgba(255,255,255,.6) inset;}
+.seg button{flex:1;border:0;background:transparent;font-size:14px;font-weight:600;color:var(--ios-label);padding:8px 6px;border-radius:10px;cursor:pointer;transition:.18s;}
+.seg button.active{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);}
+/* ===== Cards / lists ===== */
+.section{margin:18px 0;}
+.section-h{font-size:13px;font-weight:600;color:var(--ios-label3);text-transform:uppercase;letter-spacing:.4px;margin:0 8px 7px;}
+.card{background:var(--ios-bg2);border-radius:var(--radius);box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden;}
+.pad{padding:16px;}
+.row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--ios-sep);}
+.row:last-child{border-bottom:0;}
+.row .lbl{flex:1;font-size:16px;}
+.row .val{font-variant-numeric:tabular-nums;font-weight:600;font-size:16px;}
+.muted{color:var(--ios-label3);}
+/* KPI hero */
+.hero{background:linear-gradient(160deg,#0A2342 0%,#143257 100%);color:#fff;border-radius:22px;padding:20px;position:relative;overflow:hidden;}
+.hero .cap{font-size:13px;opacity:.8;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding-right:104px;}
+.hero .num{font-size:40px;font-weight:800;letter-spacing:-1px;margin-top:4px;font-variant-numeric:tabular-nums;}
+.hero .sub{font-size:14px;opacity:.85;margin-top:2px;}
+.hero .chip{position:absolute;top:18px;right:18px;max-width:42%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--tecc-amarillo);color:#0A2342;font-weight:700;font-size:12px;padding:5px 10px;border-radius:20px;}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+.kpi{background:var(--ios-bg2);border-radius:16px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.kpi .k{font-size:12px;color:var(--ios-label3);font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+.kpi .v{font-size:24px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums;letter-spacing:-.5px;}
+.kpi .v.small{font-size:19px;}
+/* period selector */
+.period{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:2px 0 4px;}
+select.ios,input.ios{font-family:inherit;font-size:15px;border:0;background:var(--ios-bg2);border-radius:12px;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,.06);color:var(--ios-label);}
+.chips{display:flex;gap:7px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch;}
+.chip-btn{border:0;background:var(--ios-bg2);color:var(--tint);font-weight:600;font-size:13px;padding:7px 13px;border-radius:20px;white-space:nowrap;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.05);}
+.chip-btn.active{background:var(--tecc-azul);color:#fff;}
+/* breakdown bars */
+.bd-row{padding:12px 16px;border-bottom:1px solid var(--ios-sep);}
+.bd-row:last-child{border-bottom:0;}
+.bd-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+.bd-name{font-size:14px;font-weight:600;line-height:1.25;}
+.bd-meta{font-size:12px;color:var(--ios-label3);margin-top:2px;}
+.bd-amt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.bar{height:6px;border-radius:3px;background:#E9E9EB;margin-top:8px;overflow:hidden;}
+.bar > i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--tecc-azul),#2E5E9E);}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:7px;margin-left:6px;vertical-align:middle;}
+.badge.sinvalor{background:#FFE9E6;color:var(--red);}
+/* settings editor */
+.price-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--ios-sep);}
+.price-row:last-child{border-bottom:0;}
+.price-row .nm{flex:1;font-size:13.5px;line-height:1.3;}
+.price-row .cnt{font-size:11px;color:var(--ios-label3);}
+.price-in{width:118px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:15px;border:1px solid var(--ios-sep);border-radius:10px;padding:8px 10px;background:#fff;color:var(--ios-label);}
+.price-in:focus{outline:2px solid var(--tecc-azul);border-color:transparent;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:13px;font-size:16px;font-weight:600;padding:13px 18px;cursor:pointer;width:100%;}
+.btn.primary{background:var(--tecc-azul);color:#fff;}
+.btn.ghost{background:var(--ios-bg2);color:var(--tint);box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.btn.danger{background:var(--ios-bg2);color:var(--red);box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.note{font-size:12.5px;color:var(--ios-label3);padding:6px 8px;line-height:1.4;}
+.empty{text-align:center;padding:40px 20px;color:var(--ios-label3);}
+.empty .ic{font-size:42px;margin-bottom:8px;}
+.empty h3{margin:6px 0 4px;color:var(--ios-label);font-size:18px;}
+.chartbox{padding:16px 12px 8px;}
+.hidden{display:none!important;}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:104px;background:rgba(0,0,0,.85);color:#fff;padding:11px 18px;border-radius:14px;font-size:14px;font-weight:600;opacity:0;transition:.25s;z-index:50;pointer-events:none;}
+.toast.show{opacity:1;}
+.foot{text-align:center;font-size:11.5px;color:var(--ios-label3);padding:20px 0 8px;}
+/* ===== periodo (presets + rango) ===== */
+.rangeinfo{font-size:13px;color:var(--ios-label2);margin:9px 2px 0;font-weight:600;}
+.rangeinfo b{color:var(--ios-label);}
+input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
+.customrange{display:flex;gap:9px;margin-top:9px;flex-wrap:wrap;}
+.daterow{flex:1 1 140px;display:flex;flex-direction:column;gap:4px;background:var(--ios-bg2);border-radius:13px;padding:9px 12px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.daterow>span{font-size:11px;font-weight:700;color:var(--ios-label3);text-transform:uppercase;letter-spacing:.4px;}
+.daterow input.ios{border:0;background:transparent;padding:2px 0;font-size:16px;font-weight:600;min-width:0;}
+/* ===== comparación salario mínimo ===== */
+.smcard{background:linear-gradient(160deg,#14502f 0%,#0c3d23 100%);color:#fff;border-radius:22px;padding:18px;transition:background .3s;}
+.smcard.neg{background:linear-gradient(160deg,#6b1d1d 0%,#451010 100%);}
+.smcard .cap{font-size:12px;opacity:.85;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.smcard .big{font-size:36px;font-weight:800;letter-spacing:-1px;margin:3px 0 2px;font-variant-numeric:tabular-nums;}
+.smcard .big small{font-size:15px;font-weight:600;opacity:.85;letter-spacing:0;}
+.smverdict{font-size:13px;font-weight:600;line-height:1.35;margin:4px 0 12px;opacity:.97;}
+.smverdict .pill{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:3px 9px;border-radius:999px;margin-right:7px;background:rgba(255,255,255,.9);color:#0c3d23;}
+.smcard.neg .smverdict .pill{color:#451010;}
+.smcmp{display:flex;gap:10px;margin:2px 0 4px;}
+.smcmp-i{flex:1;background:rgba(255,255,255,.13);border-radius:13px;padding:10px 12px;}
+.smcmp-i span{font-size:11px;opacity:.85;display:block;margin-bottom:2px;}
+.smcmp-i b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;}
+.smbar{display:flex;height:15px;border-radius:8px;overflow:hidden;margin:13px 0 11px;background:rgba(255,255,255,.16);}
+.smbar i{display:block;height:100%;transition:width .35s;}
+.smleg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.smleg>div{font-size:11px;opacity:.95;}
+.smleg .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle;}
+.smleg b{display:block;font-size:14px;font-variant-numeric:tabular-nums;margin-top:2px;font-weight:700;}
+/* ===== TALLER ===== */
+.tvs{margin:8px 0 2px;}
+.tvs-row{margin:11px 0;}
+.tvs-h{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;font-weight:600;margin-bottom:5px;opacity:.96;}
+.tvs-h b{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;}
+.tvs-bar{height:16px;border-radius:8px;background:rgba(255,255,255,.16);overflow:hidden;}
+.tvs-bar>i{display:block;height:100%;border-radius:8px;transition:width .4s;}
+.tvs-bar.int>i{background:#F2C94C;}
+.tvs-bar.ext>i{background:#56CCF2;}
+.tvs-note{font-size:11.5px;opacity:.85;margin-top:9px;line-height:1.4;}
+.tvs-note b{font-variant-numeric:tabular-nums;}
+/* tabla costo externo */
+.tcat{padding:11px 15px;border-bottom:1px solid var(--ios-sep);}
+.tcat:last-child{border-bottom:0;}
+.tcat-h{display:flex;align-items:baseline;gap:10px;}
+.tcat-h .nm{flex:1;font-size:14px;font-weight:600;color:var(--ios-label);line-height:1.25;}
+.tcat-h .tot{font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--tint);white-space:nowrap;}
+.tcat-sub{font-size:11.5px;color:var(--ios-label3);margin-top:2px;font-variant-numeric:tabular-nums;}
+.tcat-bar{height:6px;border-radius:3px;background:var(--ios-bg);margin-top:7px;overflow:hidden;}
+.tcat-bar>i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--tecc-azul),#3a78c2);}
+.tcat.sinv .nm{color:var(--orange);font-style:italic;}
+.tcat.sinv .tot{color:var(--orange);}
+.ttot{display:flex;justify-content:space-between;align-items:center;padding:14px 15px;font-weight:700;font-size:14px;background:var(--ios-bg);}
+.ttot b{font-size:18px;font-weight:800;color:var(--tint);font-variant-numeric:tabular-nums;}
+/* placa cards */
+.pl-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.pl-pl{font-size:16px;font-weight:800;letter-spacing:.3px;color:var(--ios-label);}
+.pl-n{font-size:13px;font-weight:700;color:var(--tint);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.pl-sub{font-size:12px;color:var(--ios-label3);margin-top:3px;line-height:1.35;}
+.pl-sub .est{font-weight:700;}
+/* estado badges / crítico */
+.estrow{display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--ios-sep);}
+.estrow:last-child{border-bottom:0;}
+.estrow .tdot{width:13px;height:13px;border-radius:50%;flex-shrink:0;}
+.estrow .el{flex:1;font-size:14px;}
+.estrow .ev{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px;}
+.tdot.g{background:var(--green);} .tdot.a{background:var(--orange);} .tdot.r{background:var(--red);}
+.estscore{color:var(--green);} .estscore.a{color:var(--orange);} .estscore.r{color:var(--red);}
+/* alertas de calidad */
+.talert{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--ios-sep);}
+.talert:last-child{border-bottom:0;}
+.talert .ti{width:31px;height:31px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;font-weight:800;}
+.talert .tl{flex:1;font-size:14px;color:var(--ios-label);}
+.talert .tv{font-weight:800;font-variant-numeric:tabular-nums;font-size:16px;}
+.talert.ok .ti{background:rgba(52,199,89,.16);color:var(--green);} .talert.ok .tv{color:var(--green);}
+.talert.warn .ti{background:rgba(242,153,74,.18);color:var(--orange);} .talert.warn .tv{color:var(--orange);}
+.talert.bad .ti{background:rgba(255,59,48,.15);color:var(--red);} .talert.bad .tv{color:var(--red);}
+.tfoot{font-size:12px;color:var(--ios-label3);line-height:1.5;padding:4px 6px;}
+.tfoot b{color:var(--ios-label2);}
+.tflag{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;padding:2px 8px;border-radius:999px;background:var(--ios-bg);color:var(--tint);margin-left:6px;}
+/* ===== centro de costo imponente ===== */
+.section-hero{font-size:21px;font-weight:800;letter-spacing:-.4px;margin:0 4px 11px;}
+.cc-card{background:var(--ios-bg2);border-radius:18px;padding:15px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:11px;border-left:5px solid var(--tecc-azul);}
+.cc-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+.cc-name{font-size:18px;font-weight:800;letter-spacing:-.3px;}
+.cc-val{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px;}
+.cc-bar{height:8px;border-radius:4px;background:#E9E9EB;overflow:hidden;margin:9px 0 7px;}
+.cc-bar>i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--tecc-azul),#2E5E9E);}
+.cc-meta{font-size:12.5px;color:var(--ios-label3);font-weight:600;}
+.cc-fin{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:11px;}
+.cc-fin-i{background:var(--ios-bg);border-radius:12px;padding:9px 11px;}
+.cc-fin-i span{font-size:10.5px;color:var(--ios-label3);font-weight:700;text-transform:uppercase;letter-spacing:.3px;display:block;}
+.cc-fin-i b{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;display:block;margin-top:1px;}
+.cc-fin-i b.pos{color:var(--green);} .cc-fin-i b.neg{color:var(--red);}
+.cc-fin-i small{font-size:10px;color:var(--ios-label3);display:block;margin-top:2px;line-height:1.25;}
+/* sub-navegación dentro de Aseos: Internos | Externos | General */
+.subseg{display:flex;gap:6px;margin:0 0 14px;}
+.subseg button{flex:1;border:0;background:var(--ios-bg2);color:var(--tint);font-size:13.5px;font-weight:700;padding:9px 6px;border-radius:12px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.07);transition:.18s;}
+.subseg button[data-sub="externos"]{color:#8E44AD;}
+.subseg button.active{background:var(--tecc-azul);color:#fff;}
+.subseg button[data-sub="externos"].active{background:#8E44AD;color:#fff;}
+/* variantes moradas para el módulo de aseos externos */
+.cc-card.ext{border-left-color:#8E44AD;}
+.cc-bar.ext>i{background:linear-gradient(90deg,#8E44AD,#BB6BD9);}
+.bar.ext>i{background:linear-gradient(90deg,#8E44AD,#BB6BD9);}
+.cc404{background:var(--ios-bg2);border-radius:16px;padding:13px 15px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:11px;border-left:5px solid var(--orange);}
+.cc404-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.cc404 .t{flex:1;min-width:150px;}
+.cc404 .t b{font-size:15px;} .cc404 .t .s{font-size:12px;color:var(--ios-label3);margin-top:1px;}
+.cc404-list{margin-top:11px;display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.cc404-item{display:flex;align-items:center;gap:10px;background:var(--ios-bg);border-radius:12px;padding:9px 11px;}
+.cc404-item .i-veh{flex:0 0 auto;min-width:46px;text-align:center;background:var(--tecc-amarillo);color:#0A2342;border-radius:10px;padding:6px 8px;line-height:1.05;font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;}
+.cc404-item .i-veh span{display:block;font-size:8px;font-weight:800;opacity:.7;letter-spacing:.5px;}
+.cc404-item .i-info{flex:1;min-width:0;}
+.cc404-item .i-info b{font-size:13px;font-weight:700;display:block;}
+.cc404-item .i-info b .v{font-variant-numeric:tabular-nums;color:var(--tint);}
+.cc404-item .i-info small{font-size:11.5px;color:var(--ios-label3);display:block;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cc404-item .i-sel{flex:0 0 104px;width:104px;min-width:0;font-size:13.5px;padding:9px 8px;}
+.cc404-item .i-sel.set{color:var(--green);font-weight:700;}
+/* ----- Calendario "Aseos en general" ----- */
+.cal-intro{font-size:12.5px;color:var(--ios-label2);line-height:1.4;margin-top:4px;}
+.cal-intro .g{color:var(--green);} .cal-intro .p{color:#BB6BD9;}
+.calsum{margin-top:11px;font-size:12.5px;color:var(--ios-label);font-weight:600;line-height:1.45;}
+.calsum b{color:var(--tint);font-variant-numeric:tabular-nums;}
+.calsum b.p{color:#BB6BD9;}
+.calsum b.fon{color:var(--tint);}
+/* filtro del calendario */
+.calfilter{background:var(--ios-bg2);border-radius:16px;padding:13px 14px 14px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.calfilter-h{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3);margin-bottom:9px;}
+.calfilter-clr{border:none;background:transparent;color:var(--tint);font-size:12.5px;font-weight:700;cursor:pointer;padding:2px 2px;text-transform:none;letter-spacing:0;}
+.calfilter-grp{margin-top:9px;}
+.calfilter-lab{font-size:12px;font-weight:700;color:var(--ios-label2);margin-bottom:7px;}
+.calfilter-lab small{font-size:10.5px;font-weight:500;color:var(--ios-label3);}
+.fchips{display:flex;flex-wrap:wrap;gap:7px;}
+.fchip{border:1.5px solid var(--ios-sep);background:var(--ios-bg);color:var(--ios-label2);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;line-height:1.1;transition:all .12s;-webkit-tap-highlight-color:transparent;}
+.fchip .fn{font-size:10.5px;color:var(--ios-label3);font-weight:700;font-variant-numeric:tabular-nums;}
+.fchip.on{color:#fff;border-color:transparent;background:var(--tint);}
+.fchip.on .fn{color:rgba(255,255,255,.75);}
+.fchip.int.on{background:var(--green);}
+.fchip.ext.on{background:#8E44AD;}
+.cal-wrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;background:var(--ios-bg2);border-radius:16px;padding:10px 10px 12px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.cal-empty{font-size:13px;color:var(--ios-label3);padding:14px 6px;}
+.cal-head{display:flex;gap:2px;align-items:flex-end;width:max-content;padding-top:15px;margin-bottom:5px;}
+.cal-row{display:flex;gap:2px;align-items:center;width:max-content;margin-bottom:2px;}
+.cal-veh{position:sticky;left:0;z-index:2;flex:0 0 62px;width:62px;background:var(--ios-bg2);border-right:1px solid var(--ios-sep);padding:1px 7px 1px 1px;}
+.cal-head .cal-veh{z-index:3;font-size:10px;font-weight:800;color:var(--ios-label3);text-transform:uppercase;letter-spacing:.3px;}
+.cal-veh b{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;display:block;line-height:1.05;color:var(--ios-label);}
+.cal-veh small{font-size:8.5px;color:var(--ios-label3);display:block;line-height:1.1;}
+.cal-dh{flex:0 0 14px;width:14px;text-align:center;font-size:7px;color:var(--ios-label3);position:relative;line-height:1;font-variant-numeric:tabular-nums;}
+.cal-dh .mlab{position:absolute;bottom:11px;left:0;font-size:9.5px;font-weight:800;color:var(--tint);white-space:nowrap;letter-spacing:.2px;}
+.cal-dh.mstart{box-shadow:inset 1px 0 0 var(--ios-sep);}
+.cal-cell{flex:0 0 14px;width:14px;height:15px;border-radius:3px;background:var(--ios-bg);}
+.cal-cell.mstart{box-shadow:inset 1px 0 0 var(--ios-sep);}
+.cal-cell.int{background:var(--green);}
+.cal-cell.ext{background:#BB6BD9;}
+.cal-cell.both{background:linear-gradient(135deg,var(--green) 0 50%,#BB6BD9 50% 100%);}
+.cal-cell.int,.cal-cell.ext,.cal-cell.both{cursor:pointer;}
+.cal-cell.sel{outline:2px solid var(--tint);outline-offset:1px;}
+.cal-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:11px;font-size:12px;color:var(--ios-label2);}
+.cal-legend span{display:inline-flex;align-items:center;gap:6px;}
+.cal-legend .sw{width:13px;height:13px;border-radius:3px;display:inline-block;}
+.cal-legend .sw.int{background:var(--green);} .cal-legend .sw.ext{background:#BB6BD9;} .cal-legend .sw.none{background:var(--ios-bg);border:1px solid var(--ios-sep);}
+.cal-detail{margin-top:12px;background:var(--ios-bg2);border-radius:13px;padding:11px 13px;font-size:12.5px;color:var(--ios-label);line-height:1.45;box-shadow:0 1px 3px rgba(0,0,0,.06);min-height:20px;}
+.cal-detail b{color:var(--tint);font-variant-numeric:tabular-nums;}
+.cal-detail .pe{color:#BB6BD9;font-weight:700;}
+.cal-detail .cd-top{font-size:13px;margin-bottom:9px;}
+.cal-detail .cd-top b{color:var(--ios-label);}
+.cd-row{border-left:3px solid var(--green);padding:7px 0 7px 10px;margin-bottom:8px;}
+.cd-row.ext{border-left-color:#BB6BD9;}
+.cd-row:last-child{margin-bottom:0;}
+.cd-hd{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:8px;}
+.cd-line{display:flex;gap:10px;margin:7px 0;font-size:13px;align-items:baseline;}
+.cd-line.col{flex-direction:column;gap:5px;align-items:stretch;}
+.cd-k{flex:0 0 62px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3);padding-top:2px;}
+.cd-v{flex:1;color:var(--ios-label);line-height:1.35;min-width:0;}
+.cd-v.cd-dia{font-weight:700;}
+.cd-v.cd-chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.cd-bad{font-size:12px;font-weight:800;}
+.cd-bad.ci{color:var(--green);}
+.cd-meta{font-size:11.5px;color:var(--ios-label2);}
+.cd-val{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums;font-size:13px;}
+.cd-tipos{display:flex;flex-wrap:wrap;gap:5px;}
+.cd-t{background:var(--ios-bg);border:1px solid var(--ios-sep);border-radius:7px;padding:3px 8px;font-size:11.5px;font-weight:600;color:var(--ios-label);}
+.cd-t.cd-t0{color:var(--ios-label3);font-style:italic;font-weight:500;}
+.cd-fotos{display:flex;gap:7px;overflow-x:auto;margin-top:9px;padding-bottom:3px;-webkit-overflow-scrolling:touch;}
+.cd-foto{flex:0 0 auto;width:76px;text-decoration:none;}
+.cd-foto img{width:76px;height:76px;object-fit:cover;border-radius:11px;display:block;background:var(--ios-bg);box-shadow:0 1px 3px rgba(0,0,0,.14);}
+.cd-foto span{display:block;font-size:10px;font-weight:600;color:var(--ios-label3);text-align:center;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cd-foto.noimg{display:flex;flex-direction:column;align-items:center;}
+.cd-foto.noimg img{display:none;}
+.cd-foto.noimg::before{content:'📷';font-size:23px;width:76px;height:76px;display:flex;align-items:center;justify-content:center;background:var(--ios-bg);border:1px dashed var(--ios-sep);border-radius:11px;box-sizing:border-box;}
+.cd-fnote{font-size:11px;color:var(--ios-label3);line-height:1.4;margin-top:10px;}
+.cd-fnote b{color:var(--ios-label2);}
+@media (prefers-color-scheme:dark){
+  :root{--ios-bg:#000;--ios-bg2:#1C1C1E;--ios-sep:rgba(84,84,88,.5);--ios-label:#fff;--ios-label2:#EBEBF5;--tint:#5B9BFF;}
+  .seg{background:#1C1C1E;} .seg button{color:#fff;} .seg button.active{background:#3A3A3C;}
+  .bar,.price-in{background:#2C2C2E;} .price-in{color:#fff;}
+  .chip-btn{background:#1C1C1E;color:#5B9BFF;} select.ios,input.ios{background:#1C1C1E;color:#fff;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <button class="refresh-btn" id="topRefresh" title="Actualizar en vivo" aria-label="Actualizar en vivo">↻</button>
+    <div class="eyebrow">Equipo de Mantenimiento</div>
+    <h1 class="big">Mantenimiento TECC</h1>
+    <div class="subtitle" id="subt">Aseos de vehículos · Taller interno</div>
+    <div class="brandbar"></div>
+  </div>
+
+  <div class="seg">
+    <button data-tab="aseos" class="active">Aseos</button>
+    <button data-tab="taller">Taller</button>
+    <button data-tab="ajustes">Ajustes</button>
+  </div>
+
+  <!-- ============ ASEOS (Internos · Externos · General) ============ -->
+  <div id="tab-aseos">
+    <div class="subseg">
+      <button data-sub="internos" class="active">Internos</button>
+      <button data-sub="externos">Externos</button>
+      <button data-sub="general">General</button>
+    </div>
+    <div class="section" id="periodBlock">
+      <div class="chips" id="periodPresets"></div>
+      <div class="period" style="margin-top:8px">
+        <select class="ios" id="periodSel"></select>
+      </div>
+      <div class="customrange" id="customRange">
+        <label class="daterow"><span>Desde</span><input type="date" class="ios" id="cStart" aria-label="Fecha inicio"></label>
+        <label class="daterow"><span>Hasta</span><input type="date" class="ios" id="cEnd" aria-label="Fecha fin"></label>
+      </div>
+      <div class="rangeinfo" id="rangeInfo">—</div>
+    </div>
+
+    <!-- ====== ASEOS INTERNOS (financiero) ====== -->
+    <div id="sub-internos">
+    <div class="section">
+      <div class="hero">
+        <div class="chip" id="heroChip">—</div>
+        <div class="cap">Valor total de aseos</div>
+        <div class="num" id="heroTotal">$0</div>
+        <div class="sub" id="heroSub">—</div>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="k">Aseos realizados</div><div class="v" id="kCount">0</div></div>
+        <div class="kpi"><div class="k">Valor promedio</div><div class="v small" id="kAvg">$0</div></div>
+        <div class="kpi"><div class="k">Vehículos</div><div class="v" id="kVeh">0</div></div>
+        <div class="kpi"><div class="k">Sin valor</div><div class="v" id="kSin">0</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="smcard" id="smCard">
+        <div class="cap">¿Rentable tener a la persona haciendo aseos?</div>
+        <div class="big"><span id="smMargin">$0</span> <small id="smMarginLab">rentabilidad del periodo</small></div>
+        <div class="smverdict" id="smVerdict"><span class="pill">—</span></div>
+        <div class="smcmp">
+          <div class="smcmp-i"><span>Valor total de aseos</span><b id="smVal">$0</b></div>
+          <div class="smcmp-i"><span>Costo de la persona</span><b id="smRef">$0</b></div>
+        </div>
+        <div style="font-size:12px;opacity:.9;margin-top:8px">Salario mínimo (costo empleador) <b id="smUnit">$0</b>/mes × <b id="smMeses">0</b> <span id="smMesesU">meses</span> del periodo (<b id="smDias">0</b> días). Desglose del costo de la persona:</div>
+        <div class="smbar">
+          <i id="smBarSal" style="background:#F2C94C;width:0"></i>
+          <i id="smBarAux" style="background:#56CCF2;width:0"></i>
+          <i id="smBarPres" style="background:#BB6BD9;width:0"></i>
+        </div>
+        <div class="smleg">
+          <div><span class="dot" style="background:#F2C94C"></span>Salario<b id="smSal">$0</b></div>
+          <div><span class="dot" style="background:#56CCF2"></span>Aux. transporte<b id="smAux">$0</b></div>
+          <div><span class="dot" style="background:#BB6BD9"></span>Prestaciones<b id="smPres">$0</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-hero">Valor por centro de costo</div>
+      <div class="cc404 hidden" id="cc404Box">
+        <div class="cc404-head">
+          <div class="t"><b>Aseos del CC 404 · por vehículo</b><div class="s" id="cc404n">—</div></div>
+          <select class="ios" id="cc404SelAll" title="Aplicar a todos"></select>
+        </div>
+        <div class="cc404-list" id="cc404List"></div>
+      </div>
+      <div id="ccCards"></div>
+      <div class="card chartbox" style="margin-top:4px"><canvas id="ccChart" height="200"></canvas></div>
+    </div>
+
+    <div class="section">
+      <div class="section-h">Desglose por tipo de aseo</div>
+      <div class="card" id="bdTipo"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-h">Aseos por mes (valor)</div>
+      <div class="card chartbox"><canvas id="monthChart" height="200"></canvas></div>
+    </div>
+    </div><!-- /#sub-internos -->
+
+    <!-- ====== ASEOS EXTERNOS (financiero · proveedores) ====== -->
+    <div id="sub-externos" class="hidden">
+      <div class="section">
+        <div class="hero" style="background:linear-gradient(160deg,#5B2A7A 0%,#3A1A50 100%);">
+          <div class="chip" id="exHeroChip" style="background:#E7C8F5;color:#3A1A50">—</div>
+          <div class="cap">Gasto total en aseos externos</div>
+          <div class="num" id="exHeroTotal">$0</div>
+          <div class="sub" id="exHeroSub">—</div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="k">Aseos externos</div><div class="v" id="exCount">0</div></div>
+          <div class="kpi"><div class="k">Valor promedio</div><div class="v small" id="exAvg">$0</div></div>
+          <div class="kpi"><div class="k">Vehículos</div><div class="v" id="exVeh">0</div></div>
+          <div class="kpi"><div class="k">Proveedores</div><div class="v" id="exProv">0</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-hero">Gasto por proveedor</div>
+        <div id="exProvCards"></div>
+        <div class="card chartbox" style="margin-top:4px"><canvas id="exProvChart" height="200"></canvas></div>
+      </div>
+      <div class="section">
+        <div class="section-h">Gasto por vehículo</div>
+        <div class="card" id="exByVeh"></div>
+      </div>
+      <div class="section">
+        <div class="section-h">Aseos externos por mes (gasto)</div>
+        <div class="card chartbox"><canvas id="exMonthChart" height="200"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ====== GENERAL (calendario gráfico) ====== -->
+    <div id="sub-general" class="hidden">
+      <div class="section">
+        <div class="section-hero">Aseos en general · calendario</div>
+        <div class="cal-intro">Una fila por vehículo, una columna por día <b>(según el periodo elegido arriba)</b>. <b class="g">Verde</b> = aseo interno (TECC) · <b class="p">Morado</b> = aseo externo (proveedor, con valor). Toca una celda para ver el detalle.</div>
+        <div class="calsum" id="calSum">—</div>
+      </div>
+      <div class="section">
+        <div class="calfilter">
+          <div class="calfilter-h"><span>Filtrar el calendario</span><button id="calFilterClear" class="calfilter-clr" style="display:none">Limpiar</button></div>
+          <div class="calfilter-grp">
+            <div class="calfilter-lab">Origen</div>
+            <div class="fchips" id="calOrigChips"></div>
+          </div>
+          <div class="calfilter-grp">
+            <div class="calfilter-lab">Tipo de lavado <small>(combina varios = todos a la vez)</small></div>
+            <div class="fchips" id="calTipoChips"></div>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="cal-wrap" id="calWrap"><div class="cal-empty">Sin aseos en esta ventana.</div></div>
+        <div class="cal-legend">
+          <span><i class="sw int"></i>Aseo interno (TECC)</span>
+          <span><i class="sw ext"></i>Aseo externo (proveedor)</span>
+          <span><i class="sw none"></i>Sin aseo</span>
+        </div>
+        <div class="cal-detail" id="calDetail">Toca una celda con color para ver el detalle del aseo.</div>
+      </div>
+    </div>
+  </div><!-- /#tab-aseos -->
+
+  <!-- ============ TALLER ============ -->
+  <div id="tab-taller" class="hidden">
+    <div class="section" id="tPeriodWrap">
+      <div class="chips" id="tPresets"></div>
+      <div class="customrange" id="tCustomRange">
+        <label class="daterow"><span>Desde</span><input type="date" class="ios" id="cTStart" aria-label="Taller fecha inicio"></label>
+        <label class="daterow"><span>Hasta</span><input type="date" class="ios" id="cTEnd" aria-label="Taller fecha fin"></label>
+      </div>
+      <div class="rangeinfo" id="tRangeInfo">—</div>
+    </div>
+    <div id="tallerBody"></div>
+  </div>
+
+  <!-- ============ AJUSTES ============ -->
+  <div id="tab-ajustes" class="hidden">
+    <div class="section">
+      <div class="section-h">Precios por tipo de aseo (COP)</div>
+      <div class="note">Edita el valor de cada combinación. Los cambios se guardan en este dispositivo y recalculan los totales al instante.</div>
+      <div class="card" id="priceList"></div>
+    </div>
+    <div class="section" style="display:flex;gap:10px;">
+      <button class="btn danger" id="resetPrices">Restablecer</button>
+      <button class="btn primary" id="savedHint">Guardado automático ✓</button>
+    </div>
+    <div class="section">
+      <div class="section-h">Costo del taller interno</div>
+      <div class="card">
+        <div class="price-row"><div class="nm">Costo semanal del taller interno</div>
+          <input class="price-in" id="costoSemanal" type="number" step="1000"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-h">Modelo de costo de salario (mensual)</div>
+      <div class="card">
+        <div class="price-row"><div class="nm">Salario base (SMMLV 2026)<div class="cnt">Parte salarial</div></div><input class="price-in" id="finSal" type="number" step="1000"></div>
+        <div class="price-row"><div class="nm">Auxilio de transporte 2026</div><input class="price-in" id="finAux" type="number" step="1000"></div>
+        <div class="price-row"><div class="nm">Prestaciones y parafiscales</div><input class="price-in" id="finPres" type="number" step="1000"></div>
+        <div class="price-row"><div class="nm">Costo total empleador<div class="cnt">Salario + auxilio + prestaciones</div></div><div class="price-in" id="finTotal" style="border:0;background:transparent;color:var(--tecc-azul)">$0</div></div>
+        <div class="price-row"><div class="nm">Divisor de días/mes<div class="cnt">Día base = costo total ÷ divisor</div></div><input class="price-in" id="finDiv" type="number" step="1"></div>
+        <div class="price-row"><div class="nm">Día base resultante</div><div class="price-in" id="finDia" style="border:0;background:transparent;color:var(--tecc-azul)">$0</div></div>
+        <div class="price-row"><div class="nm">Días fijos/mes: NIDIA + CARLOS + TECC (los 3 juntos)<div class="cnt">WG = los demás días del mes (divisor − fijos)</div></div><input class="price-in" id="finDiasF" type="number" step="1"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="price-row"><div class="nm">Redirigir aseos del CC 404<div class="cnt">Cada aseo 404 se redirige individualmente en la pestaña Aseos. Aquí puedes aplicar un destino a todos de una vez.</div></div>
+          <select class="ios" id="cc404SelA"></select></div>
+      </div>
+      <div class="note"><b>Reglas de asignación:</b> NIDIA GASCA, CARLOS GASCA y TECC = <b>4 días/mes los 3 juntos</b> (en conjunto, repartidos por su valor de aseos y prorrateado al rango). WG = <b>todos los demás días</b> del mes (divisor − días fijos = 20 días/mes). El CC 404 no carga salario: se redirige por aseo en la pestaña Aseos.</div>
+    </div>
+    <div class="section">
+      <div class="section-h">Conexión en vivo (Google Sheets API)</div>
+      <div class="card">
+        <div class="price-row" style="flex-wrap:wrap;gap:8px">
+          <div class="nm" style="flex:1 1 100%">API key de Google
+            <div class="cnt">Se guarda solo en este dispositivo. Permite leer los formularios en tiempo real.</div>
+          </div>
+          <input class="price-in" id="apiKeyIn" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false" style="flex:1;width:auto;text-align:left;min-width:180px">
+        </div>
+      </div>
+      <div class="section" style="display:flex;gap:10px;margin:12px 0 0">
+        <button class="btn ghost" id="toggleKey" style="flex:0 0 auto;width:auto;padding:13px 16px">👁 Ver</button>
+        <button class="btn primary" id="refreshLive">Actualizar en vivo</button>
+      </div>
+      <div class="note" id="liveStatus">Sin conexión en vivo · usando datos del último build.py</div>
+      <div class="note" style="opacity:.85">¿No tienes API key? Créala gratis en Google Cloud (habilita <b>Google Sheets API</b>) y pégala aquí. Los Sheets ya están compartidos como “cualquiera con el enlace”, así que la key basta para leerlos.</div>
+    </div>
+    <div class="section">
+      <div class="section-h">Datos</div>
+      <div class="card">
+        <div class="row"><span class="lbl">Generado</span><span class="val muted" id="genAt" style="font-size:13px">—</span></div>
+        <div class="row"><span class="lbl">Aseos cargados</span><span class="val" id="genAseos">0</span></div>
+        <div class="row"><span class="lbl">Registros taller</span><span class="val" id="genTaller">0</span></div>
+      </div>
+      <div class="note">Con la <b>conexión en vivo</b> activada (arriba), la app lee los formularios en tiempo real. Sin API key, usa la última instantánea de <b>build.py</b>.</div>
+    </div>
+  </div>
+
+  <div class="foot">TECC · Grupo William Gasca — App de Mantenimiento</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = __DATA_JSON__;
+const COP = n => '$' + Math.round(n||0).toLocaleString('es-CO');
+const $ = s => document.querySelector(s);
+const LS_PRICES='tecc_precios_v1', LS_COSTO='tecc_costo_semanal_v1', LS_APIKEY='tecc_apikey_v1';
+const SHEET_ASEOS='1cTsB7riRbd7u0h3DsTdlItYnUPg_b-s2YcCXIhtx9HY';
+const SHEET_TALLER='1jaxw_YLSa9KNh0F7LZWyTpaixUIGYQpvJloV_yOwvZ0';
+/* API key incrustada (solo lectura de Sheets). Si el usuario pega otra en Ajustes, esa tiene prioridad. */
+const APIKEY_DEFAULT='AIzaSyBB608z6V9FvejeBY0vsLBfKNFUyJy1Ggk';
+
+/* ---------- precios (defaults + overrides locales) ---------- */
+function loadPrices(){
+  const def = {...DATA.precios};
+  try{const ov=JSON.parse(localStorage.getItem(LS_PRICES)||'{}');return {...def,...ov};}catch(e){return def;}
+}
+function savePrices(p){localStorage.setItem(LS_PRICES, JSON.stringify(p));}
+let PRICES = loadPrices();
+let COSTO_SEM = (()=>{const v=localStorage.getItem(LS_COSTO);return v?+v:(DATA.tallerConfig.costoSemanal||1875000);})();
+
+/* ---------- modelo financiero / salario ---------- */
+const LS_SAL='tecc_sal_v1',LS_AUX='tecc_aux_v1',LS_PRES='tecc_pres_v1',LS_DIV='tecc_div_v1',LS_DIASFIJOS='tecc_diasf_v1',LS_CC404='tecc_cc404_v1',LS_CC404MAP='tecc_cc404_map_v1';
+const SC=DATA.salarioConfig||{};
+const DEF_SAL=SC.salarioBase??1750905, DEF_AUX=SC.auxTransporte??249095, DEF_PRES=SC.prestaciones??907595, DEF_DIV=SC.diaDivisor??24, DEF_DIASFIJOS=SC.diasFijos??4;
+function numLS(k,def){const v=localStorage.getItem(k);return (v!=null&&v!=='')?(+v):def;}
+function fin(){return {sal:numLS(LS_SAL,DEF_SAL),aux:numLS(LS_AUX,DEF_AUX),pres:numLS(LS_PRES,DEF_PRES),div:numLS(LS_DIV,DEF_DIV)||DEF_DIV,diasFijos:numLS(LS_DIASFIJOS,DEF_DIASFIJOS)};}
+function diaBase(){const f=fin();return (f.sal+f.aux+f.pres)/(f.div||DEF_DIV);}
+function getCC404(){return localStorage.getItem(LS_CC404)||'';}
+function setCC404(v){localStorage.setItem(LS_CC404,v||'');}
+/* redirección por-aseo del CC 404: mapa {idAseo: centroDestino} */
+function getCC404Map(){try{return JSON.parse(localStorage.getItem(LS_CC404MAP)||'{}')||{};}catch(e){return {};}}
+function cc404For(id){return getCC404Map()[id]||'';}
+function setCC404For(id,v){const m=getCC404Map();if(v)m[id]=v;else delete m[id];localStorage.setItem(LS_CC404MAP,JSON.stringify(m));}
+function applyAllCC404(target){const m=getCC404Map();DATA.aseos.records.forEach(r=>{if((r.centro||'')==='404'){if(target)m[r.id]=target;else delete m[r.id];}});localStorage.setItem(LS_CC404MAP,JSON.stringify(m));}
+function esFinca(r){return norm((r.lugar||'')+' '+(r.lugarAseo||'')).includes('finca');}
+function esPiscuiso(r){return norm((r.lugar||'')+' '+(r.lugarAseo||'')).includes('piscu');}
+/* Aseo EXTERNO = col Q "Lugar de Aseo" trae el nombre de un proveedor (≠ Finca / Taller Piscuiso, y no vacío).
+   Su valor viene de col R "Valor del aseo… proveedor externo" (r.valExt), no de la tabla de precios interna. */
+function esExterno(r){const q=norm(r.lugarAseo||'').trim();return q!=='' && !q.includes('finca') && !q.includes('piscu');}
+function esInterno(r){return !esExterno(r);}
+function valorAseo(r){return esExterno(r)?(r.valExt||0):priceOf(r.tipo).v;}
+function proveedor(r){return (r.lugarAseo||'').trim();}
+
+/* normalizador de combinación */
+function sig(tipo){return (tipo||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean).sort().join(' | ');}
+const SIG2KEY = {}; Object.keys(DATA.precios).forEach(k=>SIG2KEY[sig(k)]=k);
+function priceOf(tipo){
+  if(PRICES.hasOwnProperty(tipo)) return {v:PRICES[tipo],known:true};
+  const k=SIG2KEY[sig(tipo)];
+  if(k && PRICES.hasOwnProperty(k)) return {v:PRICES[k],known:true};
+  return {v:0,known:false};
+}
+
+/* ---------- periodo ---------- */
+const months = DATA.aseos.months.slice();
+function fmtMonth(m){const [y,mm]=m.split('-');const N=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return N[+mm-1]+' '+y;}
+function fmtD(s){const[y,mo,d]=s.split('-');const N=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return (+d)+' '+N[+mo-1]+' '+y;}
+function startOfDay(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function anchorDate(){
+  const ds=DATA.aseos.records.map(r=>r.fecha).filter(Boolean).sort();
+  const last=ds.length?parseDate(ds[ds.length-1]):null;
+  const today=startOfDay(new Date());
+  return (last&&last<=today)?last:today;
+}
+let period='ALL', customStart=null, customEnd=null;
+let calSel=null;   // celda seleccionada del calendario (el periodo lo controla el selector compartido)
+const PRESETS=[['WEEK','Semana'],['FORTNIGHT','Quincena'],['PREVMONTH','Mes anterior'],['CUSTOM','Personalizado']];
+
+function resolveRange(){
+  const a=anchorDate();
+  if(period==='WEEK'){return{start:ymdOf(addDays(a,-6)),end:ymdOf(a),label:'Última semana'};}
+  if(period==='FORTNIGHT'){return{start:ymdOf(addDays(a,-14)),end:ymdOf(a),label:'Última quincena'};}
+  if(period==='PREVMONTH'){const f=new Date(a.getFullYear(),a.getMonth()-1,1),l=new Date(a.getFullYear(),a.getMonth(),0);return{start:ymdOf(f),end:ymdOf(l),label:'Mes anterior · '+fmtMonth(ymOf(f))};}
+  if(period==='CUSTOM'){if(!customStart||!customEnd)return null;const x=customStart,y=customEnd;return{start:x<=y?x:y,end:x<=y?y:x,label:'Personalizado'};}
+  if(period==='ALL'){const ds=DATA.aseos.records.map(r=>r.fecha).filter(Boolean).sort();if(!ds.length)return null;return{start:ds[0],end:ds[ds.length-1],label:'Todo el periodo'};}
+  const [y,m]=period.split('-').map(Number);
+  return{start:ymdOf(new Date(y,m-1,1)),end:ymdOf(new Date(y,m,0)),label:fmtMonth(period)};
+}
+function dayCount(R){return Math.round((parseDate(R.end)-parseDate(R.start))/86400000)+1;}
+function monthsCovered(R){
+  const s=parseDate(R.start),e=parseDate(R.end);let frac=0,y=s.getFullYear(),m=s.getMonth();
+  while(true){
+    const mS=new Date(y,m,1),mE=new Date(y,m+1,0);
+    const oS=new Date(Math.max(mS,s)),oE=new Date(Math.min(mE,e));
+    const days=Math.round((oE-oS)/86400000)+1;
+    if(days>0)frac+=days/mE.getDate();
+    if(y===e.getFullYear()&&m===e.getMonth())break;
+    m++;if(m>11){m=0;y++;}
+  }
+  return frac;
+}
+function recordsForPeriod(){
+  const R=resolveRange(); if(!R)return [];
+  if(period==='ALL')return DATA.aseos.records;
+  return DATA.aseos.records.filter(r=>r.fecha>=R.start&&r.fecha<=R.end);
+}
+function buildPeriodUI(){
+  const sel=$('#periodSel'); sel.innerHTML='';
+  const add=(v,t)=>{const o=document.createElement('option');o.value=v;o.textContent=t;sel.appendChild(o);};
+  add('ALL','Todo el periodo');
+  months.slice().reverse().forEach(m=>add(m,fmtMonth(m)));
+  if(period==='ALL'||months.includes(period))sel.value=period;
+  sel.onchange=()=>setPeriod(sel.value);
+  const pc=$('#periodPresets'); pc.innerHTML='';
+  PRESETS.forEach(([v,t])=>{const b=document.createElement('button');b.className='chip-btn';b.dataset.p=v;b.textContent=t;b.onclick=()=>setPeriod(v);pc.appendChild(b);});
+  const cs=$('#cStart'),ce=$('#cEnd');
+  // al editar cualquier fecha → modo personalizado con los días exactos elegidos
+  const onDateEdit=()=>{ if(!cs.value||!ce.value)return; period='CUSTOM'; customStart=cs.value; customEnd=ce.value; syncPeriodUI(); render(); };
+  cs.onchange=onDateEdit; ce.onchange=onDateEdit;
+  reflectRangeInInputs();
+  syncPeriodUI();
+}
+// Refleja el rango activo (preset/mes/todo/personalizado) en los inputs Desde/Hasta, siempre visibles.
+function reflectRangeInInputs(){
+  const R=resolveRange();
+  if(R){ $('#cStart').value=R.start; $('#cEnd').value=R.end; }
+}
+function setPeriod(v){
+  period=v;
+  if(v==='CUSTOM' && (!customStart||!customEnd)){
+    const a=anchorDate(); customEnd=ymdOf(a); customStart=ymdOf(addDays(a,-29));
+  }
+  reflectRangeInInputs();
+  syncPeriodUI(); render();
+}
+function syncPeriodUI(){
+  const sel=$('#periodSel');
+  const isSel=(period==='ALL'||months.includes(period));
+  if(isSel)sel.value=period;
+  sel.style.opacity=isSel?'1':'.45';
+  document.querySelectorAll('#periodPresets .chip-btn').forEach(b=>b.classList.toggle('active',b.dataset.p===period));
+}
+
+/* ---------- render aseos ---------- */
+let ccChart, monthChart, exProvChart, exMonthChart;
+function render(){
+  const R=resolveRange();
+  const recs=recordsForPeriod().filter(esInterno);   // dashboard financiero = SOLO aseos internos (TECC)
+  const ccOf=r=>{const c=r.centro||'(sin CC)';return (c==='404')?(cc404For(r.id)||'404'):c;};
+  let total=0, sinValor=0; const veh=new Set();
+  const byTipo={}, byCC={}, cntCC={};
+  recs.forEach(r=>{
+    const p=priceOf(r.tipo); total+=p.v; if(!p.known) sinValor++;
+    if(r.vehiculo) veh.add(r.vehiculo);
+    if(!byTipo[r.tipo]) byTipo[r.tipo]={n:0,sum:0,known:p.known};
+    byTipo[r.tipo].n++; byTipo[r.tipo].sum+=p.v;
+    const cc=ccOf(r); byCC[cc]=(byCC[cc]||0)+p.v; cntCC[cc]=(cntCC[cc]||0)+1;
+  });
+  const shortLab=R?(period==='ALL'?'Todo':R.label.replace('Última ','').replace('Mes anterior','Mes ant.').split(' · ')[0]):'—';
+  $('#heroTotal').textContent=COP(total);
+  $('#heroSub').textContent=recs.length+' aseos · '+veh.size+' vehículos';
+  $('#heroChip').textContent=shortLab;
+  $('#kCount').textContent=recs.length;
+  $('#kAvg').textContent=COP(recs.length?total/recs.length:0);
+  $('#kVeh').textContent=veh.size;
+  $('#kSin').textContent=sinValor;
+  $('#rangeInfo').innerHTML=R?`<b>${fmtD(R.start)} – ${fmtD(R.end)}</b> · ${dayCount(R)} días`:'Sin datos en este rango';
+
+  renderSMMLV(total,R);
+  renderCC(byCC,cntCC,total,R,recs);
+
+  // desglose por tipo
+  const tipos=Object.entries(byTipo).sort((a,b)=>b[1].sum-a[1].sum);
+  const maxSum=Math.max(1,...tipos.map(t=>t[1].sum));
+  $('#bdTipo').innerHTML = tipos.map(([t,o])=>{
+    const unit=o.n?o.sum/o.n:0;
+    const badge=o.known?'':'<span class="badge sinvalor">sin valor</span>';
+    return `<div class="bd-row">
+      <div class="bd-top"><div style="flex:1"><div class="bd-name">${shorten(t)}${badge}</div>
+      <div class="bd-meta">${o.n} aseos × ${COP(unit)}</div></div>
+      <div class="bd-amt">${COP(o.sum)}</div></div>
+      <div class="bar"><i style="width:${Math.max(3,o.sum/maxSum*100)}%"></i></div></div>`;
+  }).join('') || '<div class="empty">Sin aseos en este periodo</div>';
+
+  // chart centro de costo
+  const ccE=Object.entries(byCC).sort((a,b)=>b[1]-a[1]);
+  drawBar('ccChart', ccE.map(e=>e[0]), ccE.map(e=>e[1]), c=>ccChart=c, ccChart);
+  // chart por mes (todo el periodo siempre · solo internos)
+  const mAgg={}; DATA.aseos.records.forEach(r=>{if(!esInterno(r))return;const p=priceOf(r.tipo);mAgg[r.ym]=(mAgg[r.ym]||0)+p.v;});
+  const mk=months.slice();
+  drawBar('monthChart', mk.map(fmtMonth), mk.map(m=>mAgg[m]||0), c=>monthChart=c, monthChart, months.includes(period)?mk.indexOf(period):-1);
+  renderExternos();
+  renderCalendar();
+}
+
+/* ---------- render ASEOS EXTERNOS (financiero · por proveedor) ---------- */
+function renderExternos(){
+  const R=resolveRange();
+  const recs=recordsForPeriod().filter(esExterno);   // solo aseos externos (proveedor en col Q, valor en col R)
+  let total=0; const vehs=new Set(), provs={}, byVeh={};
+  recs.forEach(r=>{
+    const v=valorAseo(r); total+=v;
+    if(r.vehiculo) vehs.add(r.vehiculo);
+    const p=proveedor(r)||'(sin proveedor)';
+    (provs[p]=provs[p]||{n:0,sum:0}).n++; provs[p].sum+=v;
+    const vk=r.vehiculo||'—'; (byVeh[vk]=byVeh[vk]||{n:0,sum:0}).n++; byVeh[vk].sum+=v;
+  });
+  const shortLab=R?(period==='ALL'?'Todo':R.label.replace('Última ','').replace('Mes anterior','Mes ant.').split(' · ')[0]):'—';
+  const nProv=Object.keys(provs).length;
+  $('#exHeroTotal').textContent=COP(total);
+  $('#exHeroChip').textContent=shortLab;
+  $('#exHeroSub').textContent=recs.length+' aseos · '+vehs.size+' vehículos · '+nProv+' proveedor'+(nProv===1?'':'es');
+  $('#exCount').textContent=recs.length;
+  $('#exAvg').textContent=COP(recs.length?total/recs.length:0);
+  $('#exVeh').textContent=vehs.size;
+  $('#exProv').textContent=nProv;
+  // cards por proveedor (imponentes, morados)
+  const pe=Object.entries(provs).sort((a,b)=>b[1].sum-a[1].sum);
+  const pmax=Math.max(1,...pe.map(e=>e[1].sum));
+  $('#exProvCards').innerHTML=pe.map(([p,o])=>{
+    const pct=total?o.sum/total*100:0, unit=o.n?o.sum/o.n:0;
+    return `<div class="cc-card ext">
+      <div class="cc-top"><div class="cc-name">${p}</div><div class="cc-val">${COP(o.sum)}</div></div>
+      <div class="cc-bar ext"><i style="width:${Math.max(4,o.sum/pmax*100)}%"></i></div>
+      <div class="cc-meta">${o.n} aseo${o.n===1?'':'s'} · ${pct.toFixed(1)}% del gasto · ${COP(unit)} c/u</div>
+    </div>`;
+  }).join('')||'<div class="empty">Sin aseos externos en este periodo</div>';
+  drawBar('exProvChart', pe.map(e=>e[0]), pe.map(e=>e[1]), c=>exProvChart=c, exProvChart);
+  // gasto por vehículo
+  const ve=Object.entries(byVeh).sort((a,b)=>b[1].sum-a[1].sum);
+  const vmax=Math.max(1,...ve.map(e=>e[1].sum));
+  $('#exByVeh').innerHTML=ve.map(([v,o])=>{
+    const unit=o.n?o.sum/o.n:0;
+    return `<div class="bd-row">
+      <div class="bd-top"><div style="flex:1"><div class="bd-name">N° ${v}</div>
+      <div class="bd-meta">${o.n} aseo${o.n===1?'':'s'} × ${COP(unit)}</div></div>
+      <div class="bd-amt">${COP(o.sum)}</div></div>
+      <div class="bar ext"><i style="width:${Math.max(3,o.sum/vmax*100)}%"></i></div></div>`;
+  }).join('')||'<div class="empty">Sin aseos externos en este periodo</div>';
+  // gasto externo por mes (todo el periodo, resalta el mes activo)
+  const mAgg={}; DATA.aseos.records.forEach(r=>{if(!esExterno(r))return; mAgg[r.ym]=(mAgg[r.ym]||0)+valorAseo(r);});
+  const mk=months.slice();
+  drawBar('exMonthChart', mk.map(fmtMonth), mk.map(m=>mAgg[m]||0), c=>exMonthChart=c, exMonthChart, months.includes(period)?mk.indexOf(period):-1);
+}
+
+/* ---------- calendario "aseos en general" (interno verde / externo morado) ---------- */
+function fmtDShort(ymd){const[y,mo,d]=ymd.split('-');const N=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return (+d)+' '+N[+mo-1];}
+function fmtDLong(ymd){if(!ymd)return '—';const[y,mo,d]=ymd.split('-').map(Number);const dt=new Date(y,mo-1,d);const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];const w=DIAS[dt.getDay()];return w.charAt(0).toUpperCase()+w.slice(1)+', '+d+' de '+MESES[mo-1]+' de '+y;}
+function capNombre(s){return (s||'').toLowerCase().replace(/\b[a-záéíóúñü]/g,c=>c.toUpperCase());}
+// El calendario usa el MISMO periodo que Internos/Externos (selector compartido #periodBlock).
+function calRange(){
+  const R=resolveRange();
+  if(!R) return null;
+  return {start:startOfDay(parseDate(R.start)), end:startOfDay(parseDate(R.end))};
+}
+// ----- Filtro del calendario (origen + tipos de lavado, combinables) -----
+let calOrigen=new Set(), calTipoFilter=new Set();
+function tiposDe(r){return (r.tipo||'').split(',').map(s=>s.trim()).filter(Boolean);}
+function tipoKey(t){return norm(t).trim();}
+function pretty(t){t=(t||'').trim().toLowerCase(); return t? t.charAt(0).toUpperCase()+t.slice(1):'';}
+// catálogo de tipos: agrupa por clave normalizada (junta MAYÚS/minús), ordena por frecuencia
+function tipoCatalog(){
+  const m={};
+  DATA.aseos.records.forEach(r=>tiposDe(r).forEach(t=>{const k=tipoKey(t); if(!k)return; if(!m[k])m[k]={label:t,n:0}; m[k].n++;}));
+  return Object.entries(m).sort((a,b)=>b[1].n-a[1].n);
+}
+function calMatch(r){
+  if(calOrigen.size){ const o=esExterno(r)?'ext':'int'; if(!calOrigen.has(o)) return false; }
+  if(calTipoFilter.size){ const s=new Set(tiposDe(r).map(tipoKey)); for(const k of calTipoFilter){ if(!s.has(k)) return false; } }   // AND: debe tener TODOS los tipos elegidos
+  return true;
+}
+function renderCalFilter(){
+  const og=$('#calOrigChips');
+  if(og){
+    og.innerHTML=`<button class="fchip int${calOrigen.has('int')?' on':''}" data-o="int">Interno</button>`+
+                 `<button class="fchip ext${calOrigen.has('ext')?' on':''}" data-o="ext">Externo</button>`;
+    og.querySelectorAll('.fchip').forEach(b=>b.onclick=()=>{const o=b.dataset.o; calOrigen.has(o)?calOrigen.delete(o):calOrigen.add(o); renderCalendar();});
+  }
+  const tg=$('#calTipoChips');
+  if(tg){
+    tg.innerHTML=tipoCatalog().map(([k,o])=>`<button class="fchip${calTipoFilter.has(k)?' on':''}" data-k="${encodeURIComponent(k)}">${pretty(o.label)} <span class="fn">${o.n}</span></button>`).join('');
+    tg.querySelectorAll('.fchip').forEach(b=>b.onclick=()=>{const k=decodeURIComponent(b.dataset.k); calTipoFilter.has(k)?calTipoFilter.delete(k):calTipoFilter.add(k); renderCalendar();});
+  }
+  const clr=$('#calFilterClear');
+  if(clr){ clr.style.display=(calOrigen.size||calTipoFilter.size)?'inline-block':'none'; clr.onclick=()=>{calOrigen.clear(); calTipoFilter.clear(); renderCalendar();}; }
+}
+function showCalDetail(veh,ymd){
+  const box=$('#calDetail'); if(!box) return;
+  const recs=DATA.aseos.records.filter(r=>(r.vehiculo||'—')===veh && r.fecha===ymd);
+  if(!recs.length){box.textContent='Sin aseo ese día.';return;}
+  let anyFoto=false;
+  const rows=recs.map(r=>{
+    const ext=esExterno(r);
+    const cond=capNombre((r.conductor||'').trim());
+    const tipos=tiposDe(r);
+    const chips=tipos.length? tipos.map(t=>`<span class="cd-t">${pretty(t)}</span>`).join('') : '<span class="cd-t cd-t0">sin detalle de tipo</span>';
+    const badge=ext?`<span class="cd-bad pe">● Externo</span>`:`<span class="cd-bad ci">● Interno (TECC)</span>`;
+    const val=ext?`<span class="cd-val pe">${COP(valorAseo(r))}</span>`:'';
+    // 4) fotos: solo las que existen (las que faltan no ocupan espacio)
+    const fotos=fotosDe(r); if(fotos.length)anyFoto=true;
+    const strip=fotos.length?`<div class="cd-fotos">`+fotos.map(f=>
+      `<a class="cd-foto" href="https://drive.google.com/open?id=${f.id}" target="_blank" rel="noopener" title="${f.label} — abrir en Drive">`+
+        `<img loading="lazy" alt="${f.label}" src="https://drive.google.com/thumbnail?id=${f.id}&sz=w300" onerror="this.closest('.cd-foto').classList.add('noimg')">`+
+        `<span>${f.label}</span></a>`).join('')+`</div>`:'';
+    return `<div class="cd-row${ext?' ext':' int'}">`+
+             // encabezado: origen (verde/morado) + valor si externo
+             `<div class="cd-hd">${badge}${val}</div>`+
+             // 1) día y fecha
+             `<div class="cd-line"><span class="cd-k">Día</span><span class="cd-v cd-dia">${fmtDLong(r.fecha)}</span></div>`+
+             // 2) conductor
+             `<div class="cd-line"><span class="cd-k">Conductor</span><span class="cd-v">${cond||'—'}</span></div>`+
+             // 3) descripción del aseo hecho
+             `<div class="cd-line"><span class="cd-k">Se hizo</span><span class="cd-v cd-chips">${chips}</span></div>`+
+             // 4) fotos (omitidas si no existen)
+             (strip?`<div class="cd-line col"><span class="cd-k">Fotos</span>${strip}</div>`:'')+
+           `</div>`;
+  }).join('');
+  const fnote=anyFoto?`<div class="cd-fnote">Toca una foto para abrirla en Drive. Las miniaturas cargan si tienes sesión en la cuenta de Google con acceso; para verlas siempre, comparte la carpeta como <b>“cualquiera con el enlace puede ver”</b>.</div>`:'';
+  box.innerHTML=`<div class="cd-top"><b>N° ${veh}</b>${recs.length>1?` · ${recs.length} aseos`:''}</div>${rows}${fnote}`;
+}
+function renderCalendar(){
+  renderCalFilter();
+  const wrap=$('#calWrap'); if(!wrap) return;
+  const R=calRange();
+  if(!R){ wrap.innerHTML='<div class="cal-empty">Selecciona un periodo con fechas en el selector de arriba.</div>'; const s=$('#calSum'); if(s)s.textContent='—'; return; }
+  const start=R.start, end=R.end;
+  const nDays=Math.max(1,Math.round((end-start)/86400000)+1);
+  const days=[]; for(let i=0;i<nDays;i++){const d=addDays(start,i); days.push({d,ymd:ymdOf(d)});}
+  const sYmd=ymdOf(start), eYmd=ymdOf(end);
+  const filtOn=(calOrigen.size||calTipoFilter.size);
+  const inWin=DATA.aseos.records.filter(r=>r.fecha>=sYmd && r.fecha<=eYmd && calMatch(r));
+  // agrupar por vehículo → día
+  const byVeh={};
+  inWin.forEach(r=>{
+    const v=r.vehiculo||'—';
+    const g=byVeh[v]||(byVeh[v]={veh:v,days:{},last:'',nInt:0,nExt:0,valExt:0});
+    const c=g.days[r.fecha]||(g.days[r.fecha]={int:false,ext:false});
+    if(esExterno(r)){c.ext=true; g.nExt++; g.valExt+=valorAseo(r);} else {c.int=true; g.nInt++;}
+    if(r.fecha>g.last) g.last=r.fecha;
+  });
+  const vehs=Object.values(byVeh);
+  // resumen
+  const totInt=vehs.reduce((s,g)=>s+g.nInt,0), totExt=vehs.reduce((s,g)=>s+g.nExt,0), valExt=vehs.reduce((s,g)=>s+g.valExt,0);
+  const sumEl=$('#calSum');
+  if(sumEl) sumEl.innerHTML=`${filtOn?'<b class="fon">Filtrado</b> · ':''}<b>${vehs.length}</b> vehículos · <b>${totInt}</b> aseos internos · <b class="p">${totExt}</b> externos${valExt?` (<b class="p">${COP(valExt)}</b>)`:''} · periodo de <b>${nDays}</b> días (${fmtDShort(sYmd)} – ${fmtDShort(eYmd)})`;
+  if(!vehs.length){ wrap.innerHTML='<div class="cal-empty">'+(filtOn?'Ningún aseo coincide con el filtro en este periodo.':'Sin aseos en este periodo.')+'</div>'; return; }
+  // orden: último aseo más reciente arriba; desempate por N° de vehículo
+  vehs.sort((a,b)=>{ if(a.last!==b.last) return a.last<b.last?1:-1; const na=parseInt(a.veh,10),nb=parseInt(b.veh,10); if(!isNaN(na)&&!isNaN(nb))return na-nb; return String(a.veh).localeCompare(String(b.veh)); });
+  const monthN=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  // cabecera (esquina + días)
+  let head='<div class="cal-veh">Vehículo</div>';
+  days.forEach((day,i)=>{
+    const d=day.d, first=(d.getDate()===1)||i===0;
+    const ml=first?`<span class="mlab">${monthN[d.getMonth()]} ${String(d.getFullYear()).slice(2)}</span>`:'';
+    head+=`<div class="cal-dh${d.getDate()===1?' mstart':''}">${ml}${d.getDate()}</div>`;
+  });
+  let out='<div class="cal-head">'+head+'</div>';
+  vehs.forEach(g=>{
+    let row=`<div class="cal-veh"><b>${g.veh}</b><small>últ: ${g.last?fmtDShort(g.last):'—'}</small></div>`;
+    days.forEach(day=>{
+      const c=g.days[day.ymd]; let cls='cal-cell';
+      if(day.d.getDate()===1) cls+=' mstart';
+      let tap='';
+      if(c){ cls+= (c.int&&c.ext)?' both':(c.int?' int':' ext'); tap=` data-veh="${encodeURIComponent(g.veh)}" data-ymd="${day.ymd}"`; }
+      const sel=(calSel&&calSel.veh===g.veh&&calSel.ymd===day.ymd)?' sel':'';
+      row+=`<div class="${cls}${sel}"${tap}></div>`;
+    });
+    out+=`<div class="cal-row">${row}</div>`;
+  });
+  wrap.innerHTML=out;
+  // tap → detalle (sin re-render completo)
+  wrap.querySelectorAll('.cal-cell[data-ymd]').forEach(el=>el.onclick=()=>{
+    wrap.querySelectorAll('.cal-cell.sel').forEach(x=>x.classList.remove('sel'));
+    el.classList.add('sel');
+    const veh=decodeURIComponent(el.dataset.veh), ymd=el.dataset.ymd;
+    calSel={veh,ymd}; showCalDetail(veh,ymd);
+  });
+}
+
+function renderSMMLV(total,R){
+  const f=fin(), ct=f.sal+f.aux+f.pres;          // costo total empleador mensual (salario mínimo)
+  const meses = R?monthsCovered(R):0;             // fracción de meses que cubre el periodo
+  const dias = R?dayCount(R):0;
+  const costo = ct*meses;                         // costo de la persona PRORRATEADO al periodo
+  const margen = total - costo;                   // RENTABILIDAD = valor de aseos − costo de la persona
+  const rentable = margen>=0;
+  const ratio = costo? total/costo : 0;           // veces que el valor de aseos cubre el costo
+  const card=$('#smCard'); if(card) card.classList.toggle('neg', !rentable);
+  $('#smMargin').textContent=(rentable?'+':'−')+COP(Math.abs(margen)).replace(/^\$/,'$');
+  $('#smMarginLab').textContent=rentable?'rentabilidad del periodo (a favor)':'pérdida del periodo';
+  const verdict=$('#smVerdict');
+  if(verdict){
+    if(rentable){
+      verdict.innerHTML=`<span class="pill">Sí, rentable</span>Los aseos valen <b>${COP(margen)}</b> más de lo que cuesta la persona — equivalen a <b>${ratio.toLocaleString('es-CO',{minimumFractionDigits:1,maximumFractionDigits:2})}×</b> su costo. Conviene tenerla haciendo aseos.`;
+    } else {
+      const cubre = ratio*100;
+      verdict.innerHTML=`<span class="pill">No rentable</span>La persona cuesta <b>${COP(-margen)}</b> más de lo que valen los aseos — el valor de aseos cubre solo el <b>${cubre.toLocaleString('es-CO',{maximumFractionDigits:0})}%</b> de su costo. Sale más caro que tercerizarlos.`;
+    }
+  }
+  $('#smVal').textContent=COP(total);
+  $('#smRef').textContent=COP(costo);
+  $('#smUnit').textContent=COP(ct);
+  $('#smDias').textContent=dias;
+  $('#smMeses').textContent=meses.toLocaleString('es-CO',{maximumFractionDigits:2});
+  { const u=$('#smMesesU'); if(u) u.textContent=(Math.abs(meses-1)<0.005)?'mes':'meses'; }
+  // desglose del costo de la persona prorrateado (suma = costo)
+  const salR=f.sal*meses, auxR=f.aux*meses, presR=f.pres*meses;
+  const w=x=>costo?(x/costo*100):0;
+  $('#smBarSal').style.width=w(salR)+'%';
+  $('#smBarAux').style.width=w(auxR)+'%';
+  $('#smBarPres').style.width=w(presR)+'%';
+  $('#smSal').textContent=COP(salR);
+  $('#smAux').textContent=COP(auxR);
+  $('#smPres').textContent=COP(presR);
+}
+
+const FIXED_CC={'NIDIA GASCA':1,'CARLOS GASCA':1,'TECC':1};
+function renderCC(byCC,cntCC,total,R,recs){
+  const f=fin(), db=diaBase(), mc=R?monthsCovered(R):0;
+  // NIDIA + CARLOS + TECC comparten f.diasFijos días/mes EN CONJUNTO (los 3 juntos), repartidos por su valor de aseos.
+  const fixedKeys=Object.keys(FIXED_CC);
+  const groupVal=fixedKeys.reduce((s,cc)=>s+(byCC[cc]||0),0);
+  const presentFixed=fixedKeys.filter(cc=>byCC[cc]!=null).length;
+  const wgDiasMes=Math.max(0,f.div-f.diasFijos);   // WG = todos los demás días del mes
+  const entries=Object.entries(byCC).sort((a,b)=>b[1]-a[1]);
+  const max=Math.max(1,...entries.map(e=>e[1]));
+  $('#ccCards').innerHTML=entries.map(([cc,val])=>{
+    let dias=0, basis='Sin costo de salario asignado';
+    if(FIXED_CC[cc]){
+      const share=groupVal>0?(val/groupVal):(presentFixed?1/presentFixed:0);
+      dias=f.diasFijos*mc*share;
+      basis=`${(share*100).toFixed(0)}% de ${f.diasFijos} días/mes (3 CC juntos) · ${mc.toFixed(2)} meses`;
+    }
+    else if(cc==='WG'){dias=wgDiasMes*mc; basis=`${wgDiasMes} días/mes (los demás) · ${mc.toFixed(2)} meses`;}
+    const costo=dias*db, margen=val-costo, pct=total?val/total*100:0;
+    const mcls=margen>=0?'pos':'neg';
+    return `<div class="cc-card">
+      <div class="cc-top"><div class="cc-name">${cc}</div><div class="cc-val">${COP(val)}</div></div>
+      <div class="cc-bar"><i style="width:${Math.max(4,val/max*100)}%"></i></div>
+      <div class="cc-meta">${cntCC[cc]||0} aseos · ${pct.toFixed(1)}% del total</div>
+      <div class="cc-fin">
+        <div class="cc-fin-i"><span>Costo salario</span><b>${costo?COP(costo):'—'}</b><small>${basis}${costo?` · ${dias.toFixed(1)} d × ${COP(db)}`:''}</small></div>
+        <div class="cc-fin-i"><span>Margen</span><b class="${mcls}">${COP(margen)}</b><small>ingreso − costo salario</small></div>
+      </div></div>`;
+  }).join('')||'<div class="empty">Sin aseos en este periodo</div>';
+  renderCC404(recs);
+}
+
+const CC404_OPTS=['','WG','TECC','NIDIA GASCA','CARLOS GASCA'];
+const CC404_LABEL={'':'404','WG':'WG','TECC':'TECC','NIDIA GASCA':'NIDIA','CARLOS GASCA':'CARLOS'};
+function renderCC404(recs){
+  const box=$('#cc404Box'); if(!box) return;
+  const all=recs.filter(r=>(r.centro||'')==='404');
+  if(!all.length){ box.classList.add('hidden'); const list=$('#cc404List'); if(list)list.innerHTML=''; return; }
+  box.classList.remove('hidden');
+  const map=getCC404Map();
+  let val=0, redir=0; all.forEach(r=>{val+=priceOf(r.tipo).v; if(map[r.id])redir++;});
+  $('#cc404n').textContent=`${all.length} aseos · ${COP(val)} · ${redir} redirigidos`;
+  const optHtml=cur=>CC404_OPTS.map(x=>`<option value="${x}"${x===cur?' selected':''}>${CC404_LABEL[x]}</option>`).join('');
+  const list=$('#cc404List');
+  const prevScroll=list?list.scrollTop:0;
+  list.innerHTML=all.map(r=>{
+    const cur=map[r.id]||'';
+    const dateC=`${r.fecha.slice(8,10)}/${r.fecha.slice(5,7)}/${r.fecha.slice(2,4)}`;
+    const cond=(r.conductor||'').trim().split(/\s+/).slice(0,2).join(' ');
+    const sub = r.vehiculo ? `${dateC} · ${shorten(r.tipo)}` : `${dateC}${cond?' · '+cond:''} · ${shorten(r.tipo)}`;
+    return `<div class="cc404-item">
+      <div class="i-veh"><span>N°</span>${r.vehiculo||'—'}</div>
+      <div class="i-info"><b><span class="v">${COP(priceOf(r.tipo).v)}</span></b><small>${sub}</small></div>
+      <select class="ios i-sel${cur?' set':''}" data-id="${encodeURIComponent(r.id)}" title="Redirigir N° ${r.vehiculo||'sin número'}">${optHtml(cur)}</select>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.i-sel').forEach(sel=>{
+    sel.onchange=()=>{setCC404For(decodeURIComponent(sel.dataset.id), sel.value); render();};
+  });
+  list.scrollTop=prevScroll;
+  // "Aplicar a todos" (cabecera) — fija el mismo destino para todos los aseos 404
+  const selAll=$('#cc404SelAll');
+  if(selAll){
+    if(!selAll.dataset.wired){
+      selAll.innerHTML=`<option value="__none__">Aplicar a todos…</option>`+CC404_OPTS.map(x=>`<option value="${x}">${x?('Todos → '+x):'Todos → mantener 404'}</option>`).join('');
+      selAll.dataset.wired='1';
+      selAll.onchange=()=>{ if(selAll.value==='__none__')return; applyAllCC404(selAll.value); render(); };
+    }
+    selAll.value='__none__';
+  }
+}
+function shorten(t){return t.replace(/LAVADO DE LLANTAS \+ LLANTIL/g,'Llantas').replace(/ASEO EXTERIOR/g,'Exterior').replace(/BARRIDO INTERNO/g,'Barrido').replace(/TRAPIADA INTERNA/g,'Trapeada').replace(/LAVADO DE COJINERIA/g,'Cojinería').replace(/DESMANCHADA/g,'Desmanchada').replace(/BRILLADA/g,'Brillada');}
+
+function drawBar(id, labels, data, set, prev, hi=-1){
+  if(prev) prev.destroy();
+  const ctx=document.getElementById(id); if(!ctx)return;
+  const azul='#0A2342', am='#F2C94C';
+  const colors=data.map((_,i)=> i===hi?am:azul);
+  set(new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:hi>=0?colors:azul,borderRadius:6,maxBarThickness:46}]},
+    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>COP(c.parsed.y)}}},
+    scales:{y:{ticks:{callback:v=>'$'+(v/1000)+'k',font:{size:11}},grid:{color:'rgba(0,0,0,.05)'}},
+            x:{ticks:{font:{size:11},maxRotation:0,autoSkip:true},grid:{display:false}}}}}));
+}
+
+/* ================= TALLER ================= */
+const TALLER_TABLA=(DATA.tallerConfig&&DATA.tallerConfig.tablaExterna)||{};
+let tCostChart,tSysChart,tEstadoChart,tTimeChart;
+
+/* ---- clasificador: intervención (sistema + especifique) → categoría de la tabla externa ----
+   Reglas ordenadas (gana la primera). Las llaves van SIN tildes porque norm() las quita. */
+function tHas(s){for(let i=1;i<arguments.length;i++)if(s.includes(arguments[i]))return true;return false;}
+function tAll(s){for(let i=1;i<arguments.length;i++)if(!s.includes(arguments[i]))return false;return true;}
+const TALLER_RULES=[
+ ['Relés de motoventiladores', s=>tHas(s,'rele','reles')&&tHas(s,'motoventil','moto ventil','moto-ventil')],
+ ['Relés de luces', s=>tHas(s,'rele','reles')&&tHas(s,'luz','luce','ilumin','luminac','far','bombill','stop','direccional')],
+ ['Motoventiladores (cambio)', s=>tHas(s,'motoventil','moto ventil','moto-ventil')],
+ ['Diagnóstico / revisión sistema de carga', s=>tHas(s,'alternador','regulador')||(tHas(s,'carga')&&tHas(s,'diagnost','revis','sistema','volt','ampera','bateria'))],
+ ['Blower / ventilador de cabina', s=>tHas(s,'blower','blowe','soplador')||tAll(s,'ventilador','cabina')],
+ ['Compresor A/A', s=>tHas(s,'compresor','climatiz','aire acond','a/a','a/c')||tAll(s,'aire','acondi')],
+ ['Instalación / cambio de exploradoras', s=>tHas(s,'explorador')],
+ ['Motor de arranque / reparación', s=>tHas(s,'arranque','starter')||tAll(s,'motor','marcha')],
+ ['Direccionales / estacionarias / flasher', s=>tHas(s,'direccional','estacionaria','flasher','intermitente')],
+ ['Sensor de reversa', s=>tHas(s,'reversa')],
+ ['Sensor cigüeñal', s=>tHas(s,'ciguenal','ckp')],
+ ['Luces traseras / laterales', s=>tHas(s,'trasera','lateral','calav','cocuy')],
+ ['Stop / plaqueta de stop', s=>tHas(s,'stop','plaqueta')||tAll(s,'luz','freno')],
+ ['Cambio de bombillos (incl. LED)', s=>tHas(s,'bombill','bombl','led','halogen','h7','h4','h11')||tAll(s,'luz','baja')||tAll(s,'luz','alta')||tAll(s,'luz','media')],
+ ['Farolas / faros', s=>tHas(s,'farola','faro','farol')],
+ ['Puerta eléctrica / corrediza', s=>tHas(s,'puerta')],
+ ['Cambio / tensado de correas', s=>tHas(s,'correa','tensad')],
+ ['Tablero (bajar/armar/reparar)', s=>tHas(s,'tablero','cluster','instrumentos')],
+ ['Sistema limpiaparabrisas', s=>tHas(s,'limpiaparabris','limpia parabris','limpiabris','plumill','wiper')],
+ ['Fusibles', s=>tHas(s,'fusible')],
+ ['Instalación de rutero', s=>tHas(s,'rutero')],
+ ['Arreglo compartimiento motor', s=>tHas(s,'compartimiento','compartimento')],
+ ['Escape (soporte / reparación)', s=>tHas(s,'escape','exhosto','exosto','mofle','silenciador')],
+];
+function tallerCat(r){const s=norm((r.sistema||'')+' '+(r.especifique||''));if(!s.trim())return null;for(const rule of TALLER_RULES){try{if(rule[1](s))return rule[0];}catch(e){}}return null;}
+function tValor(r){const c=tallerCat(r);return c?(TALLER_TABLA[c]||0):0;}
+function estVal(r){const m=String(r.estado||'').match(/\d+(?:[.,]\d+)?/);if(!m)return null;let v=parseFloat(m[0].replace(',','.'));if(isNaN(v))return null;if(v>10&&v<=100)v=v/10;if(v<1||v>10)return null;return v;}
+function estCls(v){return v>=7?'':(v>=5?'a':'r');}
+
+/* ---- periodo del taller (independiente; presets para el reporte semanal) ---- */
+let tPeriod='ALL', tCStart=null, tCEnd=null;
+const T_PRESETS=[['WEEK','Semana'],['PREVWEEK','Sem. pasada'],['FORTNIGHT','Quincena'],['MONTH','Mes'],['ALL','Todo'],['CUSTOM','Personalizado']];
+function tDates(){return (DATA.taller.records||[]).map(r=>r.fecha).filter(Boolean).sort();}
+function tAnchor(){const ds=tDates();const last=ds.length?parseDate(ds[ds.length-1]):null;const today=startOfDay(new Date());return(last&&last<=today)?last:today;}
+function tRange(){
+  const a=tAnchor();
+  if(tPeriod==='WEEK')return{start:ymdOf(addDays(a,-6)),end:ymdOf(a),label:'Última semana'};
+  if(tPeriod==='PREVWEEK')return{start:ymdOf(addDays(a,-13)),end:ymdOf(addDays(a,-7)),label:'Semana pasada'};
+  if(tPeriod==='FORTNIGHT')return{start:ymdOf(addDays(a,-13)),end:ymdOf(a),label:'Última quincena'};
+  if(tPeriod==='MONTH'){const f=new Date(a.getFullYear(),a.getMonth(),1);return{start:ymdOf(f),end:ymdOf(a),label:'Mes actual · '+fmtMonth(ymOf(f))};}
+  if(tPeriod==='CUSTOM'){if(!tCStart||!tCEnd)return null;const x=tCStart,y=tCEnd;return{start:x<=y?x:y,end:x<=y?y:x,label:'Personalizado'};}
+  const ds=tDates(); if(!ds.length)return null; return{start:ds[0],end:ds[ds.length-1],label:'Todo el periodo'};
+}
+function dCount(R){return R?Math.round((parseDate(R.end)-parseDate(R.start))/86400000)+1:1;}
+function tBuildPeriodUI(){
+  const pc=$('#tPresets');
+  if(pc){pc.innerHTML='';T_PRESETS.forEach(p=>{const b=document.createElement('button');b.className='chip-btn'+(p[0]===tPeriod?' active':'');b.textContent=p[1];b.onclick=()=>tSetPeriod(p[0]);pc.appendChild(b);});}
+  const cs=$('#cTStart'),ce=$('#cTEnd');
+  if(cs&&ce){const R=tRange();if(R){cs.value=R.start;ce.value=R.end;}cs.onchange=ce.onchange=()=>{if(!cs.value||!ce.value)return;tPeriod='CUSTOM';tCStart=cs.value;tCEnd=ce.value;renderTaller();};}
+}
+function tSetPeriod(v){tPeriod=v;if(v==='CUSTOM'&&(!tCStart||!tCEnd)){const a=tAnchor();tCEnd=ymdOf(a);tCStart=ymdOf(addDays(a,-13));}renderTaller();}
+
+/* ---- helper de gráficos del taller (barras vertic./horiz., conteo o COP) ---- */
+function tBar(id,labels,data,setter,prev,opt){
+  opt=opt||{};
+  if(prev&&prev.destroy)prev.destroy();
+  const ctx=document.getElementById(id); if(!ctx)return;
+  const horiz=!!opt.horizontal, money=!!opt.money;
+  const ch=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:opt.colors||'#0A2342',borderRadius:6,maxBarThickness:opt.thick||40}]},
+    options:{indexAxis:horiz?'y':'x',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const v=horiz?c.parsed.x:c.parsed.y;return money?COP(v):(v+(opt.unit||''));}}}},
+      scales:{
+        x:horiz?{beginAtZero:true,ticks:{callback:v=>money?'$'+(v/1000)+'k':v,font:{size:11},precision:0},grid:{color:'rgba(127,127,127,.12)'}}:{ticks:{font:{size:10},maxRotation:0,autoSkip:true},grid:{display:false}},
+        y:horiz?{ticks:{font:{size:11},autoSkip:false},grid:{display:false}}:{beginAtZero:true,ticks:{callback:v=>money?'$'+(v/1000)+'k':v,font:{size:11},precision:0},grid:{color:'rgba(127,127,127,.12)'}}
+      }}});
+  setter(ch);
+}
+
+function renderTaller(){
+  const body=$('#tallerBody'); if(!body) return;
+  tBuildPeriodUI();
+  const all=DATA.taller.records||[];
+  const info=$('#tRangeInfo');
+  if(!all.length){
+    if(info) info.innerHTML='Sin registros del formulario del taller todavía.';
+    body.innerHTML=`<div class="section"><div class="card"><div class="empty">
+      <div class="ic">🔧</div><h3>Sin registros de taller todavía</h3>
+      <div>El formulario de inspección del taller interno aún no tiene respuestas.<br>
+      Cuando lleguen, este módulo mostrará intervenciones, su valoración a precio de mercado y la comparación <b>interno vs tercerización</b>.</div></div></div></div>`;
+    return;
+  }
+  const R=tRange();
+  const recs = (tPeriod==='ALL'||!R) ? all.slice() : all.filter(r=>r.fecha && r.fecha>=R.start && r.fecha<=R.end);
+  const days=dCount(R), weeks=days/7;
+  if(info) info.innerHTML = R ? `<b>${fmtD(R.start)}</b> – <b>${fmtD(R.end)}</b> · ${days} día${days===1?'':'s'} · <b>${recs.length}</b> intervenci${recs.length===1?'ón':'ones'}` : '—';
+  if(!recs.length){
+    body.innerHTML=`<div class="section"><div class="card"><div class="empty"><div class="ic">📅</div><h3>Sin intervenciones en este periodo</h3><div>Cambia el periodo arriba para ver otras semanas.</div></div></div></div>`;
+    return;
+  }
+
+  // --- agregaciones ---
+  let externo=0, sinValor=0, estSum=0, estN=0, sinPlaca=0, sinSistema=0, sinFecha=0;
+  const catAgg={}, placaAgg={}, sysAgg={}, dayAgg={}, dupKey={}, placasSet=new Set();
+  const estCounts=new Array(11).fill(0);
+  recs.forEach(r=>{
+    const cat=tallerCat(r), val=cat?(TALLER_TABLA[cat]||0):0;
+    if(cat){const a=catAgg[cat]||(catAgg[cat]={n:0,total:0,unit:TALLER_TABLA[cat]||0});a.n++;a.total+=val;externo+=val;} else sinValor++;
+    const placa=(r.placa||'').trim().toUpperCase();
+    if(placa){placasSet.add(placa);const p=placaAgg[placa]||(placaAgg[placa]={n:0,total:0,estSum:0,estN:0,sis:{}});p.n++;p.total+=val;if(cat)p.sis[cat]=(p.sis[cat]||0)+1;const e=estVal(r);if(e!=null){p.estSum+=e;p.estN++;}} else sinPlaca++;
+    const sis=(r.sistema||'').trim(); if(sis)sysAgg[sis]=(sysAgg[sis]||0)+1; else sinSistema++;
+    const e=estVal(r); if(e!=null){estSum+=e;estN++;estCounts[Math.round(e)]++;}
+    if(r.fecha)dayAgg[r.fecha]=(dayAgg[r.fecha]||0)+1; else sinFecha++;
+    const k=placa+'|'+norm(sis)+'|'+(r.fecha||''); dupKey[k]=(dupKey[k]||0)+1;
+  });
+  const dupes=Object.values(dupKey).reduce((s,c)=>s+(c>1?c-1:0),0);
+  const estAvg=estN?estSum/estN:0;
+  const interno=COSTO_SEM*weeks, ahorro=externo-interno;
+  const pct=externo>0?ahorro/externo*100:0, viable=ahorro>=0, hasV=externo>0;
+  const barMax=Math.max(externo,interno)||1;
+
+  const H=[];
+  // 1) HERO + KPIs
+  H.push(`<div class="section">
+    <div class="hero">
+      <div class="chip">${R?R.label:'—'}</div>
+      <div class="cap">Trabajo del taller · valor a precio de mercado</div>
+      <div class="num">${COP(externo)}</div>
+      <div class="sub">${recs.length} intervenci${recs.length===1?'ón':'ones'} · ${placasSet.size} placa${placasSet.size===1?'':'s'}${sinValor?` · ${sinValor} sin valorar`:''}</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Intervenciones</div><div class="v">${recs.length}</div></div>
+      <div class="kpi"><div class="k">Placas únicas</div><div class="v">${placasSet.size}</div></div>
+      <div class="kpi"><div class="k">Estado previo prom.</div><div class="v small estscore ${estN?estCls(estAvg):''}">${estN?estAvg.toFixed(1)+' /10':'—'}</div></div>
+      <div class="kpi"><div class="k">Categorías valoradas</div><div class="v">${Object.keys(catAgg).length}</div></div>
+    </div>
+  </div>`);
+
+  // 2) VIABILIDAD (smcard, OBLIGATORIO)
+  let verdict;
+  if(!hasV) verdict='Aún no hay intervenciones que se puedan valorar con la tabla de tercerización en este periodo.';
+  else if(viable) verdict=`Tercerizar este trabajo costaría <b>${COP(externo)}</b>; el taller interno cuesta <b>${COP(interno)}</b>. Ahorro de <b>${COP(ahorro)}</b> (${pct.toFixed(0)}%). El taller se justifica.`;
+  else verdict=`Tercerizar este trabajo costaría <b>${COP(externo)}</b>, pero el taller cuesta <b>${COP(interno)}</b>. Sobrecosto de <b>${COP(-ahorro)}</b> (${(-pct).toFixed(0)}% por encima). En este periodo salió más caro que tercerizar.`;
+  H.push(`<div class="section">
+    <div class="smcard ${hasV&&!viable?'neg':''}">
+      <div class="cap">¿El taller interno es rentable frente a tercerizar?</div>
+      <div class="big">${hasV?(viable?'+':'−')+COP(Math.abs(ahorro)):'—'} <small>${hasV?(viable?'de ahorro en el periodo':'más caro que tercerizar'):'sin trabajo valorable aún'}</small></div>
+      <div class="smverdict"><span class="pill">${hasV?(viable?'Sí, rentable':'No rentable'):'Sin datos'}</span>${verdict}</div>
+      <div class="tvs">
+        <div class="tvs-row"><div class="tvs-h"><span>Costo si se terceriza (externo)</span><b>${COP(externo)}</b></div><div class="tvs-bar ext"><i style="width:${externo/barMax*100}%"></i></div></div>
+        <div class="tvs-row"><div class="tvs-h"><span>Costo del taller interno (fijo)</span><b>${COP(interno)}</b></div><div class="tvs-bar int"><i style="width:${interno/barMax*100}%"></i></div></div>
+      </div>
+      <div class="tvs-note">Taller interno <b>${COP(COSTO_SEM)}</b>/semana × <b>${weeks.toFixed(2)}</b> semana${weeks===1?'':'s'} (${days} día${days===1?'':'s'}). Fórmula de ahorro: (externo − interno) / externo × 100 = <b>${hasV?pct.toFixed(1)+'%':'—'}</b>.</div>
+    </div>
+  </div>`);
+
+  // 3) TABLA COSTO EXTERNO ESTIMADO
+  const catE=Object.entries(catAgg).sort((a,b)=>b[1].total-a[1].total);
+  const maxT=catE.length?catE[0][1].total:1;
+  let tabla=catE.map(([cat,a])=>`<div class="tcat">
+      <div class="tcat-h"><div class="nm">${cat}</div><div class="tot">${COP(a.total)}</div></div>
+      <div class="tcat-sub">${a.n} × ${COP(a.unit)}</div>
+      <div class="tcat-bar"><i style="width:${a.total/maxT*100}%"></i></div>
+    </div>`).join('');
+  if(sinValor) tabla+=`<div class="tcat sinv"><div class="tcat-h"><div class="nm">Sin clasificar — no se pudo dar valor</div><div class="tot">${sinValor} interv.</div></div><div class="tcat-sub">No coinciden con ninguna categoría de la tabla de tercerización</div></div>`;
+  H.push(`<div class="section">
+    <div class="section-hero">Costo externo estimado</div>
+    <div class="note" style="margin:-4px 4px 9px">Cada intervención valorada con la tabla de mano de obra de mercado (sin repuestos), agrupando descripciones similares. Ordenado por costo.</div>
+    <div class="card">${tabla||'<div class="tcat"><div class="tcat-h"><div class="nm muted">Sin intervenciones valorables</div></div></div>'}<div class="ttot"><span>Total general externo del periodo</span><b>${COP(externo)}</b></div></div>
+  </div>`);
+
+  // 4) GRÁFICA costo por categoría + intervenciones por sistema
+  const topCat=catE.slice(0,10);
+  if(topCat.length){
+    H.push(`<div class="section"><div class="section-h">Costo externo por categoría</div>
+      <div class="card chartbox"><div style="position:relative;height:${Math.max(150,topCat.length*34)}px"><canvas id="tCostChart"></canvas></div></div></div>`);
+  }
+  const sysE=Object.entries(sysAgg).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if(sysE.length){
+    H.push(`<div class="section"><div class="section-h">Intervenciones por sistema revisado</div>
+      <div class="card chartbox"><div style="position:relative;height:${Math.max(150,sysE.length*34)}px"><canvas id="tSysChart"></canvas></div></div></div>`);
+  }
+
+  // 5) VEHÍCULOS que más usan el taller
+  const plE=Object.entries(placaAgg).sort((a,b)=>b[1].n-a[1].n).slice(0,12);
+  const maxPn=plE.length?plE[0][1].n:1;
+  if(plE.length){
+    const cards=plE.map(([pl,p])=>{
+      const topSis=Object.entries(p.sis).sort((a,b)=>b[1]-a[1])[0];
+      const ea=p.estN?p.estSum/p.estN:null;
+      return `<div class="cc-card">
+        <div class="pl-top"><div class="pl-pl">${pl}</div><div class="pl-n">${p.n} interv.</div></div>
+        <div class="pl-sub">≈ <b>${COP(p.total)}</b> externo${ea!=null?` · estado <span class="est estscore ${estCls(ea)}">${ea.toFixed(1)}/10</span>`:''}${topSis?` · ${topSis[0]}`:''}</div>
+        <div class="bar"><i style="width:${p.n/maxPn*100}%"></i></div>
+      </div>`;
+    }).join('');
+    H.push(`<div class="section"><div class="section-hero">Vehículos que más usan el taller</div>${cards}</div>`);
+  }
+
+  // 6) ESTADO previo (1-10) + críticos
+  if(estN){
+    const crit=recs.filter(r=>{const e=estVal(r);return e!=null&&e<=4;}).map(r=>({pl:(r.placa||'—').toUpperCase(),e:estVal(r),sis:r.sistema||''})).sort((a,b)=>a.e-b.e).slice(0,10);
+    let critHtml=crit.map(c=>`<div class="estrow"><span class="tdot ${c.e<=2?'r':'a'}"></span><span class="el">${c.pl}${c.sis?` · <span class="muted" style="font-size:12px">${c.sis}</span>`:''}</span><span class="ev estscore ${estCls(c.e)}">${c.e.toFixed(0)}/10</span></div>`).join('');
+    H.push(`<div class="section"><div class="section-h">Estado previo del sistema (1–10)</div>
+      <div class="card chartbox"><div style="position:relative;height:170px"><canvas id="tEstadoChart"></canvas></div></div>
+      ${crit.length?`<div class="section-h" style="margin-top:15px">Vehículos en estado crítico (≤ 4)</div><div class="card">${critHtml}</div>`:''}</div>`);
+  }
+
+  // 7) CARGA en el tiempo
+  const tl=tTimeBuckets(R,dayAgg);
+  if(tl.labels.length){
+    H.push(`<div class="section"><div class="section-h">Carga del taller en el tiempo</div>
+      <div class="card chartbox"><div style="position:relative;height:180px"><canvas id="tTimeChart"></canvas></div></div></div>`);
+  }
+
+  // 8) CALIDAD del registro
+  const alert=(lvl,ic,lbl,n)=>`<div class="talert ${lvl}"><div class="ti">${ic}</div><div class="tl">${lbl}</div><div class="tv">${n}</div></div>`;
+  H.push(`<div class="section"><div class="section-h">Calidad del registro</div><div class="card">
+    ${alert(sinPlaca?'warn':'ok',sinPlaca?'!':'✓','Intervenciones sin placa',sinPlaca)}
+    ${alert(sinSistema?'warn':'ok',sinSistema?'!':'✓','Sin sistema indicado',sinSistema)}
+    ${alert(sinFecha?'warn':'ok',sinFecha?'!':'✓','Sin fecha',sinFecha)}
+    ${alert(sinValor?'warn':'ok',sinValor?'!':'✓','Sin valorar (no clasificadas)',sinValor)}
+    ${alert(dupes?'bad':'ok',dupes?'⚠':'✓','Duplicados probables',dupes)}
+  </div></div>`);
+
+  // 9) Continuidad + nota GPS
+  H.push(`<div class="section"><div class="tfoot">
+    Este informe <b>hace parte de una serie semanal</b> y se compara con la semana anterior y las siguientes.<br>
+    Los indicadores de <b>horas en taller, capacidad instalada y saturación</b> provienen del archivo GPS (Wialon) y se activarán al conectar esa fuente.
+  </div></div>`);
+
+  body.innerHTML=H.join('');
+
+  // --- dibujar gráficos (tras insertar el HTML) ---
+  if(topCat.length) tBar('tCostChart',topCat.map(e=>e[0]),topCat.map(e=>e[1].total),c=>tCostChart=c,tCostChart,{horizontal:true,money:true,thick:26});
+  if(sysE.length) tBar('tSysChart',sysE.map(e=>e[0]),sysE.map(e=>e[1]),c=>tSysChart=c,tSysChart,{horizontal:true,colors:'#2E5E9E',unit:' interv.',thick:26});
+  if(estN){
+    const ec=[]; for(let i=1;i<=10;i++)ec.push(i<=4?'#FF3B30':(i<=6?'#FF9F0A':'#34C759'));
+    tBar('tEstadoChart',['1','2','3','4','5','6','7','8','9','10'],estCounts.slice(1),c=>tEstadoChart=c,tEstadoChart,{colors:ec,unit:' veh.'});
+  }
+  if(tl.labels.length) tBar('tTimeChart',tl.labels,tl.data,c=>tTimeChart=c,tTimeChart,{colors:'#0A2342',unit:' interv.'});
+}
+function tTimeBuckets(R,dayAgg){
+  if(!R) return {labels:[],data:[]};
+  const days=dCount(R), s=parseDate(R.start);
+  if(days>210){ const m={}; Object.keys(dayAgg).forEach(d=>{const k=d.slice(0,7);m[k]=(m[k]||0)+dayAgg[d];}); const keys=Object.keys(m).sort(); return {labels:keys.map(fmtMonth),data:keys.map(k=>m[k])}; }
+  const step=days<=45?1:7, labels=[], data=[];
+  for(let i=0;i<days;i+=step){let sum=0;for(let j=0;j<step&&i+j<days;j++)sum+=dayAgg[ymdOf(addDays(s,i+j))]||0;labels.push(fmtDShort(ymdOf(addDays(s,i))));data.push(sum);}
+  return {labels,data};
+}
+
+/* ---------- ajustes ---------- */
+function renderPrices(){
+  const list=$('#priceList');
+  // contar usos por combinación
+  const counts={}; DATA.aseos.records.forEach(r=>counts[r.tipo]=(counts[r.tipo]||0)+1);
+  const keys=Object.keys(PRICES).sort((a,b)=>(counts[b]||0)-(counts[a]||0));
+  list.innerHTML=keys.map(k=>`<div class="price-row">
+    <div class="nm">${shorten(k)}<div class="cnt">${counts[k]||0} aseos en el histórico</div></div>
+    <input class="price-in" type="number" step="1000" value="${PRICES[k]}" data-k="${encodeURIComponent(k)}"></div>`).join('');
+  list.querySelectorAll('.price-in').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const k=decodeURIComponent(inp.dataset.k); PRICES[k]=+inp.value||0; savePrices(PRICES);
+      render(); flashSaved();
+    });
+  });
+  $('#costoSemanal').value=COSTO_SEM;
+  $('#costoSemanal').oninput=e=>{COSTO_SEM=+e.target.value||0;localStorage.setItem(LS_COSTO,COSTO_SEM);renderTaller();flashSaved();};
+  $('#genAt').textContent=DATA.generated_at;
+  $('#genAseos').textContent=DATA.aseos.records.length;
+  $('#genTaller').textContent=(DATA.taller.records||[]).length;
+  renderSalaryConfig();
+}
+function renderSalaryConfig(){
+  const f=fin(), ct=f.sal+f.aux+f.pres;
+  const set=(id,v)=>{const el=$('#'+id); if(el)el.value=v;};
+  set('finSal',f.sal); set('finAux',f.aux); set('finPres',f.pres); set('finDiv',f.div); set('finDiasF',f.diasFijos);
+  if($('#finTotal'))$('#finTotal').textContent=COP(ct);
+  if($('#finDia'))$('#finDia').textContent=COP(ct/(f.div||DEF_DIV));
+  const bind=(id,key)=>{const el=$('#'+id); if(el)el.oninput=()=>{localStorage.setItem(key,+el.value||0); render(); const g=fin(),c=g.sal+g.aux+g.pres; if($('#finTotal'))$('#finTotal').textContent=COP(c); if($('#finDia'))$('#finDia').textContent=COP(c/(g.div||DEF_DIV)); flashSaved();};};
+  bind('finSal',LS_SAL); bind('finAux',LS_AUX); bind('finPres',LS_PRES); bind('finDiv',LS_DIV); bind('finDiasF',LS_DIASFIJOS);
+  const sel=$('#cc404SelA');
+  if(sel){
+    if(!sel.dataset.wired){
+      sel.innerHTML=`<option value="__none__">Aplicar a todos…</option>`+CC404_OPTS.map(x=>`<option value="${x}">${x?('Todos → '+x):'Todos → mantener 404'}</option>`).join('');
+      sel.dataset.wired='1';
+      sel.onchange=()=>{ if(sel.value==='__none__')return; applyAllCC404(sel.value); render(); flashSaved(); };
+    }
+    sel.value='__none__';
+  }
+}
+let savedT;
+function flashSaved(){const b=$('#savedHint');b.textContent='Guardado ✓';clearTimeout(savedT);savedT=setTimeout(()=>b.textContent='Guardado automático ✓',1200);}
+$('#resetPrices').onclick=()=>{
+  if(!confirm('¿Restablecer todos los precios a los valores originales?'))return;
+  localStorage.removeItem(LS_PRICES);PRICES=loadPrices();renderPrices();render();toast('Precios restablecidos');
+};
+
+/* ---------- conexión en vivo: procesamiento en el navegador ---------- */
+/* Réplica de build.py para procesar las filas crudas que devuelve la API de Google Sheets */
+function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');}
+function colIndex(header,...needles){
+  for(let i=0;i<header.length;i++){
+    const hl=norm(header[i]);
+    if(needles.every(n=>hl.includes(norm(n)))) return i;
+  }
+  return -1;
+}
+function parseDate(s){
+  s=(s||'').trim(); if(!s) return null; let m;
+  if(m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)) return new Date(+m[1],+m[2]-1,+m[3]);
+  if(m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)) return new Date(+m[3],+m[2]-1,+m[1]);
+  if(m=s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/)) return new Date(+m[3],+m[2]-1,+m[1]);
+  return null;
+}
+const pad2=n=>String(n).padStart(2,'0');
+function ymOf(d){return d.getFullYear()+'-'+pad2(d.getMonth()+1);}
+function ymdOf(d){return ymOf(d)+'-'+pad2(d.getDate());}
+function timeMin(x){
+  x=(x||'').trim().toLowerCase().replace(/a\.?\s*m\.?/g,'am').replace(/p\.?\s*m\.?/g,'pm').replace(/\s+/g,'');
+  const m=x.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?(am|pm)?$/); if(!m) return null;
+  let h=+m[1]; const mi=+m[2];
+  if(m[4]==='pm'&&h<12)h+=12; if(m[4]==='am'&&h===12)h=0;
+  return h*60+mi;
+}
+function durMin(ini,fin){const a=timeMin(ini),b=timeMin(fin);if(a==null||b==null)return null;const d=b-a;return (d>0&&d<1440)?Math.round(d):null;}
+/* normaliza el N° de vehículo: O→0, quita .0 y ceros a la izquierda para que "034"="34" */
+function normVeh(v){
+  v=(v||'').trim().toUpperCase().replace(/O/g,'0').replace('.0','');
+  if(/^\d+$/.test(v)) v=String(parseInt(v,10));
+  return v;
+}
+
+function driveId(s){const m=(s||'').match(/[-\w]{25,}/);return m?m[0]:'';}
+const FOTO_LABELS=['Frontal','Izquierdo','Derecho','Trasero','Interior','Interior 2'];
+function fotosDe(r){const f=r.fot||[];const out=[];for(let i=0;i<f.length;i++){if(f[i])out.push({label:FOTO_LABELS[i]||'Foto',id:f[i]});}return out;}
+function processAseos(rows){
+  if(!rows||!rows.length) return {records:[],months:[]};
+  const h=rows[0];
+  let iVeh=colIndex(h,'numero interno'); if(iVeh<0)iVeh=colIndex(h,'interno');
+  const iCC=colIndex(h,'centro de costo'),iCond=colIndex(h,'conductor'),
+        iDia=colIndex(h,'dia de lavado'),iIni=colIndex(h,'hora de inicio'),
+        iFin=colIndex(h,'finaliz'),iTipo=colIndex(h,'tipo de aseo'),
+        iLugar=colIndex(h,'lugar de lavado'),iLugarAseo=colIndex(h,'lugar de aseo'),
+        iValExt=colIndex(h,'valor','externo');
+  const fotoCols=[colIndex(h,'foto delantera'),colIndex(h,'izquierdo'),colIndex(h,'derecho'),colIndex(h,'trasera'),colIndex(h,'parte interna'),colIndex(h,'foto interna')];
+  const recs=[],months=new Set(),seen={};
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r]||[];
+    if(iTipo<0||iTipo>=row.length) continue;
+    const tipo=(row[iTipo]||'').trim(); if(!tipo) continue;
+    const cell=i=>(i>=0&&i<row.length?(row[i]||''):'').trim();
+    const dia=cell(iDia);
+    const fecha=dia?parseDate(dia):parseDate(row[0]||'');
+    if(!fecha) continue;
+    const fch=ymdOf(fecha), veh=normVeh(cell(iVeh));
+    const baseKey=fch+'|'+veh+'|'+tipo;
+    const k=(seen[baseKey]=(seen[baseKey]||0)+1)-1;
+    recs.push({
+      id:baseKey+'|'+k,
+      ym:ymOf(fecha), fecha:fch,
+      vehiculo:veh,
+      centro:cell(iCC)||'(sin CC)',
+      conductor:cell(iCond), tipo,
+      durMin:durMin(cell(iIni),cell(iFin)),
+      lugar:cell(iLugar), lugarAseo:cell(iLugarAseo),
+      valExt:parseInt((cell(iValExt)||'').replace(/[^0-9]/g,''),10)||0,
+      fot:fotoCols.map(i=>driveId(cell(i))),
+    });
+    months.add(ymOf(fecha));
+  }
+  return {records:recs, months:[...months].sort()};
+}
+function processTaller(rows){
+  if(!rows||!rows.length) return {headers:[],records:[]};
+  const h=rows[0];
+  const iId=colIndex(h,'id del mantenimiento'),iSis=colIndex(h,'sistema'),
+        iEsp=colIndex(h,'especifique'),iEst=colIndex(h,'estado'),iPlaca=colIndex(h,'placa');
+  const recs=[];
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r]||[];
+    if(!row.some(c=>(c||'').trim())) continue;
+    const cell=i=>(i>=0&&i<row.length?(row[i]||''):'').trim();
+    const fecha=parseDate(row[0]||'');
+    recs.push({id:cell(iId),sistema:cell(iSis),especifique:cell(iEsp),
+               estado:cell(iEst),placa:cell(iPlaca),fecha:fecha?ymdOf(fecha):''});
+  }
+  return {headers:h, records:recs};
+}
+
+function apiKey(){return ((localStorage.getItem(LS_APIKEY)||'').trim())||APIKEY_DEFAULT;}
+function setLiveStatus(m){const el=$('#liveStatus'); if(el) el.textContent=m;}
+async function fetchSheet(id,key){
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${id}/values/A:AD?key=${encodeURIComponent(key)}`;
+  const r=await fetch(url);
+  if(!r.ok){let msg='HTTP '+r.status;try{const j=await r.json();if(j.error&&j.error.message)msg=j.error.message;}catch(_){}throw new Error(msg);}
+  const j=await r.json(); return j.values||[];
+}
+let liveBusy=false;
+async function refreshLive(){
+  const key=apiKey();
+  if(!key){setLiveStatus('🟡 Falta la API key — pégala abajo');toast('Agrega tu API key');const i=$('#apiKeyIn');if(i)i.focus();return;}
+  if(liveBusy) return; liveBusy=true;
+  const btn=$('#refreshLive'); if(btn){btn.disabled=true;btn.textContent='Actualizando…';}
+  const top=$('#topRefresh'); if(top) top.classList.add('spin');
+  setLiveStatus('⏳ Conectando con Google Sheets…');
+  try{
+    const [aRows,tRows]=await Promise.all([fetchSheet(SHEET_ASEOS,key),fetchSheet(SHEET_TALLER,key)]);
+    DATA.aseos=processAseos(aRows);
+    DATA.taller=processTaller(tRows);
+    DATA.generated_at=new Date().toLocaleString('es-CO');
+    months.length=0; DATA.aseos.months.forEach(m=>months.push(m));
+    period='ALL';
+    buildPeriodUI(); render(); renderTaller(); renderPrices();
+    setLiveStatus('🟢 En vivo · '+DATA.generated_at+' · '+DATA.aseos.records.length+' aseos · '+DATA.taller.records.length+' taller');
+    toast('Datos actualizados en vivo');
+  }catch(e){
+    setLiveStatus('🔴 Error: '+(e.message||e)+'  (revisa la API key / que la Sheets API esté habilitada)');
+    toast('No se pudo actualizar');
+  }finally{
+    liveBusy=false; if(btn){btn.disabled=false;btn.textContent='Actualizar en vivo';}
+    if(top) top.classList.remove('spin');
+  }
+}
+function wireLive(){
+  const inp=$('#apiKeyIn'); if(inp){
+    inp.value=apiKey();
+    inp.addEventListener('input',()=>localStorage.setItem(LS_APIKEY,inp.value.trim()));
+  }
+  const tg=$('#toggleKey'); if(tg) tg.onclick=()=>{inp.type=inp.type==='password'?'text':'password';tg.textContent=inp.type==='password'?'👁 Ver':'🙈 Ocultar';};
+  const rb=$('#refreshLive'); if(rb) rb.onclick=refreshLive;
+  const tr=$('#topRefresh'); if(tr) tr.onclick=refreshLive;
+  if(apiKey()) setLiveStatus('🔵 Conectado · listo para actualizar');
+}
+
+/* ---------- tabs ---------- */
+// sub-navegación dentro de Aseos: Internos | Externos | General
+let curSub='internos';
+function switchSub(s){
+  curSub=s;
+  document.querySelectorAll('.subseg button').forEach(x=>x.classList.toggle('active',x.dataset.sub===s));
+  ['internos','externos','general'].forEach(t=>{const el=$('#sub-'+t); if(el) el.classList.toggle('hidden',t!==s);});
+  const pb=$('#periodBlock'); if(pb) pb.classList.remove('hidden');  // selector de periodo COMPARTIDO por los 3 submódulos
+  if(s==='general') renderCalendar();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.subseg button').forEach(b=>b.onclick=()=>switchSub(b.dataset.sub));
+// navegación principal: Aseos | Taller | Ajustes
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  ['aseos','taller','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
+  if(b.dataset.tab==='aseos' && curSub==='general') renderCalendar();
+  if(b.dataset.tab==='taller') renderTaller();   // re-render para dimensionar los gráficos al hacerse visible
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+
+/* ---------- init ---------- */
+buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive();
+/* si hay API key guardada, intenta traer datos en vivo al abrir */
+if(apiKey()) refreshLive();
+</script>
+</body>
+</html>
