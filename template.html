@@ -89,6 +89,7 @@ select.ios,input.ios{font-family:inherit;font-size:15px;border:0;background:var(
 .empty .ic{font-size:42px;margin-bottom:8px;}
 .empty h3{margin:6px 0 4px;color:var(--ios-label);font-size:18px;}
 .chartbox{padding:16px 12px 8px;}
+.chartbox .cwrap{position:relative;height:230px;}
 .hidden{display:none!important;}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:104px;background:rgba(0,0,0,.85);color:#fff;padding:11px 18px;border-radius:14px;font-size:14px;font-weight:600;opacity:0;transition:.25s;z-index:50;pointer-events:none;}
 .toast.show{opacity:1;}
@@ -300,6 +301,36 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cd-foto.noimg::before{content:'📷';font-size:23px;width:76px;height:76px;display:flex;align-items:center;justify-content:center;background:var(--ios-bg);border:1px dashed var(--ios-sep);border-radius:11px;box-sizing:border-box;}
 .cd-fnote{font-size:11px;color:var(--ios-label3);line-height:1.4;margin-top:10px;}
 .cd-fnote b{color:var(--ios-label2);}
+/* ===== Escritorio: dashboard ancho de 2 columnas ===== */
+@media (min-width:1024px){
+  body{padding-bottom:40px;}
+  .wrap{max-width:1200px;padding:0 28px;}
+  .top{padding:22px 0 4px;}
+  h1.big{font-size:40px;}
+  .seg{top:12px;}
+  .seg button{font-size:15px;padding:11px 8px;}
+  .subseg button{font-size:13px;padding:11px 6px;}
+  .kpis{grid-template-columns:repeat(4,1fr);}
+  /* submódulos como grilla de 2 columnas */
+  .dash{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+  .dash > .section{margin:0;}
+  .dash > .section.span2{grid-column:1 / -1;}
+  .section-hero{font-size:23px;}
+  .hero .num{font-size:46px;}
+  /* el bloque de periodo no se estira de más */
+  #periodBlock{max-width:760px;}
+  .chartbox .cwrap{height:300px;}
+  /* tarjetas (centro de costo, proveedor, conductor) en grilla que llena el ancho */
+  #ccCards,#exProvCards,#condCards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:13px;}
+  #ccCards .cc-card,#exProvCards .cc-card,#condCards .cc-card{margin-bottom:0;}
+  /* Ajustes: ancho legible y centrado */
+  #tab-ajustes{max-width:840px;margin:0 auto;}
+  /* el calendario General usa todo el ancho */
+  #sub-general .cal-wrap{max-height:none;}
+}
+@media (min-width:1500px){
+  .wrap{max-width:1340px;}
+}
 @media (prefers-color-scheme:dark){
   :root{--ios-bg:#000;--ios-bg2:#1C1C1E;--ios-sep:rgba(84,84,88,.5);--ios-label:#fff;--ios-label2:#EBEBF5;--tint:#5B9BFF;}
   .seg{background:#1C1C1E;} .seg button{color:#fff;} .seg button.active{background:#3A3A3C;}
@@ -345,8 +376,8 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
     </div>
 
     <!-- ====== ASEOS POR LAVADOR (financiero) ====== -->
-    <div id="sub-lavador">
-    <div class="section">
+    <div id="sub-lavador" class="dash">
+    <div class="section span2">
       <div class="hero">
         <div class="chip" id="heroChip">—</div>
         <div class="cap">Aseos por lavador TECC · valor total</div>
@@ -361,7 +392,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
       </div>
     </div>
 
-    <div class="section">
+    <div class="section span2">
       <div class="smcard" id="smCard">
         <div class="cap">¿Rentable tener al lavador haciendo aseos?</div>
         <div class="big"><span id="smMargin">$0</span> <small id="smMarginLab">rentabilidad del periodo</small></div>
@@ -384,7 +415,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
       </div>
     </div>
 
-    <div class="section">
+    <div class="section span2">
       <div class="section-hero">Valor por centro de costo</div>
       <div class="cc404 hidden" id="cc404Box">
         <div class="cc404-head">
@@ -394,7 +425,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
         <div class="cc404-list" id="cc404List"></div>
       </div>
       <div id="ccCards"></div>
-      <div class="card chartbox" style="margin-top:4px"><canvas id="ccChart" height="200"></canvas></div>
+      <div class="card chartbox" style="margin-top:4px"><div class="cwrap"><canvas id="ccChart"></canvas></div></div>
     </div>
 
     <div class="section">
@@ -404,13 +435,13 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 
     <div class="section">
       <div class="section-h">Aseos por mes (valor)</div>
-      <div class="card chartbox"><canvas id="monthChart" height="200"></canvas></div>
+      <div class="card chartbox"><div class="cwrap"><canvas id="monthChart"></canvas></div></div>
     </div>
     </div><!-- /#sub-lavador -->
 
     <!-- ====== LAVADAS POR CONDUCTORES ====== -->
-    <div id="sub-conductores" class="hidden">
-      <div class="section">
+    <div id="sub-conductores" class="hidden dash">
+      <div class="section span2">
         <div class="hero" style="background:linear-gradient(160deg,#7A4B00 0%,#4A2E00 100%);">
           <div class="chip" id="condHeroChip" style="background:#FFD88A;color:#4A2E00">—</div>
           <div class="cap">Lavadas por conductores propios · en casa</div>
@@ -424,10 +455,10 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
           <div class="kpi"><div class="k">Conductores</div><div class="v" id="condNCond">0</div></div>
         </div>
       </div>
-      <div class="section">
+      <div class="section span2">
         <div class="section-hero">Lavadas por conductor</div>
         <div id="condCards"></div>
-        <div class="card chartbox" style="margin-top:4px"><canvas id="condChart" height="200"></canvas></div>
+        <div class="card chartbox" style="margin-top:4px"><div class="cwrap"><canvas id="condChart"></canvas></div></div>
       </div>
       <div class="section">
         <div class="section-h">Desglose por tipo de lavado</div>
@@ -435,13 +466,13 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
       </div>
       <div class="section">
         <div class="section-h">Lavadas por mes (valor)</div>
-        <div class="card chartbox"><canvas id="condMonthChart" height="200"></canvas></div>
+        <div class="card chartbox"><div class="cwrap"><canvas id="condMonthChart"></canvas></div></div>
       </div>
     </div><!-- /#sub-conductores -->
 
     <!-- ====== PROVEEDORES (financiero · externos) ====== -->
-    <div id="sub-proveedores" class="hidden">
-      <div class="section">
+    <div id="sub-proveedores" class="hidden dash">
+      <div class="section span2">
         <div class="hero" style="background:linear-gradient(160deg,#5B2A7A 0%,#3A1A50 100%);">
           <div class="chip" id="exHeroChip" style="background:#E7C8F5;color:#3A1A50">—</div>
           <div class="cap">Gasto total en aseos por proveedores externos</div>
@@ -455,10 +486,10 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
           <div class="kpi"><div class="k">Proveedores</div><div class="v" id="exProv">0</div></div>
         </div>
       </div>
-      <div class="section">
+      <div class="section span2">
         <div class="section-hero">Gasto por proveedor</div>
         <div id="exProvCards"></div>
-        <div class="card chartbox" style="margin-top:4px"><canvas id="exProvChart" height="200"></canvas></div>
+        <div class="card chartbox" style="margin-top:4px"><div class="cwrap"><canvas id="exProvChart"></canvas></div></div>
       </div>
       <div class="section">
         <div class="section-h">Gasto por vehículo</div>
@@ -466,7 +497,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
       </div>
       <div class="section">
         <div class="section-h">Aseos externos por mes (gasto)</div>
-        <div class="card chartbox"><canvas id="exMonthChart" height="200"></canvas></div>
+        <div class="card chartbox"><div class="cwrap"><canvas id="exMonthChart"></canvas></div></div>
       </div>
     </div>
 
@@ -513,7 +544,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
       </div>
       <div class="rangeinfo" id="tRangeInfo">—</div>
     </div>
-    <div id="tallerBody"></div>
+    <div id="tallerBody" class="dash">
   </div>
 
   <!-- ============ AJUSTES ============ -->
@@ -1152,7 +1183,7 @@ function drawBar(id, labels, data, set, prev, hi=-1){
   const azul='#0A2342', am='#F2C94C';
   const colors=data.map((_,i)=> i===hi?am:azul);
   set(new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:hi>=0?colors:azul,borderRadius:6,maxBarThickness:46}]},
-    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>COP(c.parsed.y)}}},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>COP(c.parsed.y)}}},
     scales:{y:{ticks:{callback:v=>'$'+(v/1000)+'k',font:{size:11}},grid:{color:'rgba(0,0,0,.05)'}},
             x:{ticks:{font:{size:11},maxRotation:0,autoSkip:true},grid:{display:false}}}}}));
 }
@@ -1278,7 +1309,7 @@ function renderTaller(){
 
   const H=[];
   // 1) HERO + KPIs
-  H.push(`<div class="section">
+  H.push(`<div class="section span2">
     <div class="hero">
       <div class="chip">${R?R.label:'—'}</div>
       <div class="cap">Trabajo del taller · valor a precio de mercado</div>
@@ -1298,7 +1329,7 @@ function renderTaller(){
   if(!hasV) verdict='Aún no hay intervenciones que se puedan valorar con la tabla de tercerización en este periodo.';
   else if(viable) verdict=`Tercerizar este trabajo costaría <b>${COP(externo)}</b>; el taller interno cuesta <b>${COP(interno)}</b>. Ahorro de <b>${COP(ahorro)}</b> (${pct.toFixed(0)}%). El taller se justifica.`;
   else verdict=`Tercerizar este trabajo costaría <b>${COP(externo)}</b>, pero el taller cuesta <b>${COP(interno)}</b>. Sobrecosto de <b>${COP(-ahorro)}</b> (${(-pct).toFixed(0)}% por encima). En este periodo salió más caro que tercerizar.`;
-  H.push(`<div class="section">
+  H.push(`<div class="section span2">
     <div class="smcard ${hasV&&!viable?'neg':''}">
       <div class="cap">¿El taller interno es rentable frente a tercerizar?</div>
       <div class="big">${hasV?(viable?'+':'−')+COP(Math.abs(ahorro)):'—'} <small>${hasV?(viable?'de ahorro en el periodo':'más caro que tercerizar'):'sin trabajo valorable aún'}</small></div>
@@ -1320,7 +1351,7 @@ function renderTaller(){
       <div class="tcat-bar"><i style="width:${a.total/maxT*100}%"></i></div>
     </div>`).join('');
   if(sinValor) tabla+=`<div class="tcat sinv"><div class="tcat-h"><div class="nm">Sin clasificar — no se pudo dar valor</div><div class="tot">${sinValor} interv.</div></div><div class="tcat-sub">No coinciden con ninguna categoría de la tabla de tercerización</div></div>`;
-  H.push(`<div class="section">
+  H.push(`<div class="section span2">
     <div class="section-hero">Costo externo estimado</div>
     <div class="note" style="margin:-4px 4px 9px">Cada intervención valorada con la tabla de mano de obra de mercado (sin repuestos), agrupando descripciones similares. Ordenado por costo.</div>
     <div class="card">${tabla||'<div class="tcat"><div class="tcat-h"><div class="nm muted">Sin intervenciones valorables</div></div></div>'}<div class="ttot"><span>Total general externo del periodo</span><b>${COP(externo)}</b></div></div>
@@ -1381,7 +1412,7 @@ function renderTaller(){
   </div></div>`);
 
   // 9) Continuidad + nota GPS
-  H.push(`<div class="section"><div class="tfoot">
+  H.push(`<div class="section span2"><div class="tfoot">
     Este informe <b>hace parte de una serie semanal</b> y se compara con la semana anterior y las siguientes.<br>
     Los indicadores de <b>horas en taller, capacidad instalada y saturación</b> provienen del archivo GPS (Wialon) y se activarán al conectar esa fuente.
   </div></div>`);
