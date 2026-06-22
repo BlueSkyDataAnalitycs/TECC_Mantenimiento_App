@@ -244,15 +244,33 @@ def process_taller(rows):
         if not any((c or "").strip() for c in row):
             continue
         fecha = parse_date(row[0] if row else "")
-        recs.append({
+        rec = {
             "id": (row[iId].strip() if 0 <= iId < len(row) else ""),
             "sistema": (row[iSis].strip() if 0 <= iSis < len(row) else ""),
             "especifique": (row[iEsp].strip() if 0 <= iEsp < len(row) else ""),
             "estado": (row[iEst].strip() if 0 <= iEst < len(row) else ""),
             "placa": (row[iPlaca].strip() if 0 <= iPlaca < len(row) else ""),
             "fecha": fecha.strftime("%Y-%m-%d") if fecha else "",
-        })
+        }
+        hh = hora_de(row[0] if row else "")
+        if hh is not None:
+            rec["hora"] = hh
+        recs.append(rec)
     return {"headers": h, "records": recs}
+
+
+def hora_de(s):
+    """Hora (0-23) de una marca temporal 'DD/MM/YYYY HH:MM:SS'; None si no hay."""
+    m = re.search(r"\d{1,2}/\d{1,2}/\d{2,4}[ ,]+(\d{1,2}):(\d{2})(?::\d{2})?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?", str(s or ""), re.I)
+    if not m:
+        return None
+    h = int(m.group(1))
+    ap = (m.group(3) or "").lower().replace(".", "").replace(" ", "")
+    if ap == "pm" and h < 12:
+        h += 12
+    if ap == "am" and h == 12:
+        h = 0
+    return h if 0 <= h < 24 else None
 
 
 def main():

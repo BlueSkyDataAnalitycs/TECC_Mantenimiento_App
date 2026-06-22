@@ -171,6 +171,32 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .tfoot{font-size:12px;color:var(--ios-label3);line-height:1.5;padding:4px 6px;}
 .tfoot b{color:var(--ios-label2);}
 .tflag{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;padding:2px 8px;border-radius:999px;background:var(--ios-bg);color:var(--tint);margin-left:6px;}
+/* veredicto de rentabilidad por CC */
+.cc-verdict{margin-top:10px;font-size:12px;font-weight:700;padding:7px 10px;border-radius:10px;line-height:1.3;}
+.cc-verdict.ok{background:rgba(52,199,89,.14);color:#1f8f43;}
+.cc-verdict.bad{background:rgba(255,59,48,.12);color:var(--red);}
+@media (prefers-color-scheme:dark){.cc-verdict.ok{color:#5fd07e;}}
+/* calendario de intervenciones (días × horas) */
+.tcal-scroll{overflow:auto;max-height:560px;-webkit-overflow-scrolling:touch;}
+.tcal-row{display:flex;gap:3px;align-items:stretch;width:max-content;}
+.tcal-headrow{position:sticky;top:0;z-index:3;background:var(--ios-bg2);padding-bottom:3px;}
+.tcal-day{flex:0 0 96px;width:96px;position:sticky;left:0;z-index:1;background:var(--ios-bg2);font-size:12px;padding:7px 7px 7px 2px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--ios-sep);}
+.tcal-day b{font-variant-numeric:tabular-nums;font-weight:800;}
+.tcal-day small{color:var(--ios-label3);font-size:10px;}
+.tcal-headrow .tcal-day{z-index:4;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--ios-label3);justify-content:flex-end;}
+.tcal-ch{flex:0 0 58px;width:58px;text-align:center;font-size:10px;font-weight:800;color:var(--ios-label3);padding:7px 2px;font-variant-numeric:tabular-nums;align-self:flex-end;}
+.tcal-cell{flex:0 0 58px;width:58px;min-height:31px;margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ios-label3);}
+.tcal-cell.on{background:var(--tecc-azul);color:#fff;cursor:pointer;}
+.tcal-cell.on:hover{filter:brightness(1.12);}
+.tcal-cell.sel{outline:2px solid var(--tecc-amarillo);outline-offset:1px;}
+.tcal-detail{margin-top:11px;background:var(--ios-bg2);border-radius:13px;padding:12px 14px;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.06);min-height:20px;}
+.tcd-top{font-size:13px;margin-bottom:9px;color:var(--ios-label);}
+.tcd-top b{color:var(--tint);}
+.tcd-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid var(--ios-sep);}
+.tcd-row:last-child{border-bottom:0;}
+.tcd-veh{flex:0 0 auto;background:var(--tecc-amarillo);color:#0A2342;font-weight:800;font-size:12px;padding:2px 9px;border-radius:7px;font-variant-numeric:tabular-nums;}
+.tcd-int{flex:1;min-width:150px;font-size:13px;color:var(--ios-label);line-height:1.32;}
+.tcd-cat{flex:0 0 auto;font-size:11.5px;font-weight:700;color:var(--tint);}
 /* ===== centro de costo imponente ===== */
 .section-hero{font-size:21px;font-weight:800;letter-spacing:-.4px;margin:0 4px 11px;}
 .cc-card{background:var(--ios-bg2);border-radius:18px;padding:15px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:11px;border-left:5px solid var(--tecc-azul);}
@@ -321,8 +347,8 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
   #periodBlock{max-width:760px;}
   .chartbox .cwrap{height:300px;}
   /* tarjetas (centro de costo, proveedor, conductor) en grilla que llena el ancho */
-  #ccCards,#exProvCards,#condCards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:13px;}
-  #ccCards .cc-card,#exProvCards .cc-card,#condCards .cc-card{margin-bottom:0;}
+  #ccCards,#exProvCards,#condCards,.cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:13px;}
+  #ccCards .cc-card,#exProvCards .cc-card,#condCards .cc-card,.cardgrid .cc-card{margin-bottom:0;}
   /* Ajustes: ancho legible y centrado */
   #tab-ajustes{max-width:840px;margin:0 auto;}
   /* el calendario General usa todo el ancho */
@@ -1314,15 +1340,21 @@ function renderTaller(){
     return;
   }
 
+  // mapa vehículo → centro de costo (modal) tomado de los aseos
+  const vehCentro=(function(){const cnt={};(DATA.aseos.records||[]).forEach(a=>{const v=(a.vehiculo||'').trim();if(!v)return;const c=a.centro||'(sin CC)';(cnt[v]=cnt[v]||{});cnt[v][c]=(cnt[v][c]||0)+1;});const m={};Object.keys(cnt).forEach(v=>{m[v]=Object.entries(cnt[v]).sort((x,y)=>y[1]-x[1])[0][0];});return m;})();
+
   // --- agregaciones ---
   let externo=0, sinValor=0, estSum=0, estN=0, sinPlaca=0, sinSistema=0, sinFecha=0;
-  const catAgg={}, placaAgg={}, sysAgg={}, dayAgg={}, dupKey={}, placasSet=new Set();
+  const catAgg={}, placaAgg={}, sysAgg={}, dayAgg={}, dupKey={}, placasSet=new Set(), ccAgg={};
   const estCounts=new Array(11).fill(0);
   recs.forEach(r=>{
     const cat=tallerCat(r), val=cat?(TALLER_TABLA[cat]||0):0;
     if(cat){const a=catAgg[cat]||(catAgg[cat]={n:0,total:0,unit:TALLER_TABLA[cat]||0});a.n++;a.total+=val;externo+=val;} else sinValor++;
     const placa=(r.placa||'').trim().toUpperCase();
     if(placa){placasSet.add(placa);const p=placaAgg[placa]||(placaAgg[placa]={n:0,total:0,estSum:0,estN:0,sis:{}});p.n++;p.total+=val;if(cat)p.sis[cat]=(p.sis[cat]||0)+1;const e=estVal(r);if(e!=null){p.estSum+=e;p.estN++;}} else sinPlaca++;
+    // centro de costo del vehículo (para rentabilidad propia por CC)
+    const cc=(placa&&vehCentro[placa])||'(sin centro)';
+    const ca=ccAgg[cc]||(ccAgg[cc]={ext:0,n:0,veh:new Set()}); ca.ext+=val; ca.n++; if(placa)ca.veh.add(placa);
     const sis=tallerSistema(r); if(sis&&sis!=='Otros')sysAgg[sis]=(sysAgg[sis]||0)+1; else {sysAgg['Otros']=(sysAgg['Otros']||0)+1; if(!sis)sinSistema++;}
     const e=estVal(r); if(e!=null){estSum+=e;estN++;estCounts[Math.round(e)]++;}
     if(r.fecha)dayAgg[r.fecha]=(dayAgg[r.fecha]||0)+1; else sinFecha++;
@@ -1369,6 +1401,37 @@ function renderTaller(){
     </div>
   </div>`);
 
+  // 2.5) RENTABILIDAD POR CENTRO DE COSTO
+  // El costo fijo del taller se reparte entre los CC según su NÚMERO DE VEHÍCULOS (flota
+  // completa de cada CC, tomada de los aseos), y se compara con el valor externo que
+  // generaron en el taller los carros de ese CC.
+  const ccFleet={};                                  // flota por CC (todos los vehículos con CC conocido)
+  Object.values(vehCentro).forEach(c=>{ccFleet[c]=(ccFleet[c]||0)+1;});
+  const ccGroups=Object.keys(ccFleet).map(cc=>({cc, nVeh:ccFleet[cc], ext:(ccAgg[cc]?ccAgg[cc].ext:0), n:(ccAgg[cc]?ccAgg[cc].n:0)}));
+  if(ccAgg['(sin centro)']) ccGroups.push({cc:'(sin centro)', nVeh:ccAgg['(sin centro)'].veh.size, ext:ccAgg['(sin centro)'].ext, n:ccAgg['(sin centro)'].n});
+  const totVeh=ccGroups.reduce((s,g)=>s+g.nVeh,0)||1;
+  ccGroups.sort((a,b)=>b.ext-a.ext);
+  if(ccGroups.length){
+    const ccCards=ccGroups.map(g=>{
+      const share=g.nVeh/totVeh, asign=interno*share, margen=g.ext-asign, rent=margen>=0;
+      return `<div class="cc-card">
+        <div class="cc-top"><div class="cc-name">${g.cc}</div><div class="cc-val ${rent?'pos':'neg'}" style="color:${rent?'var(--green)':'var(--red)'}">${(rent?'+':'−')+COP(Math.abs(margen))}</div></div>
+        <div class="cc-bar"><i style="width:${Math.max(4,share*100)}%"></i></div>
+        <div class="cc-meta">${g.nVeh} vehículo${g.nVeh===1?'':'s'} · ${(share*100).toFixed(0)}% del taller · ${g.n} intervenci${g.n===1?'ón':'ones'}</div>
+        <div class="cc-fin">
+          <div class="cc-fin-i"><span>Costo taller asignado</span><b>${COP(asign)}</b><small>${(share*100).toFixed(0)}% de ${COP(interno)}</small></div>
+          <div class="cc-fin-i"><span>Valor externo generado</span><b>${COP(g.ext)}</b><small>si se tercerizara</small></div>
+        </div>
+        <div class="cc-verdict ${rent?'ok':'bad'}">${rent?'✅ Conviene el taller propio para este CC':'⚠️ Para este CC saldría más barato tercerizar'}</div>
+      </div>`;
+    }).join('');
+    H.push(`<div class="section span2">
+      <div class="section-hero">Rentabilidad por centro de costo</div>
+      <div class="note" style="margin:-4px 4px 9px">El costo fijo del taller (<b>${COP(interno)}</b> en el periodo) se reparte entre los centros de costo según su <b>número de vehículos</b> (${totVeh} en total), y se compara con el <b>valor externo</b> que esos carros generaron en el taller. Margen positivo (verde) = el taller propio le conviene a ese CC.</div>
+      <div class="cardgrid">${ccCards}</div>
+    </div>`);
+  }
+
   // 3) TABLA COSTO EXTERNO ESTIMADO
   const catE=Object.entries(catAgg).sort((a,b)=>b[1].total-a[1].total);
   const maxT=catE.length?catE[0][1].total:1;
@@ -1384,15 +1447,10 @@ function renderTaller(){
     <div class="card">${tabla||'<div class="tcat"><div class="tcat-h"><div class="nm muted">Sin intervenciones valorables</div></div></div>'}<div class="ttot"><span>Total general externo del periodo</span><b>${COP(externo)}</b></div></div>
   </div>`);
 
-  // 4) GRÁFICA costo por categoría + intervenciones por sistema
-  const topCat=catE.slice(0,10);
-  if(topCat.length){
-    H.push(`<div class="section"><div class="section-h">Costo externo por categoría</div>
-      <div class="card chartbox"><div style="position:relative;height:${Math.max(150,topCat.length*34)}px"><canvas id="tCostChart"></canvas></div></div></div>`);
-  }
+  // 4) GRÁFICA: número de intervenciones por sistema / área
   const sysE=Object.entries(sysAgg).sort((a,b)=>b[1]-a[1]).slice(0,10);
   if(sysE.length){
-    H.push(`<div class="section"><div class="section-h">Intervenciones por sistema / área</div>
+    H.push(`<div class="section"><div class="section-h">Número de intervenciones por sistema</div>
       <div class="card chartbox"><div style="position:relative;height:${Math.max(150,sysE.length*34)}px"><canvas id="tSysChart"></canvas></div></div></div>`);
   }
 
@@ -1411,6 +1469,14 @@ function renderTaller(){
     }).join('');
     H.push(`<div class="section"><div class="section-hero">Vehículos que más usan el taller</div>${cards}</div>`);
   }
+
+  // 5.5) CALENDARIO DE INTERVENCIONES (días × horas)
+  H.push(`<div class="section span2">
+    <div class="section-hero">Calendario de intervenciones</div>
+    <div class="note" style="margin:-4px 4px 9px">Una fila por día. Las intervenciones <b>sin hora registrada</b> (los informes históricos no la traen) van en la primera columna; cuando el formulario capture la hora aparecerán en su franja horaria. Toca una celda con número para ver <b>qué vehículo</b> y <b>qué intervención</b> se hizo.</div>
+    <div class="card" style="padding:10px 10px 12px">${buildTallerCal(recs)}</div>
+    <div class="tcal-detail" id="tCalDetail">Toca una celda con número para ver las intervenciones de ese día.</div>
+  </div>`);
 
   // 6) ESTADO previo (1-10) + críticos
   if(estN){
@@ -1446,8 +1512,13 @@ function renderTaller(){
 
   body.innerHTML=H.join('');
 
+  // tap en celda del calendario de intervenciones → detalle (vehículo + intervención)
+  body.querySelectorAll('.tcal-cell.on[data-key]').forEach(el=>el.onclick=()=>{
+    body.querySelectorAll('.tcal-cell.sel').forEach(x=>x.classList.remove('sel'));
+    el.classList.add('sel'); showTCalDetail(el.dataset.key);
+  });
+
   // --- dibujar gráficos (tras insertar el HTML) ---
-  if(topCat.length) tBar('tCostChart',topCat.map(e=>e[0]),topCat.map(e=>e[1].total),c=>tCostChart=c,tCostChart,{horizontal:true,money:true,thick:26});
   if(sysE.length) tBar('tSysChart',sysE.map(e=>e[0]),sysE.map(e=>e[1]),c=>tSysChart=c,tSysChart,{horizontal:true,colors:'#2E5E9E',unit:' interv.',thick:26});
   if(estN){
     const ec=[]; for(let i=1;i<=10;i++)ec.push(i<=4?'#FF3B30':(i<=6?'#FF9F0A':'#34C759'));
@@ -1462,6 +1533,48 @@ function tTimeBuckets(R,dayAgg){
   const step=days<=45?1:7, labels=[], data=[];
   for(let i=0;i<days;i+=step){let sum=0;for(let j=0;j<step&&i+j<days;j++)sum+=dayAgg[ymdOf(addDays(s,i+j))]||0;labels.push(fmtDShort(ymdOf(addDays(s,i))));data.push(sum);}
   return {labels,data};
+}
+
+/* ---- calendario de intervenciones (filas=días, columnas=horas; sin hora primero) ---- */
+let tCalIndex={};
+const TDIAS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+function tCalDayLabel(ymd){const[y,mo,da]=ymd.split('-').map(Number);const dt=new Date(y,mo-1,da);const MN=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return `<b>${da} ${MN[mo-1]}</b> <small>${TDIAS[dt.getDay()]} ${String(y).slice(2)}</small>`;}
+function buildTallerCal(recs){
+  tCalIndex={};
+  const byDay={}, hoursSet=new Set();
+  recs.forEach(r=>{
+    if(!r.fecha) return;
+    const hk=(r.hora!=null&&r.hora!=='')?String(r.hora):'sh';
+    if(hk!=='sh') hoursSet.add(+r.hora);
+    const key=r.fecha+'|'+hk;
+    (tCalIndex[key]=tCalIndex[key]||[]).push(r);
+    (byDay[r.fecha]=byDay[r.fecha]||{});
+    byDay[r.fecha][hk]=(byDay[r.fecha][hk]||0)+1;
+  });
+  const days=Object.keys(byDay).sort().reverse();          // día más reciente arriba
+  if(!days.length) return '<div class="cal-empty">Sin intervenciones con fecha en este periodo.</div>';
+  const hours=[...hoursSet].sort((a,b)=>a-b);
+  const cols=['sh',...hours.map(String)];                  // "Sin hora" SIEMPRE primero
+  const head=`<div class="tcal-row tcal-headrow"><div class="tcal-day">Día</div>`+
+    cols.map(c=>`<div class="tcal-ch">${c==='sh'?'Sin hora':c.padStart(2,'0')+':00'}</div>`).join('')+`</div>`;
+  const rows=days.map(d=>{
+    const cells=cols.map(c=>{const n=byDay[d][c]||0;return n?`<div class="tcal-cell on" data-key="${d}|${c}">${n}</div>`:`<div class="tcal-cell"></div>`;}).join('');
+    return `<div class="tcal-row"><div class="tcal-day">${tCalDayLabel(d)}</div>${cells}</div>`;
+  }).join('');
+  return `<div class="tcal-scroll">${head}${rows}</div>`;
+}
+function showTCalDetail(key){
+  const box=$('#tCalDetail'); if(!box) return;
+  const list=tCalIndex[key]||[]; const [d,hk]=key.split('|');
+  if(!list.length){box.textContent='Sin intervenciones.';return;}
+  const rows=list.map(r=>{
+    const cat=tallerCat(r), val=cat?(TALLER_TABLA[cat]||0):0;
+    return `<div class="tcd-row"><div class="tcd-veh">N° ${r.placa||'—'}</div>`+
+      `<div class="tcd-int">${(r.especifique||'—')}</div>`+
+      (cat?`<div class="tcd-cat">${cat} · ${COP(val)}</div>`:`<div class="tcd-cat muted">sin valorar</div>`)+`</div>`;
+  }).join('');
+  const dl=tCalDayLabel(d).replace(/<[^>]+>/g,'');
+  box.innerHTML=`<div class="tcd-top"><b>${dl}</b> · ${hk==='sh'?'sin hora registrada':hk.padStart(2,'0')+':00'} · ${list.length} intervenci${list.length===1?'ón':'ones'}</div>${rows}`;
 }
 
 /* ---------- ajustes ---------- */
@@ -1604,11 +1717,15 @@ function processTaller(rows){
     if(!row.some(c=>(c||'').trim())) continue;
     const cell=i=>(i>=0&&i<row.length?(row[i]||''):'').trim();
     const fecha=parseDate(row[0]||'');
-    recs.push({id:cell(iId),sistema:cell(iSis),especifique:cell(iEsp),
-               estado:cell(iEst),placa:cell(iPlaca),fecha:fecha?ymdOf(fecha):''});
+    const rec={id:cell(iId),sistema:cell(iSis),especifique:cell(iEsp),
+               estado:cell(iEst),placa:cell(iPlaca),fecha:fecha?ymdOf(fecha):''};
+    const hh=horaDe(row[0]||''); if(hh!=null) rec.hora=hh;   // hora desde la marca temporal del Form
+    recs.push(rec);
   }
   return {headers:h, records:recs};
 }
+/* extrae la hora (0-23) de una marca temporal "DD/MM/YYYY HH:MM:SS"; null si no hay */
+function horaDe(s){const m=String(s||'').match(/\d{1,2}\/\d{1,2}\/\d{2,4}[ ,]+(\d{1,2}):(\d{2})(?::\d{2})?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/i);if(!m)return null;let h=+m[1];const ap=(m[3]||'').toLowerCase().replace(/[.\s]/g,'');if(ap==='pm'&&h<12)h+=12;if(ap==='am'&&h===12)h=0;return (h>=0&&h<24)?h:null;}
 
 function apiKey(){return ((localStorage.getItem(LS_APIKEY)||'').trim())||APIKEY_DEFAULT;}
 function setLiveStatus(m){const el=$('#liveStatus'); if(el) el.textContent=m;}
