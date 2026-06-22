@@ -64,6 +64,17 @@ TALLER_CONFIG = {
         "Arreglo compartimiento motor": 40000,
         "Escape (soporte / reparación)": 40000,
         "Sensor cigüeñal": 40000,
+        # categorías añadidas a partir de los informes históricos del taller
+        "Relés (general)": 40000,
+        "Batería / bornes / puentes": 40000,
+        "Dispositivo de velocidad / tacógrafo": 80000,
+        "Elevavidrios (motor / switch)": 70000,
+        "Frenos (válvula / ajuste)": 90000,
+        "Cuchilla / accesorio de cabina": 30000,
+        "Carrocería (babero / bómper)": 50000,
+        "Instalación eléctrica / accesorios": 60000,
+        "Arreglo de luces (general)": 50000,
+        "Domicilio / traslado": 25000,
     },
 }
 
@@ -260,10 +271,20 @@ def main():
     recs, months = process_aseos(aseos_rows)
     taller = process_taller(taller_rows)
 
+    # Base de datos histórica del taller (informes ene–jun 2026). SIEMPRE presente.
+    # Las intervenciones nuevas llegan por el Google Sheet y se unen a estas.
+    taller_seed = []
+    seed_path = os.path.join(here, "taller_seed.json")
+    if os.path.exists(seed_path):
+        with open(seed_path, encoding="utf-8") as f:
+            taller_seed = json.load(f)
+    taller_all = taller_seed + taller["records"]   # seed + lo que haya en el Sheet
+
     data = {
         "generated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "aseos": {"records": recs, "months": months},
-        "taller": taller,
+        "taller": {"headers": taller.get("headers", []), "records": taller_all},
+        "tallerSeed": taller_seed,
         "precios": PRECIOS,
         "tallerConfig": TALLER_CONFIG,
         "salarioConfig": SALARIO_CONFIG,
@@ -284,7 +305,7 @@ def main():
     print("\n✅ Generado index.html")
     print(f"   Aseos: {len(recs)} registros · {len(months)} meses ({months[0] if months else '—'} → {months[-1] if months else '—'})")
     print(f"   Valor total histórico: ${total:,.0f}  | sin valor: {sin}")
-    print(f"   Taller: {len(taller['records'])} registros")
+    print(f"   Taller: {len(taller_all)} intervenciones ({len(taller_seed)} histórico + {len(taller['records'])} del Sheet)")
 
 
 if __name__ == "__main__":

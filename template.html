@@ -1197,31 +1197,58 @@ let tCostChart,tSysChart,tEstadoChart,tTimeChart;
 function tHas(s){for(let i=1;i<arguments.length;i++)if(s.includes(arguments[i]))return true;return false;}
 function tAll(s){for(let i=1;i<arguments.length;i++)if(!s.includes(arguments[i]))return false;return true;}
 const TALLER_RULES=[
- ['Relés de motoventiladores', s=>tHas(s,'rele','reles')&&tHas(s,'motoventil','moto ventil','moto-ventil')],
- ['Relés de luces', s=>tHas(s,'rele','reles')&&tHas(s,'luz','luce','ilumin','luminac','far','bombill','stop','direccional')],
- ['Motoventiladores (cambio)', s=>tHas(s,'motoventil','moto ventil','moto-ventil')],
+ ['Relés de motoventiladores', s=>tHas(s,'rele','reles','relevo')&&tHas(s,'motoventil','moto ventil','moto-ventil')],
+ ['Relés de luces', s=>tHas(s,'rele','reles','relevo')&&tHas(s,'luz','luce','ilumin','luminac','far','bombill','stop','direccional')],
+ ['Relés (general)', s=>tHas(s,'relevo','reles','rele ')],
+ ['Motoventiladores (cambio)', s=>tHas(s,'motoventil','moto ventil','moto-ventil','ventilador radiad','radiador')],
  ['Diagnóstico / revisión sistema de carga', s=>tHas(s,'alternador','regulador')||(tHas(s,'carga')&&tHas(s,'diagnost','revis','sistema','volt','ampera','bateria'))],
+ ['Batería / bornes / puentes', s=>tHas(s,'bateria','borne')],
  ['Blower / ventilador de cabina', s=>tHas(s,'blower','blowe','soplador')||tAll(s,'ventilador','cabina')],
- ['Compresor A/A', s=>tHas(s,'compresor','climatiz','aire acond','a/a','a/c')||tAll(s,'aire','acondi')],
- ['Instalación / cambio de exploradoras', s=>tHas(s,'explorador')],
- ['Motor de arranque / reparación', s=>tHas(s,'arranque','starter')||tAll(s,'motor','marcha')],
- ['Direccionales / estacionarias / flasher', s=>tHas(s,'direccional','estacionaria','flasher','intermitente')],
+ ['Compresor A/A', s=>tHas(s,'compresor','climatiz','aire acond','a/a','a/c','calefac')||tAll(s,'aire','acondi')],
+ ['Instalación / cambio de exploradoras', s=>tHas(s,'explorad')],
+ ['Motor de arranque / reparación', s=>tHas(s,'arranque','starter','inicion','encendido')||tAll(s,'motor','marcha')],
+ ['Direccionales / estacionarias / flasher', s=>tHas(s,'direccional','estacionaria','flasher','flacher','intermitente')],
  ['Sensor de reversa', s=>tHas(s,'reversa')],
  ['Sensor cigüeñal', s=>tHas(s,'ciguenal','ckp')],
+ ['Dispositivo de velocidad / tacógrafo', s=>tHas(s,'tacograf','tacometro')||tAll(s,'dispositivo','velocidad')],
+ ['Elevavidrios (motor / switch)', s=>tHas(s,'elevavidrio','eleva vidrio','eleva-vidrio')],
  ['Luces traseras / laterales', s=>tHas(s,'trasera','lateral','calav','cocuy')],
  ['Stop / plaqueta de stop', s=>tHas(s,'stop','plaqueta')||tAll(s,'luz','freno')],
- ['Cambio de bombillos (incl. LED)', s=>tHas(s,'bombill','bombl','led','halogen','h7','h4','h11')||tAll(s,'luz','baja')||tAll(s,'luz','alta')||tAll(s,'luz','media')],
+ ['Cambio de bombillos (incl. LED)', s=>tHas(s,'bombil','bobmil','led','halogen','h1','h3','h4','h5','h7','h11')||tAll(s,'luz','baja')||tAll(s,'luz','alta')||tAll(s,'luz','media')],
  ['Farolas / faros', s=>tHas(s,'farola','faro','farol')],
- ['Puerta eléctrica / corrediza', s=>tHas(s,'puerta')],
+ ['Frenos (válvula / ajuste)', s=>tHas(s,'freno')],
+ ['Puerta eléctrica / corrediza', s=>tHas(s,'puerta','boxter','corrediz')],
  ['Cambio / tensado de correas', s=>tHas(s,'correa','tensad')],
  ['Tablero (bajar/armar/reparar)', s=>tHas(s,'tablero','cluster','instrumentos')],
- ['Sistema limpiaparabrisas', s=>tHas(s,'limpiaparabris','limpia parabris','limpiabris','plumill','wiper')],
+ ['Sistema limpiaparabrisas', s=>tHas(s,'limpiaparabris','limpia parabris','limpiabris','plumill','wiper','pacha')],
+ ['Cuchilla / accesorio de cabina', s=>tHas(s,'cuchilla')],
  ['Fusibles', s=>tHas(s,'fusible')],
  ['Instalación de rutero', s=>tHas(s,'rutero')],
+ ['Carrocería (babero / bómper)', s=>tHas(s,'babero','bomper','bumper','latoneria')],
  ['Arreglo compartimiento motor', s=>tHas(s,'compartimiento','compartimento')],
  ['Escape (soporte / reparación)', s=>tHas(s,'escape','exhosto','exosto','mofle','silenciador')],
+ ['Instalación eléctrica / accesorios', s=>tHas(s,'instalacion electrica','instalacion accesorios','instalacion de accesorios','accesorios')],
+ ['Arreglo de luces (general)', s=>tHas(s,'luz','luce','ilumin','lampar')],
+ ['Domicilio / traslado', s=>tHas(s,'domicilio','traslado')],
 ];
 function tallerCat(r){const s=norm((r.sistema||'')+' '+(r.especifique||''));if(!s.trim())return null;for(const rule of TALLER_RULES){try{if(rule[1](s))return rule[0];}catch(e){}}return null;}
+/* sistema/área (agrupación gruesa) — para los informes históricos que no traen el campo "sistema" */
+const TALLER_SIS=[
+ ['Aire acondicionado / clima', s=>tHas(s,'aire','acondi','climatiz','compresor','blower','calefac','recarga de gas','desfogue','desague','ducto')],
+ ['Refrigeración motor', s=>tHas(s,'motoventil','moto ventil','ventilador radiad','radiador')||tAll(s,'ventilador','radiad')],
+ ['Sistema de carga', s=>tHas(s,'alternador','regulador','correa','tensor','bateria','borne')],
+ ['Arranque', s=>tHas(s,'arranque','marcha','swiche de inicion','switche de inicion','inicion','corto de inicion')],
+ ['Iluminación', s=>tHas(s,'bombill','bombl','bobmill','farola','faro','lampar','luz','luce','stop','direccional','flacher','explorador','reflector','cocuy','calav','reversa','pito')],
+ ['Puertas / carrocería', s=>tHas(s,'puerta','boxter','corrediz','tablero','bomper','babero','techo','elevavidrio','vidrio','cuchilla')],
+ ['Eléctrico general', s=>tHas(s,'instalacion electrica','fusible','rele','relevo','swiche','switche','corto','sensor','rutero','dispositivo','velocidad','modulo','pacha','plumill','limpiaparabris')],
+ ['Frenos / mecánica', s=>tHas(s,'freno','valvula','escape','suspension','muela')],
+];
+function tallerSistema(r){
+  const s=(r.sistema||'').trim(); if(s) return s;          // si el Sheet trae sistema, se respeta
+  const n=norm(r.especifique||''); if(!n.trim()) return '';
+  for(const rule of TALLER_SIS){try{if(rule[1](n))return rule[0];}catch(e){}}
+  return 'Otros';
+}
 function tValor(r){const c=tallerCat(r);return c?(TALLER_TABLA[c]||0):0;}
 function estVal(r){const m=String(r.estado||'').match(/\d+(?:[.,]\d+)?/);if(!m)return null;let v=parseFloat(m[0].replace(',','.'));if(isNaN(v))return null;if(v>10&&v<=100)v=v/10;if(v<1||v>10)return null;return v;}
 function estCls(v){return v>=7?'':(v>=5?'a':'r');}
@@ -1296,7 +1323,7 @@ function renderTaller(){
     if(cat){const a=catAgg[cat]||(catAgg[cat]={n:0,total:0,unit:TALLER_TABLA[cat]||0});a.n++;a.total+=val;externo+=val;} else sinValor++;
     const placa=(r.placa||'').trim().toUpperCase();
     if(placa){placasSet.add(placa);const p=placaAgg[placa]||(placaAgg[placa]={n:0,total:0,estSum:0,estN:0,sis:{}});p.n++;p.total+=val;if(cat)p.sis[cat]=(p.sis[cat]||0)+1;const e=estVal(r);if(e!=null){p.estSum+=e;p.estN++;}} else sinPlaca++;
-    const sis=(r.sistema||'').trim(); if(sis)sysAgg[sis]=(sysAgg[sis]||0)+1; else sinSistema++;
+    const sis=tallerSistema(r); if(sis&&sis!=='Otros')sysAgg[sis]=(sysAgg[sis]||0)+1; else {sysAgg['Otros']=(sysAgg['Otros']||0)+1; if(!sis)sinSistema++;}
     const e=estVal(r); if(e!=null){estSum+=e;estN++;estCounts[Math.round(e)]++;}
     if(r.fecha)dayAgg[r.fecha]=(dayAgg[r.fecha]||0)+1; else sinFecha++;
     const k=placa+'|'+norm(sis)+'|'+(r.fecha||''); dupKey[k]=(dupKey[k]||0)+1;
@@ -1365,7 +1392,7 @@ function renderTaller(){
   }
   const sysE=Object.entries(sysAgg).sort((a,b)=>b[1]-a[1]).slice(0,10);
   if(sysE.length){
-    H.push(`<div class="section"><div class="section-h">Intervenciones por sistema revisado</div>
+    H.push(`<div class="section"><div class="section-h">Intervenciones por sistema / área</div>
       <div class="card chartbox"><div style="position:relative;height:${Math.max(150,sysE.length*34)}px"><canvas id="tSysChart"></canvas></div></div></div>`);
   }
 
@@ -1405,7 +1432,7 @@ function renderTaller(){
   const alert=(lvl,ic,lbl,n)=>`<div class="talert ${lvl}"><div class="ti">${ic}</div><div class="tl">${lbl}</div><div class="tv">${n}</div></div>`;
   H.push(`<div class="section"><div class="section-h">Calidad del registro</div><div class="card">
     ${alert(sinPlaca?'warn':'ok',sinPlaca?'!':'✓','Intervenciones sin placa',sinPlaca)}
-    ${alert(sinSistema?'warn':'ok',sinSistema?'!':'✓','Sin sistema indicado',sinSistema)}
+    ${alert(sinSistema?'warn':'ok',sinSistema?'!':'✓','Sin descripción de intervención',sinSistema)}
     ${alert(sinFecha?'warn':'ok',sinFecha?'!':'✓','Sin fecha',sinFecha)}
     ${alert(sinValor?'warn':'ok',sinValor?'!':'✓','Sin valorar (no clasificadas)',sinValor)}
     ${alert(dupes?'bad':'ok',dupes?'⚠':'✓','Duplicados probables',dupes)}
@@ -1602,7 +1629,9 @@ async function refreshLive(){
   try{
     const [aRows,tRows]=await Promise.all([fetchSheet(SHEET_ASEOS,key),fetchSheet(SHEET_TALLER,key)]);
     DATA.aseos=processAseos(aRows);
-    DATA.taller=processTaller(tRows);
+    // El taller siempre conserva el histórico (seed) + lo nuevo del Sheet
+    const liveTaller=processTaller(tRows);
+    DATA.taller={headers:liveTaller.headers, records:(DATA.tallerSeed||[]).concat(liveTaller.records)};
     DATA.generated_at=new Date().toLocaleString('es-CO');
     months.length=0; DATA.aseos.months.forEach(m=>months.push(m));
     period='ALL';
