@@ -537,6 +537,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
     <button data-tab="aseos" class="active">Aseos</button>
     <button data-tab="taller">Taller</button>
     <button data-tab="llantas">Llantas</button>
+    <button data-tab="peajes">Peajes</button>
     <button data-tab="ajustes">Ajustes</button>
   </div>
 
@@ -745,6 +746,16 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
       </div>
     </div>
     <div id="llBody" class="dash"></div>
+  </div>
+
+  <!-- ============ AJUSTES ============ -->
+  <!-- ============ PEAJES (pendiente de API) ============ -->
+  <div id="tab-peajes" class="hidden">
+    <div class="section"><div class="card"><div class="empty">
+      <div class="ic">🛣️</div>
+      <h3>Pendiente de API</h3>
+      <div>El módulo de peajes estará funcionando próximamente.</div>
+    </div></div></div>
   </div>
 
   <!-- ============ AJUSTES ============ -->
@@ -2250,7 +2261,7 @@ document.querySelectorAll('.subseg button').forEach(b=>b.onclick=()=>switchSub(b
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
-  ['aseos','taller','llantas','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
+  ['aseos','taller','llantas','peajes','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
   if(b.dataset.tab==='aseos' && curSub==='general') renderCalendar();
   if(b.dataset.tab==='taller') renderTaller();   // re-render para dimensionar los gráficos al hacerse visible
   if(b.dataset.tab==='llantas') renderLlantas();
