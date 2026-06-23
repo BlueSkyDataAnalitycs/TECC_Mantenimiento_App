@@ -164,14 +164,38 @@ def dur_min(ini, fin):
     return None
 
 
+def aseo_parte_b(ts):
+    """22-jun-2026 12:00 → parte B (formulario corregido). Antes → parte A (cruzado)."""
+    d = parse_date(ts)
+    if not d:
+        return False
+    day = datetime.datetime(d.year, d.month, d.day)
+    cut = datetime.datetime(2026, 6, 22)
+    if day < cut:
+        return False
+    if day > cut:
+        return True
+    hh = hora_de(ts)
+    return hh is not None and hh >= 12
+
+
+def parse_veh_b(q):
+    """'LFL492 - 2' → ('LFL492','2'); '277' → ('','277')."""
+    q = (q or "").strip()
+    if not q:
+        return "", ""
+    parts = re.split(r"\s*[-–/]\s*", q)
+    if len(parts) >= 2:
+        return parts[0].strip().upper(), norm_veh(parts[-1])
+    return "", norm_veh(q)
+
+
 def process_aseos(rows):
     if not rows:
         return [], []
     h = rows[0]
-    # OJO: el formulario quedó con encabezados que NO concuerdan con su contenido.
-    #  · El N° de vehículo llega a la columna titulada "Lugar de Aseo".
-    #  · El origen (FINCA/TALLER PISCUISO/CASA CONDUCTOR/proveedor) llega a la columna
-    #    "Vehiculo" (formulario nuevo) o "Lugar de lavado" (formulario viejo).
+    # Corte 22-jun-2026 mediodía: parte A (cruzado: vehículo en "Lugar de Aseo"/C, origen en "Vehiculo"/Q o "Lugar de lavado"/P)
+    # vs parte B (corregido: vehículo en "Vehiculo"/Q como "PLACA - N° interno", origen en "Lugar de Aseo"/C).
     iVeh = col_index(h, "lugar de aseo")
     if iVeh < 0:
         iVeh = col_index(h, "numero interno")
@@ -200,9 +224,17 @@ def process_aseos(rows):
         fecha = parse_date(row[iDia]) if (0 <= iDia < len(row) and row[iDia].strip()) else parse_date(row[0] if row else "")
         if not fecha:
             continue
-        veh = norm_veh(row[iVeh].strip() if 0 <= iVeh < len(row) else "")
-        origen = (row[iOrigen].strip() if 0 <= iOrigen < len(row) else "") \
-            or (row[iOrigen2].strip() if 0 <= iOrigen2 < len(row) else "")
+        # resolver vehículo y origen según el corte del 22-jun
+        if aseo_parte_b(row[0] if row else ""):
+            qv = row[iOrigen].strip() if 0 <= iOrigen < len(row) else ""
+            placa, num = parse_veh_b(qv)
+            veh = num or norm_veh(qv)
+            origen = row[iVeh].strip() if 0 <= iVeh < len(row) else ""
+        else:
+            placa = ""
+            veh = norm_veh(row[iVeh].strip() if 0 <= iVeh < len(row) else "")
+            origen = (row[iOrigen].strip() if 0 <= iOrigen < len(row) else "") \
+                or (row[iOrigen2].strip() if 0 <= iOrigen2 < len(row) else "")
         fch = fecha.strftime("%Y-%m-%d")
         # id estable por-aseo (debe coincidir con processAseos del template.html)
         base_key = f"{fch}|{veh}|{tipo}"
@@ -214,6 +246,7 @@ def process_aseos(rows):
             "ym": fecha.strftime("%Y-%m"),
             "fecha": fch,
             "vehiculo": veh,
+            "placa": placa,
             "centro": (row[iCC].strip() if 0 <= iCC < len(row) else "") or "(sin CC)",
             "conductor": (row[iCond].strip() if 0 <= iCond < len(row) else ""),
             "tipo": tipo,

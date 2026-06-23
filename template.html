@@ -1071,6 +1071,11 @@ const FLEET=[
 const FLEET_BY_KEY={};
 FLEET.forEach(([placa,label])=>{const k=normVeh(label); if(!(k in FLEET_BY_KEY)) FLEET_BY_KEY[k]={placa,label};});
 function vehTitulo(key){const f=FLEET_BY_KEY[key];return f?`${f.label} · ${f.placa}`:`N° ${key}`;}
+// placa (sin espacios/guiones) → número interno (label), para relacionar placa↔N° interno con la flota
+function normPlaca(p){return (p||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+const FLEET_BY_PLACA={};
+FLEET.forEach(([placa,label])=>{const k=normPlaca(placa); if(k&&!(k in FLEET_BY_PLACA)) FLEET_BY_PLACA[k]=normVeh(label);});
+function placaANumero(p){return FLEET_BY_PLACA[normPlaca(p)]||'';}
 
 function renderCalendar(){
   renderCalFilter();
@@ -1406,8 +1411,9 @@ function renderTaller(){
     if(val>0){const a=catAgg[catKey]||(catAgg[catKey]={n:0,total:0});a.n++;a.total+=val;externo+=val;} else sinValor++;
     const placa=(r.placa||'').trim().toUpperCase();
     if(placa){placasSet.add(placa);const p=placaAgg[placa]||(placaAgg[placa]={n:0,total:0,estSum:0,estN:0,sis:{}});p.n++;p.total+=val;if(cat)p.sis[cat]=(p.sis[cat]||0)+1;const e=estVal(r);if(e!=null){p.estSum+=e;p.estN++;}} else sinPlaca++;
-    // centro de costo del vehículo (para rentabilidad propia por CC)
-    const cc=(placa&&vehCentro[placa])||'(sin centro)';
+    // centro de costo del vehículo: resuelve placa↔N° interno con la flota y cruza con los aseos
+    const num=placa?(placaANumero(placa)||normVeh(placa)):'';
+    const cc=(num&&vehCentro[num])||'(sin centro)';
     const ca=ccAgg[cc]||(ccAgg[cc]={ext:0,n:0,veh:new Set()}); ca.ext+=val; ca.n++; if(placa)ca.veh.add(placa);
     const sis=tallerSistema(r); if(sis&&sis!=='Otros')sysAgg[sis]=(sysAgg[sis]||0)+1; else {sysAgg['Otros']=(sysAgg['Otros']||0)+1; if(!sis)sinSistema++;}
     const e=estVal(r); if(e!=null){estSum+=e;estN++;estCounts[Math.round(e)]++;}
@@ -1781,13 +1787,15 @@ function normVeh(v){
 function driveId(s){const m=(s||'').match(/[-\w]{25,}/);return m?m[0]:'';}
 const FOTO_LABELS=['Frontal','Izquierdo','Derecho','Trasero','Interior','Interior 2'];
 function fotosDe(r){const f=r.fot||[];const out=[];for(let i=0;i<f.length;i++){if(f[i])out.push({label:FOTO_LABELS[i]||'Foto',id:f[i]});}return out;}
+/* Corte del 22-jun-2026 al mediodía: el formulario de aseos se CORRIGIÓ.
+   · Parte A (antes del 22-jun 12:00): cruzado → vehículo en "Lugar de Aseo"(C); origen en "Vehiculo"(Q) o "Lugar de lavado"(P).
+   · Parte B (desde el 22-jun 12:00): correcto → vehículo en "Vehiculo"(Q) como "PLACA - N° interno"; origen en "Lugar de Aseo"(C). */
+const ASEO_CUT=new Date(2026,5,22);
+function aseoParteB(ts){const d=parseDate(ts);if(!d)return false;const day=new Date(d.getFullYear(),d.getMonth(),d.getDate());if(day<ASEO_CUT)return false;if(day>ASEO_CUT)return true;const hh=horaDe(ts);return hh!=null&&hh>=12;}
+function parseVehB(q){q=(q||'').trim();if(!q)return{placa:'',num:''};const p=q.split(/\s*[-–\/]\s*/);if(p.length>=2)return{placa:p[0].trim().toUpperCase(),num:normVeh(p[p.length-1])};return{placa:'',num:normVeh(q)};}
 function processAseos(rows){
   if(!rows||!rows.length) return {records:[],months:[]};
   const h=rows[0];
-  // OJO: el formulario quedó con encabezados que NO concuerdan con su contenido.
-  //  · El N° de vehículo llega a la columna titulada "Lugar de Aseo".
-  //  · El origen (FINCA/TALLER PISCUISO/CASA CONDUCTOR/proveedor) llega a la columna
-  //    "Vehiculo" (formulario nuevo) o "Lugar de lavado" (formulario viejo).
   let iVeh=colIndex(h,'lugar de aseo'); if(iVeh<0)iVeh=colIndex(h,'numero interno');
   const iOrigen=colExact(h,'vehiculo'),       // origen primario (incl. CASA CONDUCTOR / proveedor)
         iOrigen2=colIndex(h,'lugar de lavado'); // origen de respaldo (form viejo)
@@ -1805,17 +1813,21 @@ function processAseos(rows){
     const dia=cell(iDia);
     const fecha=dia?parseDate(dia):parseDate(row[0]||'');
     if(!fecha) continue;
-    const fch=ymdOf(fecha), veh=normVeh(cell(iVeh));
+    // resolver vehículo y origen según el corte del 22-jun (parte A cruzada / parte B corregida)
+    let veh, lugarAseo, placa='';
+    if(aseoParteB(row[0]||'')){ const pv=parseVehB(cell(iOrigen)); placa=pv.placa; veh=pv.num||normVeh(cell(iOrigen)); lugarAseo=cell(iVeh); }
+    else { veh=normVeh(cell(iVeh)); lugarAseo=cell(iOrigen)||cell(iOrigen2); }
+    const fch=ymdOf(fecha);
     const baseKey=fch+'|'+veh+'|'+tipo;
     const k=(seen[baseKey]=(seen[baseKey]||0)+1)-1;
     recs.push({
       id:baseKey+'|'+k,
       ym:ymOf(fecha), fecha:fch,
-      vehiculo:veh,
+      vehiculo:veh, placa,
       centro:cell(iCC)||'(sin CC)',
       conductor:cell(iCond), tipo,
       durMin:durMin(cell(iIni),cell(iFin)),
-      lugar:cell(iOrigen2), lugarAseo:(cell(iOrigen)||cell(iOrigen2)),  // origen resuelto (clasificación)
+      lugar:cell(iOrigen2), lugarAseo:lugarAseo,  // origen resuelto (clasificación)
       valExt:parseInt((cell(iValExt)||'').replace(/[^0-9]/g,''),10)||0,
       fot:fotoCols.map(i=>driveId(cell(i))),
     });
