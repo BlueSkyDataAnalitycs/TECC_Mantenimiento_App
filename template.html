@@ -184,8 +184,8 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .tcal-day b{font-variant-numeric:tabular-nums;font-weight:800;}
 .tcal-day small{color:var(--ios-label3);font-size:10px;}
 .tcal-headrow .tcal-day{z-index:4;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--ios-label3);justify-content:flex-end;}
-.tcal-ch{flex:0 0 108px;width:108px;text-align:center;font-size:10px;font-weight:800;color:var(--ios-label3);padding:7px 2px;font-variant-numeric:tabular-nums;align-self:flex-end;}
-.tcal-cell{flex:0 0 108px;width:108px;min-height:34px;margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;padding:4px 4px;}
+.tcal-ch{flex:0 0 96px;width:96px;text-align:center;font-size:10.5px;font-weight:800;color:var(--ios-label3);padding:7px 2px;font-variant-numeric:tabular-nums;align-self:flex-end;}
+.tcal-cell{flex:0 0 96px;width:96px;min-height:34px;margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;padding:4px 4px;}
 .tcal-cell.on{background:rgba(10,35,66,.07);cursor:pointer;}
 .tcal-cell.on:hover{background:rgba(10,35,66,.13);}
 .tcal-cell.sel{outline:2px solid var(--tecc-amarillo);outline-offset:1px;}
@@ -1476,7 +1476,7 @@ function renderTaller(){
   // 5.5) CALENDARIO DE INTERVENCIONES (días × horas)
   H.push(`<div class="section span2">
     <div class="section-hero">Calendario de intervenciones</div>
-    <div class="note" style="margin:-4px 4px 9px">Una fila por <b>día</b>; a lo largo, la <b>hora de inicio</b>. Cada celda muestra la <b>placa</b> del vehículo intervenido. Las intervenciones nuevas del formulario (con hora de inicio/fin) caen en su franja horaria; los informes históricos sin hora quedan en la primera columna <b>"Sin hora"</b>. Toca una celda para ver abajo la <b>descripción</b> de lo que se hizo y el vehículo.</div>
+    <div class="note" style="margin:-4px 4px 9px">Una fila por <b>día</b>; a lo largo, <b>franjas fijas de 2 horas</b> (06–08 … 18–20) que <b>siempre se muestran</b>. Cada celda muestra la <b>placa</b> del vehículo intervenido. Las intervenciones nuevas del formulario caen en su franja según la <b>hora de inicio</b>; los informes históricos sin hora quedan en la primera columna <b>"Sin hora"</b>. Toca una celda para ver abajo la <b>descripción</b> de lo que se hizo y el vehículo.</div>
     <div class="card" style="padding:10px 10px 12px">${buildTallerCal(recs)}</div>
     <div class="tcal-detail" id="tCalDetail">Toca una celda con número para ver las intervenciones de ese día.</div>
   </div>`);
@@ -1542,25 +1542,26 @@ function tTimeBuckets(R,dayAgg){
 let tCalIndex={};
 const TDIAS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 function tCalDayLabel(ymd){const[y,mo,da]=ymd.split('-').map(Number);const dt=new Date(y,mo-1,da);const MN=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return `<b>${da} ${MN[mo-1]}</b> <small>${TDIAS[dt.getDay()]} ${String(y).slice(2)}</small>`;}
+// franjas FIJAS de 2 horas (06–08 … 18–20). Siempre se muestran TODAS, aunque estén vacías.
+const TCAL_SLOTS=[6,8,10,12,14,16,18];
+function slotOf(h){ if(h==null||h==='') return 'sh'; let s=Math.floor(h/2)*2; const lo=TCAL_SLOTS[0],hi=TCAL_SLOTS[TCAL_SLOTS.length-1]; if(s<lo)s=lo; if(s>hi)s=hi; return String(s); }
+function slotLabel(c){ if(c==='sh') return 'Sin hora'; const a=+c; return String(a).padStart(2,'0')+'–'+String(a+2).padStart(2,'0'); }
 function buildTallerCal(recs){
   tCalIndex={};
-  const byDay={}, hoursSet=new Set();
+  const days=new Set();
   recs.forEach(r=>{
     if(!r.fecha) return;
-    const hk=(r.hora!=null&&r.hora!=='')?String(r.hora):'sh';
-    if(hk!=='sh') hoursSet.add(+r.hora);
-    const key=r.fecha+'|'+hk;
+    days.add(r.fecha);
+    const sk=slotOf(r.hora!=null&&r.hora!=='' ? +r.hora : null);   // a su franja de 2h, o "Sin hora"
+    const key=r.fecha+'|'+sk;
     (tCalIndex[key]=tCalIndex[key]||[]).push(r);
-    (byDay[r.fecha]=byDay[r.fecha]||{});
-    byDay[r.fecha][hk]=(byDay[r.fecha][hk]||0)+1;
   });
-  const days=Object.keys(byDay).sort().reverse();          // día más reciente arriba
-  if(!days.length) return '<div class="cal-empty">Sin intervenciones con fecha en este periodo.</div>';
-  const hours=[...hoursSet].sort((a,b)=>a-b);
-  const cols=['sh',...hours.map(String)];                  // "Sin hora" SIEMPRE primero
+  const dayList=[...days].sort().reverse();                // día más reciente arriba
+  if(!dayList.length) return '<div class="cal-empty">Sin intervenciones con fecha en este periodo.</div>';
+  const cols=['sh',...TCAL_SLOTS.map(String)];             // columnas FIJAS: "Sin hora" + todas las franjas
   const head=`<div class="tcal-row tcal-headrow"><div class="tcal-day">Día</div>`+
-    cols.map(c=>`<div class="tcal-ch">${c==='sh'?'Sin hora':c.padStart(2,'0')+':00'}</div>`).join('')+`</div>`;
-  const rows=days.map(d=>{
+    cols.map(c=>`<div class="tcal-ch">${slotLabel(c)}</div>`).join('')+`</div>`;
+  const rows=dayList.map(d=>{
     const cells=cols.map(c=>{
       const list=tCalIndex[d+'|'+c]||[];
       if(!list.length) return `<div class="tcal-cell"></div>`;
@@ -1586,7 +1587,7 @@ function showTCalDetail(key){
       `</div>`;
   }).join('');
   const dl=tCalDayLabel(d).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
-  box.innerHTML=`<div class="cd-top"><b>${dl}</b> · ${hk==='sh'?'sin hora registrada':hk.padStart(2,'0')+':00'} · ${list.length} intervenci${list.length===1?'ón':'ones'}</div>${rows}`;
+  box.innerHTML=`<div class="cd-top"><b>${dl}</b> · ${hk==='sh'?'sin hora registrada':'franja '+slotLabel(hk)+' h'} · ${list.length} intervenci${list.length===1?'ón':'ones'}</div>${rows}`;
 }
 
 /* ---------- ajustes ---------- */
