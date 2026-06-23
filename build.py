@@ -239,6 +239,7 @@ def process_taller(rows):
     iEsp = col_index(h, "especifique")
     iEst = col_index(h, "estado")
     iPlaca = col_index(h, "placa")
+    iHIni = col_index(h, "hora", "inicio")   # hora de inicio (formulario nuevo)
     recs = []
     for row in rows[1:]:
         if not any((c or "").strip() for c in row):
@@ -252,8 +253,19 @@ def process_taller(rows):
             "placa": (row[iPlaca].strip() if 0 <= iPlaca < len(row) else ""),
             "fecha": fecha.strftime("%Y-%m-%d") if fecha else "",
         }
-        hh = hora_de(row[0] if row else "")
-        if hh is not None:
+        hh = None
+        ti = row[iHIni] if 0 <= iHIni < len(row) else ""
+        mt = re.search(r"(\d{1,2}):(\d{2})", str(ti or ""))
+        if mt:
+            hh = int(mt.group(1))
+            low = str(ti).lower()
+            if "p" in low and hh < 12:
+                hh += 12
+            if "a" in low and hh == 12:
+                hh = 0
+        if hh is None:
+            hh = hora_de(row[0] if row else "")
+        if hh is not None and 0 <= hh < 24:
             rec["hora"] = hh
         recs.append(rec)
     return {"headers": h, "records": recs}

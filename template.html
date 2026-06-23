@@ -184,11 +184,14 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .tcal-day b{font-variant-numeric:tabular-nums;font-weight:800;}
 .tcal-day small{color:var(--ios-label3);font-size:10px;}
 .tcal-headrow .tcal-day{z-index:4;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--ios-label3);justify-content:flex-end;}
-.tcal-ch{flex:0 0 58px;width:58px;text-align:center;font-size:10px;font-weight:800;color:var(--ios-label3);padding:7px 2px;font-variant-numeric:tabular-nums;align-self:flex-end;}
-.tcal-cell{flex:0 0 58px;width:58px;min-height:31px;margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ios-label3);}
-.tcal-cell.on{background:var(--tecc-azul);color:#fff;cursor:pointer;}
-.tcal-cell.on:hover{filter:brightness(1.12);}
+.tcal-ch{flex:0 0 108px;width:108px;text-align:center;font-size:10px;font-weight:800;color:var(--ios-label3);padding:7px 2px;font-variant-numeric:tabular-nums;align-self:flex-end;}
+.tcal-cell{flex:0 0 108px;width:108px;min-height:34px;margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;padding:4px 4px;}
+.tcal-cell.on{background:rgba(10,35,66,.07);cursor:pointer;}
+.tcal-cell.on:hover{background:rgba(10,35,66,.13);}
 .tcal-cell.sel{outline:2px solid var(--tecc-amarillo);outline-offset:1px;}
+.tcal-pl{background:var(--tecc-amarillo);color:#0A2342;font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:6px;font-variant-numeric:tabular-nums;line-height:1.5;}
+.tcal-pl.more{background:var(--tecc-azul);color:#fff;}
+@media (prefers-color-scheme:dark){.tcal-cell.on{background:rgba(91,155,255,.14);}.tcal-cell.on:hover{background:rgba(91,155,255,.22);}}
 .tcal-detail{margin-top:11px;background:var(--ios-bg2);border-radius:13px;padding:12px 14px;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.06);min-height:20px;}
 .tcd-top{font-size:13px;margin-bottom:9px;color:var(--ios-label);}
 .tcd-top b{color:var(--tint);}
@@ -1473,7 +1476,7 @@ function renderTaller(){
   // 5.5) CALENDARIO DE INTERVENCIONES (días × horas)
   H.push(`<div class="section span2">
     <div class="section-hero">Calendario de intervenciones</div>
-    <div class="note" style="margin:-4px 4px 9px">Una fila por día. Las intervenciones <b>sin hora registrada</b> (los informes históricos no la traen) van en la primera columna; cuando el formulario capture la hora aparecerán en su franja horaria. Toca una celda con número para ver <b>qué vehículo</b> y <b>qué intervención</b> se hizo.</div>
+    <div class="note" style="margin:-4px 4px 9px">Una fila por <b>día</b>; a lo largo, la <b>hora de inicio</b>. Cada celda muestra la <b>placa</b> del vehículo intervenido. Las intervenciones nuevas del formulario (con hora de inicio/fin) caen en su franja horaria; los informes históricos sin hora quedan en la primera columna <b>"Sin hora"</b>. Toca una celda para ver abajo la <b>descripción</b> de lo que se hizo y el vehículo.</div>
     <div class="card" style="padding:10px 10px 12px">${buildTallerCal(recs)}</div>
     <div class="tcal-detail" id="tCalDetail">Toca una celda con número para ver las intervenciones de ese día.</div>
   </div>`);
@@ -1558,7 +1561,13 @@ function buildTallerCal(recs){
   const head=`<div class="tcal-row tcal-headrow"><div class="tcal-day">Día</div>`+
     cols.map(c=>`<div class="tcal-ch">${c==='sh'?'Sin hora':c.padStart(2,'0')+':00'}</div>`).join('')+`</div>`;
   const rows=days.map(d=>{
-    const cells=cols.map(c=>{const n=byDay[d][c]||0;return n?`<div class="tcal-cell on" data-key="${d}|${c}">${n}</div>`:`<div class="tcal-cell"></div>`;}).join('');
+    const cells=cols.map(c=>{
+      const list=tCalIndex[d+'|'+c]||[];
+      if(!list.length) return `<div class="tcal-cell"></div>`;
+      const shown=list.slice(0,3).map(r=>`<span class="tcal-pl">${r.placa||'—'}</span>`).join('');
+      const more=list.length>3?`<span class="tcal-pl more">+${list.length-3}</span>`:'';
+      return `<div class="tcal-cell on" data-key="${d}|${c}">${shown}${more}</div>`;
+    }).join('');
     return `<div class="tcal-row"><div class="tcal-day">${tCalDayLabel(d)}</div>${cells}</div>`;
   }).join('');
   return `<div class="tcal-scroll">${head}${rows}</div>`;
@@ -1568,13 +1577,16 @@ function showTCalDetail(key){
   const list=tCalIndex[key]||[]; const [d,hk]=key.split('|');
   if(!list.length){box.textContent='Sin intervenciones.';return;}
   const rows=list.map(r=>{
-    const cat=tallerCat(r), val=cat?(TALLER_TABLA[cat]||0):0;
-    return `<div class="tcd-row"><div class="tcd-veh">N° ${r.placa||'—'}</div>`+
-      `<div class="tcd-int">${(r.especifique||'—')}</div>`+
-      (cat?`<div class="tcd-cat">${cat} · ${COP(val)}</div>`:`<div class="tcd-cat muted">sin valorar</div>`)+`</div>`;
+    const cat=tallerCat(r), val=cat?(TALLER_TABLA[cat]||0):0, sis=tallerSistema(r);
+    return `<div class="cd-row int">`+
+      `<div class="cd-hd"><span class="cd-bad ci">● N° ${r.placa||'—'}</span>`+
+        (cat?`<span class="cd-val">${COP(val)}</span>`:`<span class="cd-val" style="color:var(--orange)">sin valorar</span>`)+`</div>`+
+      `<div class="cd-line"><span class="cd-k">Se hizo</span><span class="cd-v">${r.especifique||'—'}</span></div>`+
+      `<div class="cd-line"><span class="cd-k">Sistema</span><span class="cd-v">${sis||'—'}${cat?` · ${cat}`:''}</span></div>`+
+      `</div>`;
   }).join('');
-  const dl=tCalDayLabel(d).replace(/<[^>]+>/g,'');
-  box.innerHTML=`<div class="tcd-top"><b>${dl}</b> · ${hk==='sh'?'sin hora registrada':hk.padStart(2,'0')+':00'} · ${list.length} intervenci${list.length===1?'ón':'ones'}</div>${rows}`;
+  const dl=tCalDayLabel(d).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+  box.innerHTML=`<div class="cd-top"><b>${dl}</b> · ${hk==='sh'?'sin hora registrada':hk.padStart(2,'0')+':00'} · ${list.length} intervenci${list.length===1?'ón':'ones'}</div>${rows}`;
 }
 
 /* ---------- ajustes ---------- */
@@ -1710,7 +1722,8 @@ function processTaller(rows){
   if(!rows||!rows.length) return {headers:[],records:[]};
   const h=rows[0];
   const iId=colIndex(h,'id del mantenimiento'),iSis=colIndex(h,'sistema'),
-        iEsp=colIndex(h,'especifique'),iEst=colIndex(h,'estado'),iPlaca=colIndex(h,'placa');
+        iEsp=colIndex(h,'especifique'),iEst=colIndex(h,'estado'),iPlaca=colIndex(h,'placa'),
+        iHIni=colIndex(h,'hora','inicio');   // hora de inicio (formulario nuevo); si no, se usa la marca temporal
   const recs=[];
   for(let r=1;r<rows.length;r++){
     const row=rows[r]||[];
@@ -1719,7 +1732,9 @@ function processTaller(rows){
     const fecha=parseDate(row[0]||'');
     const rec={id:cell(iId),sistema:cell(iSis),especifique:cell(iEsp),
                estado:cell(iEst),placa:cell(iPlaca),fecha:fecha?ymdOf(fecha):''};
-    const hh=horaDe(row[0]||''); if(hh!=null) rec.hora=hh;   // hora desde la marca temporal del Form
+    let hh=null; const ti=timeMin(cell(iHIni)); if(ti!=null) hh=Math.floor(ti/60);  // hora de inicio del Form
+    if(hh==null) hh=horaDe(row[0]||'');                                            // respaldo: marca temporal
+    if(hh!=null) rec.hora=hh;
     recs.push(rec);
   }
   return {headers:h, records:recs};
