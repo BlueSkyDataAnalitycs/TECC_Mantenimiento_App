@@ -238,14 +238,30 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .llcal-d{flex:0 0 104px;width:104px;position:sticky;left:0;background:var(--ios-bg2);font-size:12px;font-weight:700;padding:7px 6px;border-right:1px solid var(--ios-sep);z-index:1;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;justify-content:center;}
 .llcal-d small{font-size:10px;color:var(--ios-label3);font-weight:600;}
 .llcal-headrow .llcal-d{z-index:4;}
-.llcal-h{flex:0 0 26px;width:26px;font-size:9px;font-weight:800;color:var(--ios-label2);white-space:nowrap;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;}
-.llcal-h span{writing-mode:vertical-rl;transform:rotate(180deg);}
-.llcal-cell{flex:0 0 26px;width:26px;height:24px;margin:1px 0;border-radius:5px;background:var(--ios-bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;}
+.llcal-h{flex:0 0 28px;width:28px;height:74px;font-size:10.5px;font-weight:800;color:var(--ios-label);white-space:nowrap;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;}
+.llcal-h span{writing-mode:vertical-rl;transform:rotate(180deg);font-variant-numeric:tabular-nums;}
+.llcal-cell{flex:0 0 28px;width:28px;height:24px;margin:1px 0;border-radius:5px;background:var(--ios-bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;}
 .llcal-cell.on{background:var(--green);color:#fff;}
 .llcal-cell.crit{background:var(--red);color:#fff;}
 .llcal-legend{display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--ios-label2);flex-wrap:wrap;}
 .llcal-legend span{display:inline-flex;align-items:center;gap:6px;}
 .llcal-legend i{width:13px;height:13px;border-radius:3px;display:inline-block;}
+/* desglose por vehículo */
+.llveh{padding:9px 14px;border-bottom:1px solid var(--ios-sep);}
+.llveh:last-child{border-bottom:0;}
+.llveh-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.llveh-h b{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;}
+.llveh-h small{font-size:11.5px;color:var(--ios-label3);}
+.llveh-bad{font-size:10.5px;font-weight:800;color:#fff;background:var(--red);padding:1px 7px;border-radius:6px;}
+.llveh-w{margin-left:auto;font-size:14px;}
+.llveh-w small{display:none;}
+.llveh-pos{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+.llpos{display:inline-flex;align-items:center;gap:4px;background:var(--ios-bg);border-radius:7px;padding:2px 7px;font-size:10.5px;font-weight:700;color:var(--ios-label3);}
+.llpos i{font-style:normal;font-weight:800;font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--ios-label);}
+.llpos.r{background:rgba(255,59,48,.16);} .llpos.r i{color:var(--red);}
+.llpos.a{background:rgba(255,149,0,.16);} .llpos.a i{color:var(--orange);}
+.llpos.g{background:rgba(52,199,89,.15);} .llpos.g i{color:#1e8449;}
+@media (prefers-color-scheme:dark){.llpos.g i{color:#34C759;}}
 @media (prefers-color-scheme:dark){
   .tcal-cell.on{background:rgba(91,155,255,.14);}.tcal-cell.on:hover{background:rgba(91,155,255,.22);}
   .tcal-cell.nw{background:rgba(91,155,255,.16);}.tcal-cell.nw.on{background:rgba(91,155,255,.28);}
@@ -1915,7 +1931,7 @@ function horaDe(s){const m=String(s||'').match(/\d{1,2}\/\d{1,2}\/\d{2,4}[ ,]+(\
 
 /* ================= INSPECCIONES DE LLANTAS (CSV arrastrados, guardados local) ================= */
 const LS_LLANTAS='tecc_llantas_v1';
-let llSurcoChart, llMarcaChart;
+let llSurcoChart, llMarcaChart, llPosChart;
 function llLoad(){try{return JSON.parse(localStorage.getItem(LS_LLANTAS)||'[]')||[];}catch(e){return [];}}
 function llSave(rows){localStorage.setItem(LS_LLANTAS,JSON.stringify(rows));}
 function llNum(x){const v=parseFloat(String(x==null?'':x).replace(',','.'));return isNaN(v)?null:v;}
@@ -1990,20 +2006,25 @@ function renderLlantas(){
   const clr=$('#llClear'); if(clr) clr.onclick=()=>{ if(confirm('¿Borrar todas las inspecciones de llantas cargadas?')){localStorage.removeItem(LS_LLANTAS);renderLlantas();} };
 
   let crit=0,aler=0,ok=0,irr=0,presFuera=0,reenc=0,nuevas=0,sumSurco=0,nSurco=0;
-  const critList=[],irrList=[],marca={},byVeh={},buckets=[0,0,0,0,0,0];
+  const critList=[],alerList=[],irrList=[],marca={},byVeh={},byPos={},byDim={},presList=[],vehTires={},buckets=[0,0,0,0,0,0];
   cur.forEach(r=>{
-    const sm=surco(r);
+    const sm=surco(r), L=lim(r);
     if(sm!=null){ sumSurco+=sm;nSurco++;
-      if(sm<=lim(r)){crit++;critList.push(Object.assign({sm},r));} else if(sm<=lim(r)+2){aler++;} else ok++;
+      if(sm<=L){crit++;critList.push(Object.assign({sm,L},r));}
+      else if(sm<=L+2){aler++;alerList.push(Object.assign({sm,L},r));}
+      else ok++;
       const bi=sm<=2?0:sm<=4?1:sm<=6?2:sm<=8?3:sm<=10?4:5; buckets[bi]++;
+      if(r.pos){const pp=byPos[r.pos]||(byPos[r.pos]={sum:0,n:0,crit:0});pp.sum+=sm;pp.n++;if(sm<=L)pp.crit++;}
     }
     const sp=spread(r); if(sp!=null&&r.difMin!=null&&sp>=r.difMin){irr++;irrList.push(Object.assign({sp,sm},r));}
     const des=r.presDes?llNum(String(r.presDes).split(/[;,]/)[0]):null;
-    if(des&&r.presAire!=null&&des>0&&Math.abs(r.presAire-des)/des>0.12)presFuera++;
+    if(des&&r.presAire!=null&&des>0&&Math.abs(r.presAire-des)/des>0.12){presFuera++;presList.push({placa:r.placa,pos:r.pos,act:r.presAire,des});}
     if(/^r/i.test(r.vida||''))reenc++; else if(r.vida)nuevas++;
     if(r.marca){const m=marca[r.marca]||(marca[r.marca]={n:0,sum:0,cnt:0});m.n++;if(sm!=null){m.sum+=sm;m.cnt++;}}
-    const v=byVeh[r.placa]||(byVeh[r.placa]={placa:r.placa,id:r.idExterno,n:0,crit:0,min:99});
-    v.n++; if(sm!=null){v.min=Math.min(v.min,sm); if(sm<=lim(r))v.crit++;}
+    if(r.dim)byDim[r.dim]=(byDim[r.dim]||0)+1;
+    (vehTires[r.placa]=vehTires[r.placa]||[]).push({pos:r.pos,sm,marca:r.marca,vida:r.vida,L});
+    const v=byVeh[r.placa]||(byVeh[r.placa]={placa:r.placa,id:r.idExterno,marcaVeh:r.marcaVeh,modeloVeh:r.modeloVeh,n:0,crit:0,min:99});
+    v.n++; if(sm!=null){v.min=Math.min(v.min,sm); if(sm<=L)v.crit++;}
   });
   const promSurco=nSurco?sumSurco/nSurco:0, totLlantas=cur.length, totReenc=reenc+nuevas;
 
@@ -2035,36 +2056,66 @@ function renderLlantas(){
     <div class="card chartbox" style="margin-top:12px"><div class="cwrap"><canvas id="llSurcoChart"></canvas></div></div>
   </div>`);
 
-  // 3) Críticas + 4) irregular (lado a lado en escritorio)
-  const critHtml=critList.sort((a,b)=>a.sm-b.sm).slice(0,40).map(r=>`<div class="lltire">
+  // 3) CAMBIO URGENTE (criterio de la inspección: surco ≤ mínimo)
+  const vehUrg=Object.values(byVeh).filter(v=>v.crit>0).length;
+  const urgHtml=critList.sort((a,b)=>a.sm-b.sm).map(r=>`<div class="lltire">
     <div class="pl">${r.placa}</div><div class="pos">P${r.pos}</div>
-    <div class="inf">${r.marca||'—'} ${r.diseno||''}<small>${r.dim||''}${r.idExterno?' · N° '+r.idExterno:''}</small></div>
-    <div class="sv r">${r.sm} mm<small>mín ${lim(r)}</small></div></div>`).join('')||'<div class="empty">Sin llantas críticas 🎉</div>';
-  H.push(`<div class="section"><div class="section-h">Llantas críticas (cambiar ya)</div><div class="card">${critHtml}</div></div>`);
+    <div class="inf">${r.marca||'—'} ${r.diseno||''}<small>${r.dim||''}${r.idExterno?' · N° '+r.idExterno:''}${/^r/i.test(r.vida||'')?' · reencauche':''}</small></div>
+    <div class="sv r">${r.sm} mm<small>≤ mín ${r.L}</small></div></div>`).join('')||'<div class="empty">Ninguna llanta por debajo del mínimo 🎉</div>';
+  H.push(`<div class="section span2">
+    <div class="section-hero">🚨 Cambio urgente — ${crit} llanta${crit===1?'':'s'} bajo el mínimo</div>
+    <div class="note" style="margin:-4px 4px 9px">Surco por debajo del <b>mínimo de seguridad</b> que fija la inspección. Afecta a <b>${vehUrg}</b> vehículo${vehUrg===1?'':'s'} — cambiar de inmediato.</div>
+    <div class="card">${urgHtml}</div>
+  </div>`);
+
+  // 4) Próximas a cambiar + desgaste irregular (cols)
+  const alerHtml=alerList.sort((a,b)=>a.sm-b.sm).slice(0,40).map(r=>`<div class="lltire">
+    <div class="pl">${r.placa}</div><div class="pos">P${r.pos}</div>
+    <div class="inf">${r.marca||'—'} ${r.diseno||''}<small>${r.dim||''}</small></div>
+    <div class="sv a">${r.sm} mm<small>cerca del mín ${r.L}</small></div></div>`).join('')||'<div class="empty">Ninguna próxima a cambiar</div>';
+  H.push(`<div class="section"><div class="section-h">Por cambiar pronto (vigilar)</div><div class="card">${alerHtml}</div></div>`);
   const irrHtml=irrList.sort((a,b)=>b.sp-a.sp).slice(0,40).map(r=>`<div class="lltire">
     <div class="pl">${r.placa}</div><div class="pos">P${r.pos}</div>
     <div class="inf">${r.s1}/${r.s2}/${r.s3} mm<small>${r.obs||'posible alineación/suspensión'}</small></div>
     <div class="sv a">Δ${r.sp}<small>máx ${r.difMin}</small></div></div>`).join('')||'<div class="empty">Sin desgaste irregular</div>';
   H.push(`<div class="section"><div class="section-h">Desgaste irregular (revisar alineación)</div><div class="card">${irrHtml}</div></div>`);
 
-  // 5) por marca + 6) por vehículo
+  // 5) por marca + por posición/eje (cols, charts)
   const me=Object.entries(marca).sort((a,b)=>b[1].n-a[1].n).slice(0,10);
   if(me.length) H.push(`<div class="section"><div class="section-h">Llantas por marca</div><div class="card chartbox"><div class="cwrap"><canvas id="llMarcaChart"></canvas></div></div></div>`);
-  const ve=Object.values(byVeh).sort((a,b)=>a.min-b.min).slice(0,12);
-  const vehHtml=ve.map(v=>{const cls=v.min<=2?'r':v.min<=4?'a':'g';return `<div class="lltire">
-    <div class="pl">${v.placa}</div>
-    <div class="inf">${v.id?'N° '+v.id+' · ':''}${v.n} llantas medidas${v.crit?` · <b style="color:var(--red)">${v.crit} crítica${v.crit===1?'':'s'}</b>`:''}</div>
-    <div class="sv ${cls}">${v.min} mm<small>peor llanta</small></div></div>`;}).join('');
-  H.push(`<div class="section"><div class="section-h">Vehículos por atender (peor llanta)</div><div class="card">${vehHtml}</div></div>`);
+  const pe=Object.entries(byPos).sort((a,b)=>String(a[0]).localeCompare(String(b[0]),undefined,{numeric:true}));
+  if(pe.length) H.push(`<div class="section"><div class="section-h">Surco promedio por posición (eje)</div><div class="card chartbox"><div class="cwrap"><canvas id="llPosChart"></canvas></div></div></div>`);
 
-  // 7) CALENDARIO placas × días
+  // 6) DESGLOSE POR VEHÍCULO (reporte completo, todas las posiciones)
+  const POS=p=>{const n=parseInt(p,10);return isNaN(n)?99:n;};
+  const vehSorted=Object.values(byVeh).sort((a,b)=>a.min-b.min);
+  const vehRows=vehSorted.map(v=>{
+    const ts=(vehTires[v.placa]||[]).slice().sort((a,b)=>POS(a.pos)-POS(b.pos));
+    const chips=ts.map(t=>{const c=t.sm==null?'':t.sm<=t.L?'r':t.sm<=t.L+2?'a':'g';return `<span class="llpos ${c}">${t.pos}<i>${t.sm==null?'–':t.sm}</i></span>`;}).join('');
+    const wc=v.min<=2?'r':v.min<=4?'a':'g';
+    return `<div class="llveh">
+      <div class="llveh-h"><b>${v.placa}</b><small>${v.id?'N° '+v.id+' · ':''}${v.marcaVeh||''} ${v.modeloVeh||''}</small>${v.crit?`<span class="llveh-bad">${v.crit} urgente${v.crit===1?'':'s'}</span>`:''}<span class="sv ${wc} llveh-w">${v.min} mm</span></div>
+      <div class="llveh-pos">${chips}</div></div>`;
+  }).join('');
+  H.push(`<div class="section span2"><div class="section-hero">Desglose por vehículo</div>
+    <div class="note" style="margin:-4px 4px 9px">Todas las posiciones de cada vehículo con su surco mínimo (mm). <b style="color:var(--green)">Verde</b> OK · <b style="color:var(--orange)">naranja</b> por cambiar · <b style="color:var(--red)">rojo</b> urgente. Ordenado por el peor.</div>
+    <div class="card" style="padding:2px 0">${vehRows}</div></div>`);
+
+  // 7) por dimensión + presión (cols)
+  const de=Object.entries(byDim).sort((a,b)=>b[1]-a[1]);
+  const dimHtml=de.map(([d,n])=>`<div class="lltire"><div class="inf">${d}</div><div class="sv g">${n}<small>llantas</small></div></div>`).join('')||'<div class="empty">—</div>';
+  H.push(`<div class="section"><div class="section-h">Inventario por dimensión</div><div class="card">${dimHtml}</div></div>`);
+  const presHtml=presList.slice(0,40).map(p=>`<div class="lltire"><div class="pl">${p.placa}</div><div class="pos">P${p.pos}</div><div class="inf">Presión ${p.act} psi<small>deseada ${p.des} psi</small></div><div class="sv ${p.act<p.des?'a':'r'}">${p.act<p.des?'baja':'alta'}</div></div>`).join('')||'<div class="empty">Presiones dentro de rango</div>';
+  H.push(`<div class="section"><div class="section-h">Presión fuera de rango (${presFuera})</div><div class="card">${presHtml}</div></div>`);
+
+  // 8) CALENDARIO — filas=fechas/días, columnas=placas
   const byFP={}; all.forEach(r=>{const k=r.fecha+'|'+r.placa;const o=byFP[k]||(byFP[k]={n:0,crit:0});o.n++;const sm=surco(r);if(sm!=null&&sm<=lim(r))o.crit++;});
-  const head=`<div class="llcal-row llcal-headrow"><div class="llcal-d">Fecha</div>${placas.map(p=>`<div class="llcal-h"><span>${p}</span></div>`).join('')}</div>`;
-  const crows=fechas.slice().reverse().map(f=>`<div class="llcal-row"><div class="llcal-d">${fmtDShort(f)}<small>${f.slice(0,4)}</small></div>${placas.map(p=>{const o=byFP[f+'|'+p];return o?`<div class="llcal-cell ${o.crit?'crit':'on'}" title="${p} · ${fmtD(f)} · ${o.n} llantas${o.crit?' · '+o.crit+' críticas':''}">${o.crit||'✓'}</div>`:'<div class="llcal-cell"></div>';}).join('')}</div>`).join('');
+  const head=`<div class="llcal-row llcal-headrow"><div class="llcal-d">Día / placa →</div>${placas.map(p=>`<div class="llcal-h"><span>${p}</span></div>`).join('')}</div>`;
+  const crows=fechas.slice().reverse().map(f=>`<div class="llcal-row"><div class="llcal-d">${TDIAS[parseDate(f).getDay()]} ${fmtDShort(f)}<small>${f.slice(0,4)}</small></div>${placas.map(p=>{const o=byFP[f+'|'+p];return o?`<div class="llcal-cell ${o.crit?'crit':'on'}" title="${p} · ${fmtD(f)} · ${o.n} llantas${o.crit?' · '+o.crit+' urgentes':''}">${o.crit||'✓'}</div>`:'<div class="llcal-cell"></div>';}).join('')}</div>`).join('');
   H.push(`<div class="section span2"><div class="section-hero">Calendario de inspecciones</div>
-    <div class="note" style="margin:-4px 4px 9px">Una fila por día de inspección; una columna por placa. <b style="color:var(--green)">Verde</b> = inspeccionada · <b style="color:var(--red)">rojo</b> = ese día tenía llantas críticas (muestra cuántas).</div>
+    <div class="note" style="margin:-4px 4px 9px"><b>Columnas = placas</b>, <b>filas = días</b> de inspección. <b style="color:var(--green)">Verde</b> = inspeccionada · <b style="color:var(--red)">rojo</b> = ese día tenía llantas bajo el mínimo (muestra cuántas).</div>
     <div class="card" style="padding:10px"><div class="llcal-scroll">${head}${crows}</div></div>
-    <div class="llcal-legend"><span><i style="background:var(--green)"></i>Inspeccionada</span><span><i style="background:var(--red)"></i>Con llantas críticas</span><span><i style="background:var(--ios-bg)"></i>Sin inspección ese día</span></div>
+    <div class="llcal-legend"><span><i style="background:var(--green)"></i>Inspeccionada</span><span><i style="background:var(--red)"></i>Con llantas urgentes</span><span><i style="background:var(--ios-bg)"></i>Sin inspección ese día</span></div>
   </div>`);
 
   body.innerHTML=H.join('');
@@ -2072,6 +2123,7 @@ function renderLlantas(){
   const bcol=['#FF3B30','#FF9F0A','#F2C94C','#7FC77F','#34C759','#1e8449'];
   tBar('llSurcoChart',['≤2','3-4','5-6','7-8','9-10','≥11'],buckets,c=>llSurcoChart=c,llSurcoChart,{colors:bcol,unit:' llantas'});
   if(me.length) tBar('llMarcaChart',me.map(e=>e[0]),me.map(e=>e[1].n),c=>llMarcaChart=c,llMarcaChart,{horizontal:true,colors:'#2E5E9E',unit:' llantas',thick:22});
+  if(pe.length) tBar('llPosChart',pe.map(e=>'P'+e[0]),pe.map(e=>+(e[1].sum/e[1].n).toFixed(1)),c=>llPosChart=c,llPosChart,{colors:'#0A2342',unit:' mm'});
 }
 
 function apiKey(){return ((localStorage.getItem(LS_APIKEY)||'').trim())||APIKEY_DEFAULT;}
