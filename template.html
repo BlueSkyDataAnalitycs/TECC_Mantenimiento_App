@@ -200,6 +200,25 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .tcd-veh{flex:0 0 auto;background:var(--tecc-amarillo);color:#0A2342;font-weight:800;font-size:12px;padding:2px 9px;border-radius:7px;font-variant-numeric:tabular-nums;}
 .tcd-int{flex:1;min-width:150px;font-size:13px;color:var(--ios-label);line-height:1.32;}
 .tcd-cat{flex:0 0 auto;font-size:11.5px;font-weight:700;color:var(--tint);}
+/* tabla editable de costo tercerizado por intervención */
+.tlx-scroll{max-height:520px;overflow:auto;-webkit-overflow-scrolling:touch;}
+.tlx-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--ios-sep);}
+.tlx-row:last-child{border-bottom:0;}
+.tlx-head{position:sticky;top:0;background:var(--ios-bg2);z-index:2;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3);padding-top:11px;padding-bottom:8px;}
+.tlx-d{flex:0 0 60px;width:60px;font-size:12.5px;font-weight:700;color:var(--ios-label);font-variant-numeric:tabular-nums;}
+.tlx-head .tlx-d{color:var(--ios-label3);}
+.tlx-v{flex:0 0 54px;width:54px;font-size:13px;font-weight:800;color:var(--tint);font-variant-numeric:tabular-nums;text-align:center;background:var(--ios-bg);border-radius:8px;padding:4px 2px;}
+.tlx-head .tlx-v{background:none;color:var(--ios-label3);padding:0;}
+.tlx-desc{flex:1;min-width:0;font-size:13px;color:var(--ios-label);line-height:1.3;}
+.tlx-txt{display:block;}
+.tlx-cat{display:block;font-size:10.5px;color:var(--ios-label3);font-weight:600;margin-top:2px;}
+.tlx-cw{flex:0 0 130px;width:130px;display:flex;align-items:center;gap:3px;justify-content:flex-end;}
+.tlx-head .tlx-cw{color:var(--ios-label3);}
+.tlx-cur{font-size:13px;color:var(--ios-label3);font-weight:700;}
+.tlx-cost{width:104px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;border:1px solid var(--ios-sep);border-radius:9px;padding:7px 9px;background:var(--ios-bg2);color:var(--ios-label);}
+.tlx-cost:focus{outline:2px solid var(--tecc-azul);border-color:transparent;}
+.tlx-cost.edited{border-color:var(--tecc-amarillo);background:rgba(242,201,76,.14);font-weight:800;}
+@media (prefers-color-scheme:dark){.tlx-cost{background:#2C2C2E;}}
 /* ===== centro de costo imponente ===== */
 .section-hero{font-size:21px;font-weight:800;letter-spacing:-.4px;margin:0 4px 11px;}
 .cc-card{background:var(--ios-bg2);border-radius:18px;padding:15px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:11px;border-left:5px solid var(--tecc-azul);}
@@ -1279,6 +1298,16 @@ function tallerSistema(r){
   return 'Otros';
 }
 function tValor(r){const c=tallerCat(r);return c?(TALLER_TABLA[c]||0):0;}
+/* ---- costo tercerizado por intervención: valor "experto" por defecto + ajuste manual persistente ---- */
+const LS_TCOST='tecc_taller_cost_v1';
+let _tcostCache=null;
+function tCostMap(){ if(_tcostCache) return _tcostCache; try{_tcostCache=JSON.parse(localStorage.getItem(LS_TCOST)||'{}')||{};}catch(e){_tcostCache={};} return _tcostCache; }
+function invalidateTCost(){ _tcostCache=null; }
+function tKey(r){ return (r.id&&String(r.id).trim()) || ('t|'+(r.fecha||'')+'|'+((r.placa||'').trim().toUpperCase())+'|'+norm(r.especifique||'').slice(0,40)); }
+function tBaseCost(r){ const c=tallerCat(r); return c?(TALLER_TABLA[c]||0):0; }   // estimación experta (clasificador)
+function tCostOf(r){ const m=tCostMap(), k=tKey(r); return (k in m)?(+m[k]||0):tBaseCost(r); }   // ajuste manual si existe
+function tIsEdited(r){ return tKey(r) in tCostMap(); }
+function setTCostByKey(k,base,v){ const m=tCostMap(); if(v===''||v==null||(+v)===(+base)){ delete m[k]; } else { m[k]=+v||0; } localStorage.setItem(LS_TCOST,JSON.stringify(m)); invalidateTCost(); }
 function estVal(r){const m=String(r.estado||'').match(/\d+(?:[.,]\d+)?/);if(!m)return null;let v=parseFloat(m[0].replace(',','.'));if(isNaN(v))return null;if(v>10&&v<=100)v=v/10;if(v<1||v>10)return null;return v;}
 function estCls(v){return v>=7?'':(v>=5?'a':'r');}
 
@@ -1351,8 +1380,9 @@ function renderTaller(){
   const catAgg={}, placaAgg={}, sysAgg={}, dayAgg={}, dupKey={}, placasSet=new Set(), ccAgg={};
   const estCounts=new Array(11).fill(0);
   recs.forEach(r=>{
-    const cat=tallerCat(r), val=cat?(TALLER_TABLA[cat]||0):0;
-    if(cat){const a=catAgg[cat]||(catAgg[cat]={n:0,total:0,unit:TALLER_TABLA[cat]||0});a.n++;a.total+=val;externo+=val;} else sinValor++;
+    const cat=tallerCat(r), val=tCostOf(r);   // costo tercerizado (ajuste manual o estimación experta)
+    const catKey=cat||'(sin categoría)';
+    if(val>0){const a=catAgg[catKey]||(catAgg[catKey]={n:0,total:0});a.n++;a.total+=val;externo+=val;} else sinValor++;
     const placa=(r.placa||'').trim().toUpperCase();
     if(placa){placasSet.add(placa);const p=placaAgg[placa]||(placaAgg[placa]={n:0,total:0,estSum:0,estN:0,sis:{}});p.n++;p.total+=val;if(cat)p.sis[cat]=(p.sis[cat]||0)+1;const e=estVal(r);if(e!=null){p.estSum+=e;p.estN++;}} else sinPlaca++;
     // centro de costo del vehículo (para rentabilidad propia por CC)
@@ -1435,19 +1465,44 @@ function renderTaller(){
     </div>`);
   }
 
-  // 3) TABLA COSTO EXTERNO ESTIMADO
+  // 3) DETALLE EDITABLE — día · vehículo · descripción · costo tercerizado (modificable)
+  const recsSorted=recs.slice().sort((a,b)=>{ if(a.fecha!==b.fecha) return (a.fecha||'')<(b.fecha||'')?1:-1; return String(a.placa||'').localeCompare(String(b.placa||'')); });
+  let editedCount=0;
+  const lineRows=recsSorted.map(r=>{
+    const cat=tallerCat(r), base=tBaseCost(r), val=tCostOf(r), ed=tIsEdited(r); if(ed)editedCount++;
+    return `<div class="tlx-row">
+      <div class="tlx-d">${r.fecha?fmtDShort(r.fecha):'—'}</div>
+      <div class="tlx-v">${r.placa||'—'}</div>
+      <div class="tlx-desc"><span class="tlx-txt">${r.especifique||'—'}</span><span class="tlx-cat">${cat||'sin clasificar'}</span></div>
+      <div class="tlx-cw"><span class="tlx-cur">$</span><input class="tlx-cost${ed?' edited':''}" type="number" step="5000" min="0" inputmode="numeric" value="${val}" data-k="${encodeURIComponent(tKey(r))}" data-base="${base}" title="${ed?'Ajustado a mano · estimación experta '+COP(base):'Estimación experta — edítalo para fijar el valor real'}"></div>
+    </div>`;
+  }).join('');
+  H.push(`<div class="section span2">
+    <div class="section-hero">Costo tercerizado por intervención</div>
+    <div class="note" style="margin:-4px 4px 9px">Cada fila es una intervención: <b>día · vehículo · qué se hizo · costo tercerizado</b>. La app estima el valor con su tabla de mano de obra de mercado; <b>puedes ajustar cualquier costo</b> y el total, la viabilidad y la rentabilidad por CC se recalculan al instante.${editedCount?` <b>${editedCount}</b> ajustado${editedCount===1?'':'s'} a mano.`:''}</div>
+    <div class="card" style="padding:0">
+      <div class="tlx-scroll">
+        <div class="tlx-row tlx-head"><div class="tlx-d">Día</div><div class="tlx-v">N°</div><div class="tlx-desc">Intervención</div><div class="tlx-cw">Costo terc.</div></div>
+        ${lineRows||'<div class="tlx-row"><div class="tlx-desc muted">Sin intervenciones</div></div>'}
+      </div>
+      <div class="ttot"><span>Total tercerizado del periodo · ${recs.length} interv.${sinValor?` · ${sinValor} en $0`:''}</span><b>${COP(externo)}</b></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:9px"><button class="btn danger" id="tCostReset" style="width:auto;padding:9px 15px;font-size:13px">Restablecer a la estimación</button></div>
+  </div>`);
+
+  // 3.5) RESUMEN POR CATEGORÍA (desglose para auditoría)
   const catE=Object.entries(catAgg).sort((a,b)=>b[1].total-a[1].total);
   const maxT=catE.length?catE[0][1].total:1;
   let tabla=catE.map(([cat,a])=>`<div class="tcat">
       <div class="tcat-h"><div class="nm">${cat}</div><div class="tot">${COP(a.total)}</div></div>
-      <div class="tcat-sub">${a.n} × ${COP(a.unit)}</div>
+      <div class="tcat-sub">${a.n} intervenci${a.n===1?'ón':'ones'} · prom. ${COP(a.total/a.n)}</div>
       <div class="tcat-bar"><i style="width:${a.total/maxT*100}%"></i></div>
     </div>`).join('');
-  if(sinValor) tabla+=`<div class="tcat sinv"><div class="tcat-h"><div class="nm">Sin clasificar — no se pudo dar valor</div><div class="tot">${sinValor} interv.</div></div><div class="tcat-sub">No coinciden con ninguna categoría de la tabla de tercerización</div></div>`;
+  if(sinValor) tabla+=`<div class="tcat sinv"><div class="tcat-h"><div class="nm">En $0 — sin valorar</div><div class="tot">${sinValor} interv.</div></div><div class="tcat-sub">Sin categoría ni ajuste manual; edítalas arriba para darles valor</div></div>`;
   H.push(`<div class="section span2">
-    <div class="section-hero">Costo externo estimado</div>
-    <div class="note" style="margin:-4px 4px 9px">Cada intervención valorada con la tabla de mano de obra de mercado (sin repuestos), agrupando descripciones similares. Ordenado por costo.</div>
-    <div class="card">${tabla||'<div class="tcat"><div class="tcat-h"><div class="nm muted">Sin intervenciones valorables</div></div></div>'}<div class="ttot"><span>Total general externo del periodo</span><b>${COP(externo)}</b></div></div>
+    <div class="section-hero">Resumen por categoría</div>
+    <div class="note" style="margin:-4px 4px 9px">El mismo gasto agrupado por tipo de intervención, por si necesitas auditarlo. Ordenado por costo.</div>
+    <div class="card">${tabla||'<div class="tcat"><div class="tcat-h"><div class="nm muted">Sin intervenciones valorables</div></div></div>'}<div class="ttot"><span>Total general del periodo</span><b>${COP(externo)}</b></div></div>
   </div>`);
 
   // 4) GRÁFICA: número de intervenciones por sistema / área
@@ -1520,6 +1575,16 @@ function renderTaller(){
     body.querySelectorAll('.tcal-cell.sel').forEach(x=>x.classList.remove('sel'));
     el.classList.add('sel'); showTCalDetail(el.dataset.key);
   });
+
+  // editar costo tercerizado por intervención → recalcula todo (conserva el scroll de la tabla)
+  body.querySelectorAll('.tlx-cost').forEach(inp=>inp.addEventListener('change',()=>{
+    const sc=body.querySelector('.tlx-scroll'); const top=sc?sc.scrollTop:0;
+    setTCostByKey(decodeURIComponent(inp.dataset.k), inp.dataset.base, inp.value);
+    renderTaller();
+    const sc2=body.querySelector('.tlx-scroll'); if(sc2) sc2.scrollTop=top;
+  }));
+  const tcr=body.querySelector('#tCostReset');
+  if(tcr) tcr.onclick=()=>{ if(confirm('¿Restablecer todos los costos tercerizados a la estimación automática de la app?')){ localStorage.removeItem(LS_TCOST); invalidateTCost(); renderTaller(); } };
 
   // --- dibujar gráficos (tras insertar el HTML) ---
   if(sysE.length) tBar('tSysChart',sysE.map(e=>e[0]),sysE.map(e=>e[1]),c=>tSysChart=c,tSysChart,{horizontal:true,colors:'#2E5E9E',unit:' interv.',thick:26});
