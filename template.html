@@ -208,6 +208,44 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .tcal-tot.tcal-grand{background:var(--tecc-azul);}
 .tcal-tot.tcal-grand b{color:#fff;}
 .tcal-tot.tcal-grand span{color:var(--tecc-amarillo);}
+/* ===== Inspecciones de llantas ===== */
+.lldrop{border:2px dashed var(--ios-sep);border-radius:18px;padding:24px 18px;text-align:center;background:var(--ios-bg2);cursor:pointer;transition:.15s;}
+.lldrop:hover,.lldrop.drag{border-color:var(--tint);background:rgba(10,35,66,.05);}
+.lldrop .ic{font-size:34px;line-height:1;}
+.lldrop h3{margin:9px 0 3px;font-size:17px;}
+.lldrop p{margin:0 auto;font-size:13px;color:var(--ios-label3);line-height:1.45;max-width:560px;}
+.lldrop .llbtn{display:inline-block;margin-top:12px;background:var(--tecc-azul);color:#fff;font-weight:700;font-size:14px;padding:9px 16px;border-radius:12px;}
+.llmeta{font-size:12.5px;color:var(--ios-label2);margin-top:11px;font-weight:600;}
+.llsem{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;}
+.llsem-c{border-radius:16px;padding:15px;color:#fff;}
+.llsem-c .n{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;}
+.llsem-c .l{font-size:12px;font-weight:600;margin-top:5px;opacity:.95;line-height:1.3;}
+.llsem-c.r{background:linear-gradient(160deg,#c0392b,#922b21);}
+.llsem-c.a{background:linear-gradient(160deg,#e08e0b,#b9770a);}
+.llsem-c.g{background:linear-gradient(160deg,#1e8449,#14633a);}
+.lltire{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--ios-sep);}
+.lltire:last-child{border-bottom:0;}
+.lltire .pl{flex:0 0 auto;background:var(--tecc-amarillo);color:#0A2342;font-weight:800;font-size:12px;padding:3px 8px;border-radius:7px;font-variant-numeric:tabular-nums;}
+.lltire .pos{flex:0 0 34px;text-align:center;font-size:10.5px;font-weight:800;color:var(--ios-label3);}
+.lltire .inf{flex:1;min-width:0;font-size:13px;line-height:1.3;}
+.lltire .inf small{display:block;color:var(--ios-label3);font-size:11.5px;}
+.lltire .sv{flex:0 0 auto;font-weight:800;font-variant-numeric:tabular-nums;font-size:15px;text-align:right;}
+.lltire .sv small{display:block;font-size:9.5px;font-weight:700;color:var(--ios-label3);text-transform:uppercase;letter-spacing:.3px;}
+.lltire .sv.r{color:var(--red);} .lltire .sv.a{color:var(--orange);} .lltire .sv.g{color:var(--green);}
+.llcal-scroll{overflow:auto;max-height:380px;-webkit-overflow-scrolling:touch;}
+.llcal-row{display:flex;gap:2px;width:max-content;align-items:stretch;}
+.llcal-headrow{position:sticky;top:0;background:var(--ios-bg2);z-index:3;}
+.llcal-d{flex:0 0 104px;width:104px;position:sticky;left:0;background:var(--ios-bg2);font-size:12px;font-weight:700;padding:7px 6px;border-right:1px solid var(--ios-sep);z-index:1;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;justify-content:center;}
+.llcal-d small{font-size:10px;color:var(--ios-label3);font-weight:600;}
+.llcal-headrow .llcal-d{z-index:4;}
+.llcal-h{flex:0 0 26px;width:26px;font-size:9px;font-weight:800;color:var(--ios-label2);white-space:nowrap;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;}
+.llcal-h span{writing-mode:vertical-rl;transform:rotate(180deg);}
+.llcal-cell{flex:0 0 26px;width:26px;height:24px;margin:1px 0;border-radius:5px;background:var(--ios-bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;}
+.llcal-cell.on{background:var(--green);color:#fff;}
+.llcal-cell.crit{background:var(--red);color:#fff;}
+.llcal-legend{display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--ios-label2);flex-wrap:wrap;}
+.llcal-legend span{display:inline-flex;align-items:center;gap:6px;}
+.llcal-legend i{width:13px;height:13px;border-radius:3px;display:inline-block;}
 @media (prefers-color-scheme:dark){
   .tcal-cell.on{background:rgba(91,155,255,.14);}.tcal-cell.on:hover{background:rgba(91,155,255,.22);}
   .tcal-cell.nw{background:rgba(91,155,255,.16);}.tcal-cell.nw.on{background:rgba(91,155,255,.28);}
@@ -421,6 +459,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
   <div class="seg">
     <button data-tab="aseos" class="active">Aseos</button>
     <button data-tab="taller">Taller</button>
+    <button data-tab="llantas">Llantas</button>
     <button data-tab="ajustes">Ajustes</button>
   </div>
 
@@ -613,7 +652,22 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
       </div>
       <div class="rangeinfo" id="tRangeInfo">—</div>
     </div>
-    <div id="tallerBody" class="dash">
+    <div id="tallerBody" class="dash"></div>
+  </div>
+
+  <!-- ============ LLANTAS (inspecciones) ============ -->
+  <div id="tab-llantas" class="hidden">
+    <div class="section">
+      <div id="llDrop" class="lldrop">
+        <div class="ic">🛞</div>
+        <h3>Arrastra aquí los CSV de inspección de llantas</h3>
+        <p>Suelta uno o varios archivos <b>vehiculos_export_*.csv</b>. La fecha de inspección se toma del nombre del archivo. Los datos quedan guardados en este dispositivo.</p>
+        <span class="llbtn">Seleccionar archivos…</span>
+        <input type="file" id="llFile" accept=".csv,text/csv" multiple style="display:none">
+        <div class="llmeta" id="llMeta"></div>
+      </div>
+    </div>
+    <div id="llBody" class="dash"></div>
   </div>
 
   <!-- ============ AJUSTES ============ -->
@@ -1859,6 +1913,167 @@ function processTaller(rows){
 /* extrae la hora (0-23) de una marca temporal "DD/MM/YYYY HH:MM:SS"; null si no hay */
 function horaDe(s){const m=String(s||'').match(/\d{1,2}\/\d{1,2}\/\d{2,4}[ ,]+(\d{1,2}):(\d{2})(?::\d{2})?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/i);if(!m)return null;let h=+m[1];const ap=(m[3]||'').toLowerCase().replace(/[.\s]/g,'');if(ap==='pm'&&h<12)h+=12;if(ap==='am'&&h===12)h=0;return (h>=0&&h<24)?h:null;}
 
+/* ================= INSPECCIONES DE LLANTAS (CSV arrastrados, guardados local) ================= */
+const LS_LLANTAS='tecc_llantas_v1';
+let llSurcoChart, llMarcaChart;
+function llLoad(){try{return JSON.parse(localStorage.getItem(LS_LLANTAS)||'[]')||[];}catch(e){return [];}}
+function llSave(rows){localStorage.setItem(LS_LLANTAS,JSON.stringify(rows));}
+function llNum(x){const v=parseFloat(String(x==null?'':x).replace(',','.'));return isNaN(v)?null:v;}
+/* CSV → matriz, respetando comillas (campos como "90,90") */
+function parseCSV(text){
+  const rows=[];let field='',row=[],inQ=false;text=String(text||'').replace(/\r\n?/g,'\n');
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(inQ){if(c==='"'){if(text[i+1]==='"'){field+='"';i++;}else inQ=false;}else field+=c;continue;}
+    if(c==='"'){inQ=true;continue;}
+    if(c===','){row.push(field);field='';continue;}
+    if(c==='\n'){row.push(field);rows.push(row);row=[];field='';continue;}
+    field+=c;}
+  if(field.length||row.length){row.push(field);rows.push(row);}
+  return rows;
+}
+function llFechaFromName(name){const m=(name||'').match(/(\d{10,})/);if(m){let n=+m[1];if(n<1e12)n*=1000;const d=new Date(n);if(!isNaN(d.getTime()))return ymdOf(d);}return null;}
+function llParseFile(name,text,lastModified){
+  const arr=parseCSV(text); if(arr.length<2) return [];
+  const H={}; arr[0].forEach((h,i)=>{H[norm(h).replace(/\s+/g,'')]=i;});
+  const g=(row,key)=>{const i=H[key];return (i!=null&&i<row.length)?String(row[i]||'').trim():'';};
+  const fecha=llFechaFromName(name)||(lastModified?ymdOf(new Date(lastModified)):ymdOf(new Date()));
+  const out=[];
+  for(let r=1;r<arr.length;r++){
+    const row=arr[r]; if(!row||!row.some(c=>(c||'').trim()))continue;
+    const placa=g(row,'placa').toUpperCase(); if(!placa)continue;
+    const pos=g(row,'posicion');
+    out.push({key:fecha+'|'+placa+'|'+pos, fecha, placa,
+      idExterno:g(row,'idexterno'), marcaVeh:g(row,'marcavehiculo'), modeloVeh:g(row,'modelovehiculo'), tipoVeh:g(row,'tipo'),
+      pos, marca:g(row,'marcallanta'), diseno:g(row,'disenollanta'), dim:g(row,'dimensionllanta'),
+      vida:g(row,'vida'), profIni:llNum(g(row,'profundidadinicialllanta')),
+      s1:llNum(g(row,'surco1')), s2:llNum(g(row,'surco2')), s3:llNum(g(row,'surco3')),
+      surcoMin:llNum(g(row,'surcominimo')), difMin:llNum(g(row,'diferenciaminimasurco')),
+      presDes:g(row,'presionesdeseadas'), presAire:llNum(g(row,'presionaire')),
+      km:llNum(g(row,'kmvehiculo')), obs:g(row,'observacionesultimainspeccion'), notas:g(row,'notasultimainspeccion')});
+  }
+  return out;
+}
+function llIngest(files,done){
+  const arr=[...files].filter(f=>/\.csv$/i.test(f.name)||(f.type||'').includes('csv'));
+  if(!arr.length){toast('Arrastra archivos .csv');return;}
+  let pend=arr.length; const byKey={}; llLoad().forEach(r=>byKey[r.key]=r);
+  let added=0; const fechas=new Set();
+  const fin=()=>{ if(--pend===0){ llSave(Object.values(byKey)); done&&done(added,[...fechas]); } };
+  arr.forEach(f=>{const rd=new FileReader();
+    rd.onload=()=>{ try{ llParseFile(f.name,rd.result,f.lastModified).forEach(r=>{ if(!(r.key in byKey))added++; byKey[r.key]=r; fechas.add(r.fecha); }); }catch(e){console.error('CSV',e);} fin(); };
+    rd.onerror=fin; rd.readAsText(f);
+  });
+}
+function wireLlantaDrop(){
+  const dz=$('#llDrop'), inp=$('#llFile'); if(!dz||dz.dataset.wired)return; dz.dataset.wired='1';
+  const onFiles=fs=>llIngest(fs,(added,fechas)=>{ toast(added+' mediciones cargadas'); renderLlantas(); });
+  dz.addEventListener('click',e=>{ if(e.target.id!=='llFile') inp.click(); });
+  inp.addEventListener('change',()=>{ if(inp.files.length) onFiles(inp.files); inp.value=''; });
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();if(ev==='dragleave'&&dz.contains(e.relatedTarget))return;dz.classList.remove('drag');}));
+  dz.addEventListener('drop',e=>{ const fs=e.dataTransfer&&e.dataTransfer.files; if(fs&&fs.length) onFiles(fs); });
+}
+const LL_SURCO=v=>v==null?null:Math.min(...v);
+function renderLlantas(){
+  const body=$('#llBody'); if(!body)return;
+  const all=llLoad(); const meta=$('#llMeta');
+  if(!all.length){ if(meta)meta.textContent=''; body.innerHTML='<div class="section"><div class="card"><div class="empty"><div class="ic">🛞</div><h3>Aún no has cargado inspecciones</h3><div>Arrastra los CSV de inspección de llantas en la zona de arriba para ver el análisis.</div></div></div></div>'; return; }
+  const surco=r=>{const xs=[r.s1,r.s2,r.s3].filter(v=>v!=null);return xs.length?Math.min(...xs):null;};
+  const spread=r=>{const xs=[r.s1,r.s2,r.s3].filter(v=>v!=null);return xs.length>1?(Math.max(...xs)-Math.min(...xs)):null;};
+  const lim=r=>r.surcoMin!=null?r.surcoMin:2;
+  const fechas=[...new Set(all.map(r=>r.fecha))].sort();
+  const placas=[...new Set(all.map(r=>r.placa))].sort();
+  // estado actual = última inspección por placa
+  const lastByPlaca={}; all.forEach(r=>{ if(!lastByPlaca[r.placa]||r.fecha>lastByPlaca[r.placa]) lastByPlaca[r.placa]=r.fecha; });
+  const cur=all.filter(r=>r.fecha===lastByPlaca[r.placa]);
+  if(meta) meta.innerHTML=`<b>${all.length}</b> mediciones · <b>${fechas.length}</b> inspección(es) · <b>${placas.length}</b> vehículos · última ${fmtD(fechas[fechas.length-1])} · <button id="llClear" class="calfilter-clr" style="color:var(--red);text-transform:none">Borrar todo</button>`;
+  const clr=$('#llClear'); if(clr) clr.onclick=()=>{ if(confirm('¿Borrar todas las inspecciones de llantas cargadas?')){localStorage.removeItem(LS_LLANTAS);renderLlantas();} };
+
+  let crit=0,aler=0,ok=0,irr=0,presFuera=0,reenc=0,nuevas=0,sumSurco=0,nSurco=0;
+  const critList=[],irrList=[],marca={},byVeh={},buckets=[0,0,0,0,0,0];
+  cur.forEach(r=>{
+    const sm=surco(r);
+    if(sm!=null){ sumSurco+=sm;nSurco++;
+      if(sm<=lim(r)){crit++;critList.push(Object.assign({sm},r));} else if(sm<=lim(r)+2){aler++;} else ok++;
+      const bi=sm<=2?0:sm<=4?1:sm<=6?2:sm<=8?3:sm<=10?4:5; buckets[bi]++;
+    }
+    const sp=spread(r); if(sp!=null&&r.difMin!=null&&sp>=r.difMin){irr++;irrList.push(Object.assign({sp,sm},r));}
+    const des=r.presDes?llNum(String(r.presDes).split(/[;,]/)[0]):null;
+    if(des&&r.presAire!=null&&des>0&&Math.abs(r.presAire-des)/des>0.12)presFuera++;
+    if(/^r/i.test(r.vida||''))reenc++; else if(r.vida)nuevas++;
+    if(r.marca){const m=marca[r.marca]||(marca[r.marca]={n:0,sum:0,cnt:0});m.n++;if(sm!=null){m.sum+=sm;m.cnt++;}}
+    const v=byVeh[r.placa]||(byVeh[r.placa]={placa:r.placa,id:r.idExterno,n:0,crit:0,min:99});
+    v.n++; if(sm!=null){v.min=Math.min(v.min,sm); if(sm<=lim(r))v.crit++;}
+  });
+  const promSurco=nSurco?sumSurco/nSurco:0, totLlantas=cur.length, totReenc=reenc+nuevas;
+
+  const H=[];
+  // 1) HERO + KPIs
+  H.push(`<div class="section span2">
+    <div class="hero">
+      <div class="chip">${fmtD(fechas[fechas.length-1])}</div>
+      <div class="cap">Estado de llantas de la flota · última inspección</div>
+      <div class="num">${crit}</div>
+      <div class="sub">llanta${crit===1?'':'s'} crítica${crit===1?'':'s'} (≤ surco mínimo) de ${totLlantas} medidas en ${placas.length} vehículos</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Llantas medidas</div><div class="v">${totLlantas}</div></div>
+      <div class="kpi"><div class="k">Surco promedio</div><div class="v small">${promSurco.toFixed(1)} mm</div></div>
+      <div class="kpi"><div class="k">Desgaste irregular</div><div class="v" style="color:${irr?'var(--orange)':'inherit'}">${irr}</div></div>
+      <div class="kpi"><div class="k">Reencauchadas</div><div class="v small">${reenc}/${totReenc||0}</div></div>
+    </div>
+  </div>`);
+
+  // 2) SEMÁFORO + distribución
+  H.push(`<div class="section span2">
+    <div class="section-hero">Semáforo de surco</div>
+    <div class="llsem">
+      <div class="llsem-c r"><div class="n">${crit}</div><div class="l">Críticas · cambiar ya<br>(≤ surco mínimo)</div></div>
+      <div class="llsem-c a"><div class="n">${aler}</div><div class="l">Por cambiar pronto<br>(hasta +2 mm del límite)</div></div>
+      <div class="llsem-c g"><div class="n">${ok}</div><div class="l">En buen estado</div></div>
+    </div>
+    <div class="card chartbox" style="margin-top:12px"><div class="cwrap"><canvas id="llSurcoChart"></canvas></div></div>
+  </div>`);
+
+  // 3) Críticas + 4) irregular (lado a lado en escritorio)
+  const critHtml=critList.sort((a,b)=>a.sm-b.sm).slice(0,40).map(r=>`<div class="lltire">
+    <div class="pl">${r.placa}</div><div class="pos">P${r.pos}</div>
+    <div class="inf">${r.marca||'—'} ${r.diseno||''}<small>${r.dim||''}${r.idExterno?' · N° '+r.idExterno:''}</small></div>
+    <div class="sv r">${r.sm} mm<small>mín ${lim(r)}</small></div></div>`).join('')||'<div class="empty">Sin llantas críticas 🎉</div>';
+  H.push(`<div class="section"><div class="section-h">Llantas críticas (cambiar ya)</div><div class="card">${critHtml}</div></div>`);
+  const irrHtml=irrList.sort((a,b)=>b.sp-a.sp).slice(0,40).map(r=>`<div class="lltire">
+    <div class="pl">${r.placa}</div><div class="pos">P${r.pos}</div>
+    <div class="inf">${r.s1}/${r.s2}/${r.s3} mm<small>${r.obs||'posible alineación/suspensión'}</small></div>
+    <div class="sv a">Δ${r.sp}<small>máx ${r.difMin}</small></div></div>`).join('')||'<div class="empty">Sin desgaste irregular</div>';
+  H.push(`<div class="section"><div class="section-h">Desgaste irregular (revisar alineación)</div><div class="card">${irrHtml}</div></div>`);
+
+  // 5) por marca + 6) por vehículo
+  const me=Object.entries(marca).sort((a,b)=>b[1].n-a[1].n).slice(0,10);
+  if(me.length) H.push(`<div class="section"><div class="section-h">Llantas por marca</div><div class="card chartbox"><div class="cwrap"><canvas id="llMarcaChart"></canvas></div></div></div>`);
+  const ve=Object.values(byVeh).sort((a,b)=>a.min-b.min).slice(0,12);
+  const vehHtml=ve.map(v=>{const cls=v.min<=2?'r':v.min<=4?'a':'g';return `<div class="lltire">
+    <div class="pl">${v.placa}</div>
+    <div class="inf">${v.id?'N° '+v.id+' · ':''}${v.n} llantas medidas${v.crit?` · <b style="color:var(--red)">${v.crit} crítica${v.crit===1?'':'s'}</b>`:''}</div>
+    <div class="sv ${cls}">${v.min} mm<small>peor llanta</small></div></div>`;}).join('');
+  H.push(`<div class="section"><div class="section-h">Vehículos por atender (peor llanta)</div><div class="card">${vehHtml}</div></div>`);
+
+  // 7) CALENDARIO placas × días
+  const byFP={}; all.forEach(r=>{const k=r.fecha+'|'+r.placa;const o=byFP[k]||(byFP[k]={n:0,crit:0});o.n++;const sm=surco(r);if(sm!=null&&sm<=lim(r))o.crit++;});
+  const head=`<div class="llcal-row llcal-headrow"><div class="llcal-d">Fecha</div>${placas.map(p=>`<div class="llcal-h"><span>${p}</span></div>`).join('')}</div>`;
+  const crows=fechas.slice().reverse().map(f=>`<div class="llcal-row"><div class="llcal-d">${fmtDShort(f)}<small>${f.slice(0,4)}</small></div>${placas.map(p=>{const o=byFP[f+'|'+p];return o?`<div class="llcal-cell ${o.crit?'crit':'on'}" title="${p} · ${fmtD(f)} · ${o.n} llantas${o.crit?' · '+o.crit+' críticas':''}">${o.crit||'✓'}</div>`:'<div class="llcal-cell"></div>';}).join('')}</div>`).join('');
+  H.push(`<div class="section span2"><div class="section-hero">Calendario de inspecciones</div>
+    <div class="note" style="margin:-4px 4px 9px">Una fila por día de inspección; una columna por placa. <b style="color:var(--green)">Verde</b> = inspeccionada · <b style="color:var(--red)">rojo</b> = ese día tenía llantas críticas (muestra cuántas).</div>
+    <div class="card" style="padding:10px"><div class="llcal-scroll">${head}${crows}</div></div>
+    <div class="llcal-legend"><span><i style="background:var(--green)"></i>Inspeccionada</span><span><i style="background:var(--red)"></i>Con llantas críticas</span><span><i style="background:var(--ios-bg)"></i>Sin inspección ese día</span></div>
+  </div>`);
+
+  body.innerHTML=H.join('');
+  // charts
+  const bcol=['#FF3B30','#FF9F0A','#F2C94C','#7FC77F','#34C759','#1e8449'];
+  tBar('llSurcoChart',['≤2','3-4','5-6','7-8','9-10','≥11'],buckets,c=>llSurcoChart=c,llSurcoChart,{colors:bcol,unit:' llantas'});
+  if(me.length) tBar('llMarcaChart',me.map(e=>e[0]),me.map(e=>e[1].n),c=>llMarcaChart=c,llMarcaChart,{horizontal:true,colors:'#2E5E9E',unit:' llantas',thick:22});
+}
+
 function apiKey(){return ((localStorage.getItem(LS_APIKEY)||'').trim())||APIKEY_DEFAULT;}
 function setLiveStatus(m){const el=$('#liveStatus'); if(el) el.textContent=m;}
 async function fetchSheet(id,key){
@@ -1922,15 +2137,16 @@ document.querySelectorAll('.subseg button').forEach(b=>b.onclick=()=>switchSub(b
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
-  ['aseos','taller','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
+  ['aseos','taller','llantas','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
   if(b.dataset.tab==='aseos' && curSub==='general') renderCalendar();
   if(b.dataset.tab==='taller') renderTaller();   // re-render para dimensionar los gráficos al hacerse visible
+  if(b.dataset.tab==='llantas') renderLlantas();
   window.scrollTo({top:0,behavior:'smooth'});
 });
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
 
 /* ---------- init ---------- */
-buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive();
+buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas();
 /* si hay API key guardada, intenta traer datos en vivo al abrir */
 if(apiKey()) refreshLive();
 </script>
