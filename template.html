@@ -8,6 +8,7 @@
 <style>
 :root{
   --tecc-azul:#0A2342; --tecc-amarillo:#F2C94C;
+  --tecc-verde:#00A14B; --tecc-lima:#9BCA3C; --tecc-rojo:#ED1C24;
   --ios-bg:#F2F2F7; --ios-bg2:#FFFFFF; --ios-sep:rgba(60,60,67,0.18);
   --ios-label:#1C1C1E; --ios-label2:#3C3C43; --ios-label3:#8E8E93;
   --tint:#0A2342; --green:#34C759; --red:#FF3B30; --orange:#FF9500;
@@ -30,7 +31,8 @@ body{
 .eyebrow{font-size:13px;font-weight:600;color:var(--ios-label3);letter-spacing:.3px;text-transform:uppercase;}
 h1.big{font-size:34px;line-height:1.1;font-weight:800;letter-spacing:-.5px;margin:2px 0 2px;padding-right:50px;}
 .subtitle{font-size:14px;color:var(--ios-label3);margin-bottom:10px;}
-.brandbar{height:4px;width:54px;border-radius:2px;background:linear-gradient(90deg,var(--tecc-azul),var(--tecc-amarillo));margin:6px 0 14px;}
+.brandbar{height:4px;width:72px;border-radius:2px;background:linear-gradient(90deg,var(--tecc-verde),var(--tecc-lima) 55%,var(--tecc-rojo));margin:6px 0 14px;}
+.brandlogo{display:none;height:34px;width:auto;margin:0 0 4px;}
 /* ===== Segmented control ===== */
 .seg{display:flex;background:#E9E9EB;border-radius:12px;padding:2px;gap:2px;position:sticky;top:8px;z-index:20;box-shadow:0 1px 0 rgba(255,255,255,.6) inset;}
 .seg button{flex:1;border:0;background:transparent;font-size:14px;font-weight:600;color:var(--ios-label);padding:8px 6px;border-radius:10px;cursor:pointer;transition:.18s;}
@@ -425,16 +427,18 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cd-fnote{font-size:11px;color:var(--ios-label3);line-height:1.4;margin-top:10px;}
 .cd-fnote b{color:var(--ios-label2);}
 /* ===== Intro animado: el bus TECC arranca al hacer scroll ===== */
-#intro{position:relative;height:100vh;min-height:540px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;background:linear-gradient(160deg,#0A2342 0%,#143257 55%,#0A2342 100%);}
+#intro{position:relative;height:100vh;min-height:540px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;background:var(--ios-bg);}
 #intro .ibus{width:min(80vw,660px);will-change:transform,opacity;}
-#intro .ibus svg{width:100%;height:auto;display:block;filter:drop-shadow(0 20px 28px rgba(0,0,0,.4));}
-#intro .ititle{color:#fff;margin-top:14px;will-change:transform,opacity;padding:0 18px;}
-#intro .ieye{font-size:13px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--tecc-amarillo);}
+#intro .ibus svg,#intro .ibus-img{width:100%;height:auto;display:block;filter:drop-shadow(0 18px 26px rgba(0,0,0,.18));}
+#intro .ibus-img{display:none;border-radius:14px;}
+#intro .ititle{color:var(--ios-label);margin-top:16px;will-change:transform,opacity;padding:0 18px;}
+#intro .ilogo{display:none;height:38px;width:auto;margin:0 auto 10px;}
+#intro .ieye{font-size:13px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--tecc-verde);}
 #intro .ibig{font-size:clamp(30px,6.2vw,54px);font-weight:800;letter-spacing:-.5px;margin:5px 0 6px;line-height:1.04;}
-#intro .isub{font-size:15px;opacity:.85;}
-#intro .iroad{position:absolute;left:0;right:0;bottom:74px;height:3px;opacity:.45;background:repeating-linear-gradient(90deg,rgba(255,255,255,.7) 0 30px,transparent 30px 60px);}
-#intro .ihint{position:absolute;left:0;right:0;bottom:24px;color:#fff;opacity:.85;font-size:12.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;}
-#intro .ihint .chev{font-size:22px;line-height:1;display:block;margin-top:5px;animation:ichev 1.5s infinite;}
+#intro .isub{font-size:15px;color:var(--ios-label3);}
+#intro .iroad{position:absolute;left:0;right:0;bottom:74px;height:3px;opacity:.6;background:repeating-linear-gradient(90deg,var(--ios-sep) 0 30px,transparent 30px 60px);}
+#intro .ihint{position:absolute;left:0;right:0;bottom:24px;color:var(--ios-label3);font-size:12.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;}
+#intro .ihint .chev{font-size:22px;line-height:1;display:block;margin-top:5px;color:var(--tecc-verde);animation:ichev 1.5s infinite;}
 @keyframes ichev{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
 .wheel{transform-box:fill-box;transform-origin:center;}
 @media (min-width:1024px){ #intro .ibus{width:min(62vw,720px);} }
@@ -480,7 +484,8 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 <!-- ===== Intro: bus TECC que arranca al hacer scroll ===== -->
 <div id="intro">
   <div class="ibus">
-    <svg viewBox="0 0 480 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bus TECC">
+    <img class="ibus-img" src="bus.png" alt="Bus TECC" onload="this.style.display='block';var s=document.getElementById('busSvg');if(s)s.style.display='none';">
+    <svg id="busSvg" viewBox="0 0 480 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bus TECC">
       <ellipse cx="248" cy="190" rx="205" ry="13" fill="rgba(0,0,0,.28)"/>
       <!-- carrocería -->
       <path d="M44 170 L44 92 C44 66 62 54 96 52 L432 52 C454 52 462 64 462 88 L462 170 Z" fill="#ffffff" stroke="#0A2342" stroke-width="4" stroke-linejoin="round"/>
@@ -509,6 +514,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
     </svg>
   </div>
   <div class="ititle">
+    <img class="ilogo" src="logo.png" alt="TECC" onload="this.style.display='block'">
     <div class="ieye">Equipo de Mantenimiento</div>
     <div class="ibig">Mantenimiento TECC</div>
     <div class="isub">Aseos · Taller · Llantas — Grupo William Gasca</div>
@@ -520,6 +526,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 <div class="wrap">
   <div class="top">
     <button class="refresh-btn" id="topRefresh" title="Actualizar en vivo" aria-label="Actualizar en vivo">↻</button>
+    <img class="brandlogo" src="logo.png" alt="TECC" onload="this.style.display='block'">
     <div class="eyebrow">Equipo de Mantenimiento</div>
     <h1 class="big">Mantenimiento TECC</h1>
     <div class="subtitle" id="subt">Aseos de vehículos · Taller interno</div>
@@ -2258,15 +2265,17 @@ function wireIntro(){
   window.scrollTo(0,0);
   const bus=intro.querySelector('.ibus'), title=intro.querySelector('.ititle'), hint=intro.querySelector('.ihint');
   const wheels=[...intro.querySelectorAll('.wheel')];
-  let tick=false;
+  let tick=false, introDone=false;
   function upd(){
-    tick=false;
+    tick=false; if(introDone) return;
     const h=intro.offsetHeight||window.innerHeight;
     const p=Math.min(1,Math.max(0,window.scrollY/h));     // 0 (arriba) → 1 (intro fuera)
     if(bus){ bus.style.transform='translateX('+(-p*138)+'%) scale('+(1-p*0.12)+')'; bus.style.opacity=String(1-Math.min(1,p*1.3)); }
     if(title){ title.style.transform='translateY('+(-p*60)+'px)'; title.style.opacity=String(Math.max(0,1-p*1.7)); }
     if(hint){ hint.style.opacity=String(Math.max(0,1-p*3)); }
     const deg=p*1440; wheels.forEach(w=>w.style.transform='rotate('+deg+'deg)');  // las ruedas giran
+    // al deslizar más allá del intro, se retira y ya no vuelve a aparecer (hasta reiniciar la app)
+    if(p>=0.85){ introDone=true; intro.style.display='none'; window.scrollTo(0,0); }
   }
   window.addEventListener('scroll',()=>{ if(!tick){tick=true;requestAnimationFrame(upd);} },{passive:true});
   window.addEventListener('resize',upd);
