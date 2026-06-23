@@ -191,7 +191,16 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .tcal-cell.sel{outline:2px solid var(--tecc-amarillo);outline-offset:1px;}
 .tcal-pl{background:var(--tecc-amarillo);color:#0A2342;font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:6px;font-variant-numeric:tabular-nums;line-height:1.5;}
 .tcal-pl.more{background:var(--tecc-azul);color:#fff;}
-@media (prefers-color-scheme:dark){.tcal-cell.on{background:rgba(91,155,255,.14);}.tcal-cell.on:hover{background:rgba(91,155,255,.22);}}
+/* domingos / festivos (azul claro) y sábado tarde (no laborable) */
+.tcal-cell.nw{background:#DCEBFF;}
+.tcal-cell.nw.on{background:#C2DBFF;}
+.tcal-day.dom,.tcal-day.fest{background:#DCEBFF;}
+.tcal-tag{display:block;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#2E6FB8;margin-top:1px;}
+@media (prefers-color-scheme:dark){
+  .tcal-cell.on{background:rgba(91,155,255,.14);}.tcal-cell.on:hover{background:rgba(91,155,255,.22);}
+  .tcal-cell.nw{background:rgba(91,155,255,.16);}.tcal-cell.nw.on{background:rgba(91,155,255,.28);}
+  .tcal-day.dom,.tcal-day.fest{background:rgba(91,155,255,.16);}.tcal-tag{color:#7FB3FF;}
+}
 .tcal-detail{margin-top:11px;background:var(--ios-bg2);border-radius:13px;padding:12px 14px;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.06);min-height:20px;}
 .tcd-top{font-size:13px;margin-bottom:9px;color:var(--ios-label);}
 .tcd-top b{color:var(--tint);}
@@ -1531,8 +1540,8 @@ function renderTaller(){
   // 5.5) CALENDARIO DE INTERVENCIONES (días × horas)
   H.push(`<div class="section span2">
     <div class="section-hero">Calendario de intervenciones</div>
-    <div class="note" style="margin:-4px 4px 9px">Una fila por <b>día</b>; a lo largo, <b>franjas fijas de 2 horas</b> (06–08 … 18–20) que <b>siempre se muestran</b>. Cada celda muestra la <b>placa</b> del vehículo intervenido. Las intervenciones nuevas del formulario caen en su franja según la <b>hora de inicio</b>; los informes históricos sin hora quedan en la primera columna <b>"Sin hora"</b>. Toca una celda para ver abajo la <b>descripción</b> de lo que se hizo y el vehículo.</div>
-    <div class="card" style="padding:10px 10px 12px">${buildTallerCal(recs)}</div>
+    <div class="note" style="margin:-4px 4px 9px">Aparecen <b>todos los días</b> del periodo (incluidos fines de semana y festivos), uno por fila; a lo largo, <b>franjas fijas de 2 horas</b> (06–08 … 18–20). Cada celda muestra la <b>placa</b> del vehículo; las del formulario caen según su <b>hora de inicio</b> y las históricas sin hora van en <b>"Sin hora"</b>. <b style="color:#2E6FB8">Azul claro</b> = no laborable: <b>domingos y festivos</b> (todo el día) y <b>sábados después de las 12 m.</b> Toca una celda para ver la <b>descripción</b> y el vehículo.</div>
+    <div class="card" style="padding:10px 10px 12px">${buildTallerCal(recs,R)}</div>
     <div class="tcal-detail" id="tCalDetail">Toca una celda con número para ver las intervenciones de ese día.</div>
   </div>`);
 
@@ -1609,32 +1618,40 @@ const TDIAS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 function tCalDayLabel(ymd){const[y,mo,da]=ymd.split('-').map(Number);const dt=new Date(y,mo-1,da);const MN=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return `<b>${da} ${MN[mo-1]}</b> <small>${TDIAS[dt.getDay()]} ${String(y).slice(2)}</small>`;}
 // franjas FIJAS de 2 horas (06–08 … 18–20). Siempre se muestran TODAS, aunque estén vacías.
 const TCAL_SLOTS=[6,8,10,12,14,16,18];
+// Festivos de Colombia (Ley Emiliani). Domingos y festivos = azul claro; sábado se trabaja hasta las 12.
+const FESTIVOS_CO=new Set(['2026-01-01','2026-01-12','2026-03-23','2026-04-02','2026-04-03','2026-05-01','2026-05-18','2026-06-08','2026-06-15','2026-06-29','2026-07-20','2026-08-07','2026-08-17','2026-10-12','2026-11-02','2026-11-16','2026-12-08','2026-12-25']);
 function slotOf(h){ if(h==null||h==='') return 'sh'; let s=Math.floor(h/2)*2; const lo=TCAL_SLOTS[0],hi=TCAL_SLOTS[TCAL_SLOTS.length-1]; if(s<lo)s=lo; if(s>hi)s=hi; return String(s); }
 function slotLabel(c){ if(c==='sh') return 'Sin hora'; const a=+c; return String(a).padStart(2,'0')+'–'+String(a+2).padStart(2,'0'); }
-function buildTallerCal(recs){
+function buildTallerCal(recs,R){
   tCalIndex={};
-  const days=new Set();
   recs.forEach(r=>{
     if(!r.fecha) return;
-    days.add(r.fecha);
     const sk=slotOf(r.hora!=null&&r.hora!=='' ? +r.hora : null);   // a su franja de 2h, o "Sin hora"
-    const key=r.fecha+'|'+sk;
-    (tCalIndex[key]=tCalIndex[key]||[]).push(r);
+    (tCalIndex[r.fecha+'|'+sk]=tCalIndex[r.fecha+'|'+sk]||[]).push(r);
   });
-  const dayList=[...days].sort().reverse();                // día más reciente arriba
+  // TODOS los días del periodo (incluye fines de semana y festivos), más reciente arriba
+  let dayList=null;
+  if(R&&R.start&&R.end){
+    const s=parseDate(R.start),e=parseDate(R.end),n=Math.round((e-s)/86400000)+1;
+    if(n>0&&n<=400){ dayList=[]; for(let i=n-1;i>=0;i--) dayList.push(ymdOf(addDays(s,i))); }
+  }
+  if(!dayList) dayList=[...new Set(recs.map(r=>r.fecha).filter(Boolean))].sort().reverse();
   if(!dayList.length) return '<div class="cal-empty">Sin intervenciones con fecha en este periodo.</div>';
   const cols=['sh',...TCAL_SLOTS.map(String)];             // columnas FIJAS: "Sin hora" + todas las franjas
   const head=`<div class="tcal-row tcal-headrow"><div class="tcal-day">Día</div>`+
     cols.map(c=>`<div class="tcal-ch">${slotLabel(c)}</div>`).join('')+`</div>`;
   const rows=dayList.map(d=>{
+    const dow=parseDate(d).getDay(), fest=FESTIVOS_CO.has(d), dom=(dow===0), sab=(dow===6);
+    const dayCls=dom?' dom':(fest?' fest':''), tag=dom?'<span class="tcal-tag">Domingo</span>':(fest?'<span class="tcal-tag">Festivo</span>':'');
     const cells=cols.map(c=>{
       const list=tCalIndex[d+'|'+c]||[];
-      if(!list.length) return `<div class="tcal-cell"></div>`;
+      const nw = c!=='sh' && (dom||fest||(sab&&+c>=12));   // no laborable: dom/festivo (todo el día) o sábado tarde
+      if(!list.length) return `<div class="tcal-cell${nw?' nw':''}"></div>`;
       const shown=list.slice(0,3).map(r=>`<span class="tcal-pl">${r.placa||'—'}</span>`).join('');
       const more=list.length>3?`<span class="tcal-pl more">+${list.length-3}</span>`:'';
-      return `<div class="tcal-cell on" data-key="${d}|${c}">${shown}${more}</div>`;
+      return `<div class="tcal-cell on${nw?' nw':''}" data-key="${d}|${c}">${shown}${more}</div>`;
     }).join('');
-    return `<div class="tcal-row"><div class="tcal-day">${tCalDayLabel(d)}</div>${cells}</div>`;
+    return `<div class="tcal-row"><div class="tcal-day${dayCls}">${tCalDayLabel(d)}${tag}</div>${cells}</div>`;
   }).join('');
   return `<div class="tcal-scroll">${head}${rows}</div>`;
 }
