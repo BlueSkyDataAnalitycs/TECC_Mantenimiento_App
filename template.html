@@ -7,6 +7,9 @@
 <meta name="theme-color" content="#00A14B">
 <title>Mantenimiento TECC</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --tecc-azul:#0A2342; --tecc-amarillo:#F2C94C;
@@ -25,10 +28,19 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;padding:0;}
 body{
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",system-ui,sans-serif;
-  background:var(--ios-bg); color:var(--ios-label);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  font-weight:400; letter-spacing:.1px; color:var(--ios-label);
+  background:
+    radial-gradient(1100px 640px at 6% -10%, rgba(0,161,75,.26), transparent 58%),
+    radial-gradient(1050px 600px at 98% -6%, rgba(11,124,143,.30), transparent 58%),
+    radial-gradient(820px 540px at 78% 30%, rgba(44,182,209,.16), transparent 55%),
+    radial-gradient(960px 760px at 42% 116%, rgba(155,202,60,.22), transparent 58%),
+    var(--ios-bg);
+  background-attachment:fixed;
   -webkit-font-smoothing:antialiased; padding-bottom:90px;
 }
+/* === Tipografía tech === */
+h1.big,.ibig,.section-hero,.hero .num,.kpi .v,.num{font-family:'Space Grotesk','Inter',system-ui,sans-serif;}
 .wrap{max-width:760px;margin:0 auto;padding:0 16px;}
 /* ===== Header ===== */
 .top{padding:14px 0 4px;position:relative;}
@@ -510,6 +522,30 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,.f
   #sub-lavador,#sub-conductores,#sub-proveedores,#sub-facturas,#sub-general{animation:viewIn .44s cubic-bezier(.2,.7,.3,1) both;}
 }
 @keyframes viewIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+/* ===== Glassmorphism tech: casillas cristalinas ===== */
+.card,.kpi,.cc-card,.cc404,.calfilter,.cal-wrap,.tcal-detail,.cal-detail{
+  background:rgba(255,255,255,.55);
+  -webkit-backdrop-filter:blur(16px) saturate(165%); backdrop-filter:blur(16px) saturate(165%);
+  border:1px solid rgba(255,255,255,.65);
+  box-shadow:0 10px 30px rgba(16,40,30,.08), inset 0 1px 0 rgba(255,255,255,.55);
+}
+.seg{background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.6);box-shadow:0 6px 20px rgba(16,40,30,.07);}
+.seg button.active{background:rgba(255,255,255,.95);box-shadow:0 2px 10px rgba(16,40,30,.14);}
+.subseg button{background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.55);}
+.chip-btn{background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
+@media (hover:hover){ .kpi:hover,.cc-card:hover{background:rgba(255,255,255,.74);} }
+/* ===== Tipografía fina + títulos rediseñados ===== */
+h1.big{font-weight:600;letter-spacing:-1.2px;}
+.hero .num,.num{font-weight:600;letter-spacing:-1px;}
+.kpi .v{font-weight:600;}
+.eyebrow{font-weight:600;letter-spacing:2.6px;}
+.section-hero{font-weight:600;letter-spacing:-.2px;position:relative;padding-left:14px;}
+.section-hero::before{content:"";position:absolute;left:0;top:.18em;bottom:.18em;width:4px;border-radius:3px;background:linear-gradient(var(--tecc-verde),var(--tecc-lima));}
+.section-h{font-weight:600;letter-spacing:1.4px;}
+.seg button,.subseg button{font-weight:500;}
+.subtitle,.note{font-weight:400;}
+/* logotipo TECC (texto con gradiente de marca) */
+.logotype{background:linear-gradient(92deg,var(--tecc-verde),var(--tecc-lima) 50%,var(--tecc-rojo));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;letter-spacing:.5px;}
 @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;} }
 @media (prefers-color-scheme:dark) and (min-width:100000px){
   :root{--ios-bg:#0b0c0e;--ios-bg2:#17191d;--ios-sep:rgba(130,135,145,.22);--ios-label:#fff;--ios-label2:#EBEBF5;--tint:#5B9BFF;
@@ -557,7 +593,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,.f
   <div class="ititle">
     <img class="ilogo" src="logo.png" alt="TECC" onload="this.style.display='block'">
     <div class="ieye">Equipo de Mantenimiento</div>
-    <div class="ibig">Mantenimiento TECC</div>
+    <div class="ibig">Mantenimiento <span class="logotype">TECC</span></div>
     <div class="isub">Aseos · Taller · Llantas — Grupo William Gasca</div>
   </div>
   <div class="iroad"></div>
@@ -569,7 +605,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,.f
     <button class="refresh-btn" id="topRefresh" title="Actualizar en vivo" aria-label="Actualizar en vivo">↻</button>
     <img class="brandlogo" src="logo.png" alt="TECC" onload="this.style.display='block'">
     <div class="eyebrow">Equipo de Mantenimiento</div>
-    <h1 class="big">Mantenimiento TECC</h1>
+    <h1 class="big">Mantenimiento <span class="logotype">TECC</span></h1>
     <div class="subtitle" id="subt">Aseos de vehículos · Taller interno</div>
     <div class="brandbar"></div>
   </div>
