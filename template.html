@@ -3,16 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#00A14B">
 <title>Mantenimiento TECC</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 :root{
   --tecc-azul:#0A2342; --tecc-amarillo:#F2C94C;
   --tecc-verde:#00A14B; --tecc-lima:#9BCA3C; --tecc-rojo:#ED1C24;
-  --ios-bg:#F2F2F7; --ios-bg2:#FFFFFF; --ios-sep:rgba(60,60,67,0.18);
-  --ios-label:#1C1C1E; --ios-label2:#3C3C43; --ios-label3:#8E8E93;
-  --tint:#0A2342; --green:#34C759; --red:#FF3B30; --orange:#FF9500;
-  --radius:18px;
+  --ios-bg:#EEF3F1; --ios-bg2:#FFFFFF; --ios-sep:rgba(16,40,30,0.10);
+  --ios-label:#16241C; --ios-label2:#3C4A42; --ios-label3:#7C8A82;
+  --tint:#00A14B; --green:#1FA85A; --red:#E5392E; --orange:#F08C1E;
+  --radius:22px;
   /* elevación premium en capas + estados (UI/UX pass) */
   --shadow-sm:0 1px 2px rgba(16,24,40,.06);
   --shadow-md:0 1px 2px rgba(16,24,40,.04), 0 6px 18px rgba(16,24,40,.07);
@@ -54,7 +56,8 @@ h1.big{font-size:34px;line-height:1.1;font-weight:800;letter-spacing:-.5px;margi
 .row .val{font-variant-numeric:tabular-nums;font-weight:600;font-size:16px;}
 .muted{color:var(--ios-label3);}
 /* KPI hero */
-.hero{background:linear-gradient(160deg,#0A2342 0%,#143257 100%);color:#fff;border-radius:22px;padding:20px;position:relative;overflow:hidden;}
+.hero{background:linear-gradient(135deg,#00A14B 0%,#0E8F5A 55%,#0B7C8F 100%);color:#fff;border-radius:24px;padding:24px;position:relative;overflow:hidden;}
+.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 88% -10%,rgba(255,255,255,.22),transparent 60%);pointer-events:none;}
 .hero .cap{font-size:13px;opacity:.8;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding-right:104px;}
 .hero .num{font-size:40px;font-weight:800;letter-spacing:-1px;margin-top:4px;font-variant-numeric:tabular-nums;}
 .hero .sub{font-size:14px;opacity:.85;margin-top:2px;}
@@ -183,7 +186,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cc-verdict{margin-top:10px;font-size:12px;font-weight:700;padding:7px 10px;border-radius:10px;line-height:1.3;}
 .cc-verdict.ok{background:rgba(52,199,89,.14);color:#1f8f43;}
 .cc-verdict.bad{background:rgba(255,59,48,.12);color:var(--red);}
-@media (prefers-color-scheme:dark){.cc-verdict.ok{color:#5fd07e;}}
+@media (prefers-color-scheme:dark) and (min-width:100000px){.cc-verdict.ok{color:#5fd07e;}}
 /* calendario de intervenciones (días × horas) */
 .tcal-scroll{overflow:auto;max-height:560px;-webkit-overflow-scrolling:touch;}
 .tcal-row{display:flex;gap:3px;align-items:stretch;width:max-content;}
@@ -269,8 +272,8 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .llpos.r{background:rgba(255,59,48,.16);} .llpos.r i{color:var(--red);}
 .llpos.a{background:rgba(255,149,0,.16);} .llpos.a i{color:var(--orange);}
 .llpos.g{background:rgba(52,199,89,.15);} .llpos.g i{color:#1e8449;}
-@media (prefers-color-scheme:dark){.llpos.g i{color:#34C759;}}
-@media (prefers-color-scheme:dark){
+@media (prefers-color-scheme:dark) and (min-width:100000px){.llpos.g i{color:#34C759;}}
+@media (prefers-color-scheme:dark) and (min-width:100000px){
   .tcal-cell.on{background:rgba(91,155,255,.14);}.tcal-cell.on:hover{background:rgba(91,155,255,.22);}
   .tcal-cell.nw{background:rgba(91,155,255,.16);}.tcal-cell.nw.on{background:rgba(91,155,255,.28);}
   .tcal-day.dom,.tcal-day.fest{background:rgba(91,155,255,.16);}.tcal-tag{color:#7FB3FF;}
@@ -301,7 +304,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .tlx-cost{width:104px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;border:1px solid var(--ios-sep);border-radius:9px;padding:7px 9px;background:var(--ios-bg2);color:var(--ios-label);}
 .tlx-cost:focus{outline:2px solid var(--tecc-azul);border-color:transparent;}
 .tlx-cost.edited{border-color:var(--tecc-amarillo);background:rgba(242,201,76,.14);font-weight:800;}
-@media (prefers-color-scheme:dark){.tlx-cost{background:#2C2C2E;}}
+@media (prefers-color-scheme:dark) and (min-width:100000px){.tlx-cost{background:#2C2C2E;}}
 /* ===== centro de costo imponente ===== */
 .section-hero{font-size:21px;font-weight:800;letter-spacing:-.4px;margin:0 4px 11px;}
 .cc-card{background:var(--ios-bg2);border-radius:18px;padding:15px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:11px;border-left:5px solid var(--tecc-azul);}
@@ -496,8 +499,19 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 }
 .seg button:active,.subseg button:active,.chip-btn:active,.fchip:active,.btn:active,.refresh-btn:active{transform:scale(.95);}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,.fchip:focus-visible{outline:2px solid var(--tint);outline-offset:2px;border-radius:9px;}
+.hero .cap,.hero .num,.hero .sub{position:relative;z-index:1;}
+.hero .chip{z-index:2;}
+/* dimensiones más amplias (rediseño claro) */
+.kpi{padding:17px 16px;} .kpi .v{font-size:27px;} .pad{padding:18px;} .section{margin:20px 0;}
+.section-hero{font-size:22px;} .seg{padding:3px;gap:3px;} .seg button{padding:10px 6px;}
+/* animación de entrada al mostrar pestaña/submódulo (no re-dispara en re-render interno) */
+@media (prefers-reduced-motion:no-preference){
+  #tab-aseos,#tab-taller,#tab-llantas,#tab-peajes,#tab-ajustes,
+  #sub-lavador,#sub-conductores,#sub-proveedores,#sub-facturas,#sub-general{animation:viewIn .44s cubic-bezier(.2,.7,.3,1) both;}
+}
+@keyframes viewIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
 @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;} }
-@media (prefers-color-scheme:dark){
+@media (prefers-color-scheme:dark) and (min-width:100000px){
   :root{--ios-bg:#0b0c0e;--ios-bg2:#17191d;--ios-sep:rgba(130,135,145,.22);--ios-label:#fff;--ios-label2:#EBEBF5;--tint:#5B9BFF;
     --shadow-sm:0 1px 2px rgba(0,0,0,.5); --shadow-md:0 2px 10px rgba(0,0,0,.55); --shadow-lg:0 14px 40px rgba(0,0,0,.6);
     --hover:rgba(255,255,255,.06); --cardbd:rgba(255,255,255,.07);}
