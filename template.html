@@ -453,18 +453,30 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cd-fnote{font-size:11px;color:var(--ios-label3);line-height:1.4;margin-top:10px;}
 .cd-fnote b{color:var(--ios-label2);}
 /* ===== Intro animado: el bus TECC arranca al hacer scroll ===== */
-#intro{position:relative;height:100vh;min-height:540px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;background:var(--ios-bg);}
-#intro .ibus{width:min(80vw,660px);will-change:transform,opacity;}
-#intro .ibus svg,#intro .ibus-img{width:100%;height:auto;display:block;filter:drop-shadow(0 18px 26px rgba(0,0,0,.18));}
+#intro{position:relative;height:100vh;min-height:560px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;
+  --imono:ui-monospace,'SF Mono',Menlo,'Roboto Mono',monospace;
+  background:#EDEAE3;
+  background-image:linear-gradient(rgba(20,30,25,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(20,30,25,.05) 1px,transparent 1px);
+  background-size:100% 25%,12.5% 100%;}
+#intro .iframe{position:absolute;inset:20px;border:1px solid rgba(20,30,25,.16);pointer-events:none;z-index:1;}
+#intro .iframe span{position:absolute;width:12px;height:12px;}
+#intro .iframe .tl{top:-6px;left:-6px;}#intro .iframe .tr{top:-6px;right:-6px;}#intro .iframe .bl{bottom:-6px;left:-6px;}#intro .iframe .br{bottom:-6px;right:-6px;}
+#intro .iframe span::before,#intro .iframe span::after{content:"";position:absolute;background:rgba(20,30,25,.5);}
+#intro .iframe span::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-.5px);}
+#intro .iframe span::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-.5px);}
+#intro .itop,#intro .ibot{position:absolute;left:36px;right:36px;display:flex;justify-content:space-between;gap:12px;font-family:var(--imono);font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:rgba(20,30,25,.55);z-index:3;}
+#intro .itop{top:34px;}#intro .ibot{bottom:62px;}
+#intro .ibus{width:min(82vw,620px);will-change:transform,opacity;position:relative;z-index:2;}
+#intro .ibus svg,#intro .ibus-img{width:100%;height:auto;display:block;filter:drop-shadow(0 26px 30px rgba(20,30,25,.20));}
 #intro .ibus-img{display:none;border-radius:14px;}
-#intro .ititle{color:var(--ios-label);margin-top:16px;will-change:transform,opacity;padding:0 18px;}
+#intro .ititle{color:#15201a;margin-top:10px;will-change:transform,opacity;padding:0 18px;position:relative;z-index:2;}
 #intro .ilogo{display:none;height:38px;width:auto;margin:0 auto 10px;}
-#intro .ieye{font-size:13px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--tecc-verde);}
-#intro .ibig{font-size:clamp(30px,6.2vw,54px);font-weight:800;letter-spacing:-.5px;margin:5px 0 6px;line-height:1.04;}
-#intro .isub{font-size:15px;color:var(--ios-label3);}
-#intro .iroad{position:absolute;left:0;right:0;bottom:74px;height:3px;opacity:.6;background:repeating-linear-gradient(90deg,var(--ios-sep) 0 30px,transparent 30px 60px);}
-#intro .ihint{position:absolute;left:0;right:0;bottom:24px;color:var(--ios-label3);font-size:12.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;}
-#intro .ihint .chev{font-size:22px;line-height:1;display:block;margin-top:5px;color:var(--tecc-verde);animation:ichev 1.5s infinite;}
+#intro .ieye{display:inline-block;background:#E8F24A;color:#1a2a1f;padding:4px 11px;border-radius:3px;font-family:var(--imono);font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;box-shadow:0 2px 0 rgba(20,30,25,.28);}
+#intro .ibig{font-size:clamp(40px,9vw,90px);font-weight:700;letter-spacing:-2px;margin:14px 0 9px;line-height:.9;text-transform:uppercase;}
+#intro .isub{font-family:var(--imono);font-size:12px;letter-spacing:1.7px;text-transform:uppercase;color:rgba(20,30,25,.5);}
+#intro .iroad{display:none;}
+#intro .ihint{position:absolute;left:0;right:0;bottom:24px;color:rgba(20,30,25,.6);font-family:var(--imono);font-size:11px;font-weight:600;letter-spacing:1.7px;text-transform:uppercase;z-index:3;}
+#intro .ihint .chev{font-size:20px;line-height:1;display:block;margin-top:4px;color:var(--tecc-verde);animation:ichev 1.5s infinite;}
 @keyframes ichev{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
 .wheel{transform-box:fill-box;transform-origin:center;}
 @media (min-width:1024px){ #intro .ibus{width:min(62vw,720px);} }
@@ -560,6 +572,8 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 <body>
 <!-- ===== Intro: bus TECC que arranca al hacer scroll ===== -->
 <div id="intro">
+  <div class="iframe"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div>
+  <div class="itop"><span>TECC — GRUPO WILLIAM GASCA</span><span id="iclock">CALI, CO · --:--:--</span></div>
   <div class="ibus">
     <img class="ibus-img" src="bus.png" alt="Bus TECC" onload="this.style.display='block';var s=document.getElementById('busSvg');if(s)s.style.display='none';">
     <svg id="busSvg" viewBox="0 0 520 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bus TECC">
@@ -620,9 +634,9 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
     <img class="ilogo" src="logo.png" alt="TECC" onload="this.style.display='block'">
     <div class="ieye">Equipo de Mantenimiento</div>
     <div class="ibig">Mantenimiento <span class="logotype">TECC</span></div>
-    <div class="isub">Aseos · Taller · Llantas — Grupo William Gasca</div>
+    <div class="isub">Mantenimiento de flota · Aseos · Taller · Llantas</div>
   </div>
-  <div class="iroad"></div>
+  <div class="ibot"><span>N 3.4516° · W 76.5320°</span><span>EST. 2026 · CALI, COLOMBIA</span></div>
   <div class="ihint">Desliza para entrar<span class="chev">⌄</span></div>
 </div>
 
@@ -2408,8 +2422,13 @@ function wireIntro(){
   upd();
 }
 
+function introClock(){
+  const el=document.getElementById('iclock'); if(!el) return;
+  function upd(){ try{ const t=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'America/Bogota'}); el.textContent='CALI, CO · '+t; }catch(e){ el.textContent='CALI, CO'; } }
+  upd(); setInterval(upd,1000);
+}
 /* ---------- init ---------- */
-buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireIntro();
+buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireIntro(); introClock();
 /* si hay API key guardada, intenta traer datos en vivo al abrir */
 if(apiKey()) refreshLive();
 </script>
