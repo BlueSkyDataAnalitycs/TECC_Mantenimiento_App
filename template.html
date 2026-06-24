@@ -31,11 +31,14 @@ body{
   font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
   font-weight:400; letter-spacing:.1px; color:var(--ios-label);
   background:
+    linear-gradient(rgba(16,40,30,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(16,40,30,.05) 1px,transparent 1px),
     radial-gradient(1100px 640px at 6% -10%, rgba(0,161,75,.26), transparent 58%),
     radial-gradient(1050px 600px at 98% -6%, rgba(11,124,143,.30), transparent 58%),
     radial-gradient(820px 540px at 78% 30%, rgba(44,182,209,.16), transparent 55%),
     radial-gradient(960px 760px at 42% 116%, rgba(155,202,60,.22), transparent 58%),
     var(--ios-bg);
+  background-size:62px 62px,62px 62px,auto,auto,auto,auto;
   background-attachment:fixed;
   -webkit-font-smoothing:antialiased; padding-bottom:90px;
 }
@@ -558,6 +561,12 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 .subtitle,.note{font-weight:400;}
 /* logotipo TECC (texto con gradiente de marca) */
 .logotype{background:linear-gradient(92deg,var(--tecc-verde),var(--tecc-lima) 50%,var(--tecc-rojo));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;letter-spacing:.5px;}
+/* ===== Acentos editoriales (híbrido, inspirado en la referencia) ===== */
+.statusbar{display:flex;justify-content:space-between;gap:10px;font-family:ui-monospace,'SF Mono',Menlo,'Roboto Mono',monospace;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ios-label3);padding:2px 54px 9px 0;}
+.eyebrow{display:inline-block;background:#E8F24A;color:#16241c;padding:3px 9px;border-radius:3px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;box-shadow:0 2px 0 rgba(16,36,30,.18);}
+.hero .sub{font-family:ui-monospace,'SF Mono',Menlo,monospace;letter-spacing:.5px;}
+.hero .chip{font-family:ui-monospace,'SF Mono',Menlo,monospace;text-transform:uppercase;letter-spacing:1px;font-weight:700;background:#E8F24A!important;color:#16241c!important;}
+.cursor-dot{position:fixed;width:7px;height:7px;border-radius:50%;background:var(--tecc-lima);pointer-events:none;z-index:9999;transform:translate(-50%,-50%) scale(1);opacity:.85;transition:opacity .5s ease,transform .5s ease;mix-blend-mode:multiply;}
 @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;} }
 @media (prefers-color-scheme:dark) and (min-width:100000px){
   :root{--ios-bg:#0b0c0e;--ios-bg2:#17191d;--ios-sep:rgba(130,135,145,.22);--ios-label:#fff;--ios-label2:#EBEBF5;--tint:#5B9BFF;
@@ -642,6 +651,7 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 
 <div class="wrap">
   <div class="top">
+    <div class="statusbar"><span class="liveclock">CALI, CO · --:--:--</span><span>FLOTA · MANTENIMIENTO</span></div>
     <button class="refresh-btn" id="topRefresh" title="Actualizar en vivo" aria-label="Actualizar en vivo">↻</button>
     <img class="brandlogo" src="logo.png" alt="TECC" onload="this.style.display='block'">
     <div class="eyebrow">Equipo de Mantenimiento</div>
@@ -2422,13 +2432,27 @@ function wireIntro(){
   upd();
 }
 
-function introClock(){
-  const el=document.getElementById('iclock'); if(!el) return;
-  function upd(){ try{ const t=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'America/Bogota'}); el.textContent='CALI, CO · '+t; }catch(e){ el.textContent='CALI, CO'; } }
+function liveClocks(){
+  const els=[...document.querySelectorAll('#iclock,.liveclock')]; if(!els.length) return;
+  function upd(){ let t=''; try{ t=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'America/Bogota'}); }catch(e){} els.forEach(el=>el.textContent='CALI, CO · '+t); }
   upd(); setInterval(upd,1000);
 }
+function cursorTrail(){
+  if(!window.matchMedia) return;
+  if(!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  let last=0;
+  window.addEventListener('mousemove',function(e){
+    const now=performance.now(); if(now-last<26) return; last=now;
+    const d=document.createElement('div'); d.className='cursor-dot';
+    d.style.left=e.clientX+'px'; d.style.top=e.clientY+'px';
+    document.body.appendChild(d);
+    requestAnimationFrame(function(){ d.style.opacity='0'; d.style.transform='translate(-50%,-50%) scale(.25)'; });
+    setTimeout(function(){ d.remove(); },520);
+  },{passive:true});
+}
 /* ---------- init ---------- */
-buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireIntro(); introClock();
+buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireIntro(); liveClocks(); cursorTrail();
 /* si hay API key guardada, intenta traer datos en vivo al abrir */
 if(apiKey()) refreshLive();
 </script>
