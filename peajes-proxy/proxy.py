@@ -22,7 +22,7 @@ Flujo (según la documentación oficial de Flypass / F2X):
               ?dateType=&startDate=&endDate=&page=&size=
          headers: X-Id-Token: <IdToken>,  Authorization: Bearer <AccessToken>
 """
-import os, json, time
+import os, json, time, base64
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import requests
@@ -34,12 +34,16 @@ except ImportError:
 CLIENT_ID = (os.getenv("FLYPASS_CLIENT_ID") or "").strip()
 USERNAME  = (os.getenv("FLYPASS_USERNAME") or "").strip()
 PASSWORD  = (os.getenv("FLYPASS_PASSWORD") or "").strip()
-DOCUMENT  = (os.getenv("FLYPASS_DOCUMENT") or "").strip()            # NIT SIN dígito de verificación (ej. 800126547)
+# NIT SIN dígito de verificación. Acepta FLYPASS_DOCUMENT o FLYPASS_DOCUMENT_NUMBER.
+# Normalmente el NIT real viene DENTRO del token (custom:document_number), así que esto es opcional.
+DOCUMENT  = (os.getenv("FLYPASS_DOCUMENT") or os.getenv("FLYPASS_DOCUMENT_NUMBER") or "").strip()
+if DOCUMENT in ("__PENDIENTE__", "PENDIENTE"): DOCUMENT = ""
 ENVIRON   = (os.getenv("FLYPASS_ENV") or "cert").strip().lower()    # cert | prod
 PORT      = int(os.getenv("PORT", "8088"))
 ALLOW_ORIGIN = os.getenv("ALLOW_ORIGIN", "*")                       # en prod: https://blueskydataanalitycs.github.io
 
-COGNITO = "https://cognito-idp.us-east-1.amazonaws.com/"
+COGNITO = ((os.getenv("FLYPASS_COGNITO_URL") or "https://cognito-idp.us-east-1.amazonaws.com").strip().rstrip("/")) + "/"
+API_BASE = (os.getenv("FLYPASS_API_BASE") or "").strip().rstrip("/")   # si se define, manda sobre BASES[ENVIRON]
 BASES = {
     "cert": "https://cert-api.flypass.com.co/company",
     "prod": "https://api.flypass.com.co/companyService",
@@ -49,7 +53,14 @@ VALID_TX = {"CONSUMPTION", "PAYMENT", "ADJUSTMENT", "COMMISSION", "ALL"}
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": ALLOW_ORIGIN}})
 
-_tok = {"access": None, "id": None, "exp": 0}
+_tok = {"access": None, "id": None, "exp": 0, "doc": None}
+
+def _jwt_claims(jwt):
+    try:
+        p = jwt.split(".")[1]; p += "=" * (-len(p) % 4)
+        return json.loads(base64.urlsafe_b64decode(p))
+    except Exception:
+        return {}
 
 def get_tokens():
     """Devuelve {access, id} cacheando hasta ~1 min antes de expirar."""
@@ -70,16 +81,30 @@ def get_tokens():
     _tok["exp"]    = time.time() + int(res.get("ExpiresIn", 3600))
     if not _tok["access"] or not _tok["id"]:
         raise RuntimeError("Cognito no devolvió AccessToken/IdToken (revisa credenciales)")
+    # El NIT habilitado viene DENTRO del token (custom:document_number). Así cert usa su
+    # NIT de prueba y prod el NIT real, sin tener que cambiar la config.
+    _tok["doc"] = _jwt_claims(_tok["id"]).get("custom:document_number") or DOCUMENT
     return _tok
 
-def fetch_page(tx, date_type, start, end, page, size):
+def fetch_page(tx, date_type, start, end, page, size, retries=2):
     t = get_tokens()
-    base = BASES.get(ENVIRON, BASES["cert"])
-    url = f"{base}/api/v1/customers/{DOCUMENT}/wallet/movements/{tx}"
+    base = API_BASE or BASES.get(ENVIRON, BASES["cert"])
+    url = f"{base}/api/v1/customers/{t['doc']}/wallet/movements/{tx}"
     params = {"dateType": date_type, "startDate": start, "endDate": end, "page": page, "size": size}
-    return requests.get(url, params=params, timeout=60, headers={
-        "X-Id-Token": t["id"], "Authorization": "Bearer " + t["access"],
-    })
+    headers = {"X-Id-Token": t["id"], "Authorization": "Bearer " + t["access"]}
+    last = None
+    for i in range(retries + 1):
+        try:
+            r = requests.get(url, params=params, timeout=75, headers=headers)
+            if r.status_code != 504:        # 504 = timeout del backend de Flypass → reintentar
+                return r
+            last = r
+        except requests.exceptions.RequestException as e:
+            last = e
+        time.sleep(1.5)
+    if isinstance(last, Exception):
+        raise last
+    return last
 
 @app.get("/health")
 def health():
