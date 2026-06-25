@@ -428,6 +428,21 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cal-dh.colsel{color:#fff;background:var(--tint);border-radius:5px;font-weight:800;}
 .cal-dh.colsel .mlab{color:var(--ios-label2);}
 .cd-prov{color:#8E44AD;font-weight:700;}
+/* ===== Consolidado por vehículo ===== */
+.cs-card{background:rgba(255,255,255,.55);-webkit-backdrop-filter:blur(16px) saturate(165%);backdrop-filter:blur(16px) saturate(165%);border:1px solid rgba(255,255,255,.65);border-radius:18px;box-shadow:var(--shadow-md);padding:14px;margin-bottom:14px;}
+.cs-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px;}
+.cs-veh b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;}
+.cs-veh small{display:block;color:var(--ios-label3);font-size:11px;font-weight:600;}
+.cs-tot{font-family:'Space Grotesk','Inter',sans-serif;font-weight:700;font-size:16px;white-space:nowrap;}
+.cs-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.cs-stat{background:var(--ios-bg);border-radius:13px;padding:9px 6px;text-align:center;}
+.cs-stat .cs-k{font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ios-label3);}
+.cs-stat .cs-v{font-family:'Space Grotesk','Inter',sans-serif;font-weight:700;font-size:21px;margin-top:2px;}
+.cs-stat.lav .cs-v{color:var(--tecc-verde);}
+.cs-stat.prov .cs-v{color:#8E44AD;}
+.cs-stat.cond .cs-v{color:#FF9500;}
+.cs-detail{display:flex;flex-direction:column;gap:9px;}
+@media(max-width:560px){.cs-stats{grid-template-columns:repeat(2,1fr);}}
 .cal-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:11px;font-size:12px;color:var(--ios-label2);}
 .cal-legend span{display:inline-flex;align-items:center;gap:6px;}
 .cal-legend .sw{width:13px;height:13px;border-radius:3px;display:inline-block;}
@@ -727,6 +742,7 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
       <button data-sub="proveedores">Proveedores</button>
       <button data-sub="facturas">Facturas</button>
       <button data-sub="general">General</button>
+      <button data-sub="consolidado">Consolidado</button>
     </div>
     <div class="section" id="periodBlock">
       <div class="chips" id="periodPresets"></div>
@@ -906,6 +922,21 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
         </div>
         <div class="cal-detail" id="calDetail">Toca una celda con color para ver el detalle del aseo.</div>
       </div>
+    </div>
+
+    <div id="sub-consolidado" class="hidden">
+      <div class="section">
+        <div class="section-hero">Consolidado por vehículo</div>
+        <div class="cal-intro">Recopilación del calendario de aseos, <b>vehículo por vehículo</b>, según el <b>periodo</b> de arriba. Cada tarjeta muestra placa, # de aseos, % por lavador / proveedor / conductor, y el desglose de cada aseo (día, origen, proveedor y fotos). Filtra por <b>centro de costo</b> abajo.</div>
+        <div class="calsum" id="csSum">—</div>
+      </div>
+      <div class="section">
+        <div class="calfilter">
+          <div class="calfilter-h"><span>Centro de costo</span><button id="csCCClear" class="calfilter-clr" style="display:none">Limpiar</button></div>
+          <div class="fchips" id="csCCChips"></div>
+        </div>
+      </div>
+      <div class="section" id="csList"></div>
     </div>
   </div><!-- /#tab-aseos -->
 
@@ -1252,6 +1283,7 @@ function render(){
   renderProveedores();
   renderConductores();
   renderCalendar();
+  renderConsolidado();
 }
 
 /* ---------- render PROVEEDORES (financiero · por proveedor externo) ---------- */
@@ -2563,13 +2595,73 @@ function wireLive(){
 
 /* ---------- tabs ---------- */
 // sub-navegación dentro de Aseos: Internos | Externos | General
+/* ================= CONSOLIDADO por vehículo ================= */
+let consolCC='';   // filtro de centro de costo
+function ccOfRec(r){ const c=r.centro||'(sin CC)'; return (c==='404')?(cc404For(r.id)||'404'):c; }
+function cdAseoRow(r){
+  const prov=esProveedor(r), condR=esConductor(r);
+  const tipos=tiposDe(r);
+  const chips=tipos.length? tipos.map(t=>`<span class="cd-t">${pretty(t)}</span>`).join('') : '<span class="cd-t cd-t0">sin detalle de tipo</span>';
+  const badge=prov?`<span class="cd-bad pe">● Proveedor externo</span>`:condR?`<span class="cd-bad cn">● Conductor propio</span>`:`<span class="cd-bad ci">● Lavador TECC</span>`;
+  const val=(prov||condR)?`<span class="cd-val ${prov?'pe':'cn'}">${COP(valorAseo(r))}</span>`:'';
+  const fotos=fotosDe(r);
+  const strip=fotos.length?`<div class="cd-fotos">`+fotos.map(f=>
+    `<a class="cd-foto" href="https://drive.google.com/open?id=${f.id}" target="_blank" rel="noopener" title="${f.label} — abrir en Drive"><img loading="lazy" alt="${f.label}" src="https://drive.google.com/thumbnail?id=${f.id}&sz=w300" onerror="this.closest('.cd-foto').classList.add('noimg')"><span>${f.label}</span></a>`).join('')+`</div>`:'';
+  return `<div class="cd-row${prov?' ext':condR?' cond':' int'}">`+
+    `<div class="cd-hd">${badge}${val}</div>`+
+    `<div class="cd-line"><span class="cd-k">Día</span><span class="cd-v cd-dia">${fmtDLong(r.fecha)}</span></div>`+
+    (prov?`<div class="cd-line"><span class="cd-k">Proveedor</span><span class="cd-v cd-prov">${capNombre(proveedor(r))||'—'}</span></div>`:'')+
+    (condR?`<div class="cd-line"><span class="cd-k">Conductor</span><span class="cd-v">${capNombre((r.conductor||'').trim())||'—'}</span></div>`:'')+
+    `<div class="cd-line"><span class="cd-k">Se hizo</span><span class="cd-v cd-chips">${chips}</span></div>`+
+    (strip?`<div class="cd-line col"><span class="cd-k">Fotos</span>${strip}</div>`:'')+
+  `</div>`;
+}
+function renderConsolidado(){
+  const root=$('#csList'); if(!root) return;
+  let recs=recordsForPeriod();
+  const ccCount={}; recs.forEach(r=>{const c=ccOfRec(r);ccCount[c]=(ccCount[c]||0)+1;});
+  const ccs=Object.keys(ccCount).sort((a,b)=>ccCount[b]-ccCount[a]);
+  const chipsEl=$('#csCCChips');
+  if(chipsEl){
+    chipsEl.innerHTML=`<button class="fchip ${consolCC===''?'on':''}" data-cc="">Todos (${recs.length})</button>`+
+      ccs.map(c=>`<button class="fchip ${consolCC===c?'on':''}" data-cc="${esc(c)}">${esc(c)} (${ccCount[c]})</button>`).join('');
+    chipsEl.querySelectorAll('.fchip').forEach(b=>b.onclick=()=>{consolCC=b.dataset.cc;renderConsolidado();});
+  }
+  const clr=$('#csCCClear'); if(clr){ clr.style.display=consolCC?'inline-block':'none'; clr.onclick=()=>{consolCC='';renderConsolidado();}; }
+  if(consolCC) recs=recs.filter(r=>ccOfRec(r)===consolCC);
+  const byVeh={}; recs.forEach(r=>{const k=r.vehiculo||'—';(byVeh[k]=byVeh[k]||[]).push(r);});
+  const order=[], seen=new Set();
+  FLEET.forEach(([placa,label])=>{const k=normVeh(label); if(byVeh[k]&&!seen.has(k)){order.push(k);seen.add(k);}});
+  Object.keys(byVeh).forEach(k=>{ if(!seen.has(k)){order.push(k);seen.add(k);} });
+  const sum=$('#csSum');
+  if(sum) sum.innerHTML=`<b>${order.length}</b> vehículo${order.length!==1?'s':''} · <b>${recs.length}</b> aseo${recs.length!==1?'s':''}${consolCC?` · CC <b>${esc(consolCC)}</b>`:''} en el periodo`;
+  if(!order.length){ root.innerHTML='<div class="card"><div class="empty"><div class="ic">📋</div><h3>Sin aseos en este periodo</h3><div>Cambia el periodo o el centro de costo.</div></div></div>'; return; }
+  root.innerHTML=order.map(k=>{
+    const list=byVeh[k].slice().sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
+    let nLav=0,nCond=0,nProv=0;
+    list.forEach(r=>{ if(esProveedor(r))nProv++; else if(esConductor(r))nCond++; else nLav++; });
+    const tot=list.length, pc=n=>tot?Math.round(n/tot*100):0;
+    const f=FLEET_BY_KEY[k]; const lab=f?f.label:k, pl=f?f.placa:'fuera de lista';
+    return `<div class="cs-card">
+      <div class="cs-head"><div class="cs-veh"><b>${esc(lab)}</b><small>${esc(pl)}</small></div><div class="cs-tot">${tot} aseo${tot!==1?'s':''}</div></div>
+      <div class="cs-stats">
+        <div class="cs-stat"><div class="cs-k">Aseos</div><div class="cs-v">${tot}</div></div>
+        <div class="cs-stat lav"><div class="cs-k">% Lavador</div><div class="cs-v">${pc(nLav)}%</div></div>
+        <div class="cs-stat prov"><div class="cs-k">% Proveedor</div><div class="cs-v">${pc(nProv)}%</div></div>
+        <div class="cs-stat cond"><div class="cs-k">% Conductor</div><div class="cs-v">${pc(nCond)}%</div></div>
+      </div>
+      <div class="cs-detail">${list.map(cdAseoRow).join('')}</div>
+    </div>`;
+  }).join('');
+}
 let curSub='lavador';
 function switchSub(s){
   curSub=s;
   document.querySelectorAll('.subseg button').forEach(x=>x.classList.toggle('active',x.dataset.sub===s));
-  ['lavador','conductores','proveedores','facturas','general'].forEach(t=>{const el=$('#sub-'+t); if(el) el.classList.toggle('hidden',t!==s);});
+  ['lavador','conductores','proveedores','facturas','general','consolidado'].forEach(t=>{const el=$('#sub-'+t); if(el) el.classList.toggle('hidden',t!==s);});
   const pb=$('#periodBlock'); if(pb) pb.classList.toggle('hidden', s==='facturas');  // periodo compartido; oculto en Facturas (placeholder)
   if(s==='general') renderCalendar();
+  if(s==='consolidado') renderConsolidado();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 document.querySelectorAll('.subseg button').forEach(b=>b.onclick=()=>switchSub(b.dataset.sub));
