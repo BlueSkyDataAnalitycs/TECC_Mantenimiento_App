@@ -229,6 +229,14 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .tcal-tot b{font-size:14px;font-weight:800;color:var(--ios-label);font-variant-numeric:tabular-nums;line-height:1.05;}
 .tcal-tot span{font-size:10.5px;font-weight:700;color:var(--tint);font-variant-numeric:tabular-nums;}
 .tcal-tot.empty{color:var(--ios-label3);}
+/* columnas Costo día + Productividad */
+.tcal-costh,.tcal-prodh{flex:0 0 112px!important;width:112px!important;}
+.tcal-cost,.tcal-prod{flex:0 0 112px;width:112px;min-height:34px;margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+.tcal-cost b{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ios-label2);line-height:1.05;}
+.tcal-cost small,.tcal-prod small{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ios-label3);}
+.tcal-prod b{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.05;}
+.tcal-prod.ok{color:var(--tecc-verde);} .tcal-prod.bad{color:var(--red);} .tcal-prod.na{color:var(--ios-label3);}
+.tcal-prod.ok small,.tcal-prod.bad small{color:inherit;opacity:.85;}
 .tcal-footrow{position:sticky;bottom:0;z-index:2;background:var(--ios-bg2);box-shadow:0 -1px 0 var(--ios-sep);}
 .tcal-footrow .tcal-day{background:var(--ios-bg2);font-weight:800;color:var(--ios-label);}
 .tcal-fcell{flex:0 0 96px;width:96px;text-align:center;font-size:12.5px;font-weight:800;color:var(--ios-label2);font-variant-numeric:tabular-nums;align-self:center;}
@@ -2056,7 +2064,7 @@ function renderTaller(){
   // 5.5) CALENDARIO DE INTERVENCIONES (días × horas)
   H.push(`<div class="section span2">
     <div class="section-hero">Calendario de intervenciones</div>
-    <div class="note" style="margin:-4px 4px 9px">Aparecen <b>todos los días</b> del periodo (incluidos fines de semana y festivos), uno por fila; a lo largo, <b>franjas fijas de 2 horas</b> (06–08 … 18–20). Cada celda muestra la <b>placa</b> del vehículo; las del formulario caen según su <b>hora de inicio</b> y las históricas sin hora van en <b>"Sin hora"</b>. <b style="color:#2E6FB8">Azul claro</b> = no laborable: <b>domingos y festivos</b> (todo el día) y <b>sábados después de las 12 m.</b> Toca una celda para ver la <b>descripción</b> y el vehículo.</div>
+    <div class="note" style="margin:-4px 4px 9px">Aparecen <b>todos los días</b> del periodo (incluidos fines de semana y festivos), uno por fila; a lo largo, <b>franjas fijas de 2 horas</b> (06–08 … 18–20). Cada celda muestra la <b>placa</b> del vehículo; las del formulario caen según su <b>hora de inicio</b> y las históricas sin hora van en <b>"Sin hora"</b>. <b style="color:#2E6FB8">Azul claro</b> = no laborable: <b>domingos y festivos</b> (todo el día) y <b>sábados después de las 12 m.</b> Toca una celda para ver la <b>descripción</b> y el vehículo. Al final: <b>Total día</b> (valor de las intervenciones), <b>Costo día</b> (el costo fijo mensual repartido entre los días trabajados del mes — sábado ½, domingo/festivo 0) y <b>Productividad</b> = valor ÷ costo (<b style="color:var(--tecc-verde)">verde</b> si el día rentó, <b style="color:var(--red)">rojo</b> si no).</div>
     <div class="card" style="padding:10px 10px 12px">${buildTallerCal(recs,R)}</div>
     <div class="tcal-detail" id="tCalDetail">Toca una celda con número para ver las intervenciones de ese día.</div>
   </div>`);
@@ -2158,8 +2166,15 @@ function buildTallerCal(recs,R){
   if(!dayList) dayList=[...new Set(recs.map(r=>r.fecha).filter(Boolean))].sort().reverse();
   if(!dayList.length) return '<div class="cal-empty">Sin intervenciones con fecha en este periodo.</div>';
   const cols=['sh',...TCAL_SLOTS.map(String)];             // columnas FIJAS: "Sin hora" + todas las franjas
+  // ----- costo del día: costo fijo MENSUAL repartido entre los días-equivalentes trabajados del mes -----
+  // (lun-vie = 1 día, sábado = ½ día, domingo/festivo = 0). Variable según festivos y sábados del mes.
+  const MONTHLY=COSTO_SEM*4;                                // ≈ $1.875M/sem × 4 = $7.5M/mes
+  const dayEquivOf=ymd=>{const dt=parseDate(ymd),dow=dt.getDay(); if(dow===0||FESTIVOS_CO.has(ymd))return 0; return dow===6?0.5:1;};
+  const _meCache={};
+  const monthEquiv=(y,m)=>{const k=y+'-'+m; if(_meCache[k]!=null)return _meCache[k]; const dim=new Date(y,m,0).getDate(); let s=0; for(let d=1;d<=dim;d++){const ymd=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'); s+=dayEquivOf(ymd);} return _meCache[k]=s;};
+  const dayCostOf=ymd=>{const eq=dayEquivOf(ymd); if(eq<=0)return 0; const p=ymd.split('-').map(Number); const me=monthEquiv(p[0],p[1]); return me>0?MONTHLY*eq/me:0;};
   const head=`<div class="tcal-row tcal-headrow"><div class="tcal-day">Día</div>`+
-    cols.map(c=>`<div class="tcal-ch">${slotLabel(c)}</div>`).join('')+`<div class="tcal-ch tcal-toth">Total día</div></div>`;
+    cols.map(c=>`<div class="tcal-ch">${slotLabel(c)}</div>`).join('')+`<div class="tcal-ch tcal-toth">Total día</div><div class="tcal-ch tcal-costh">Costo día</div><div class="tcal-ch tcal-prodh">Productividad</div></div>`;
   const rows=dayList.map(d=>{
     const dow=parseDate(d).getDay(), fest=FESTIVOS_CO.has(d), dom=(dow===0), sab=(dow===6);
     const dayCls=dom?' dom':(fest?' fest':''), tag=dom?'<span class="tcal-tag">Domingo</span>':(fest?'<span class="tcal-tag">Festivo</span>':'');
@@ -2173,12 +2188,19 @@ function buildTallerCal(recs,R){
     }).join('');
     const dc=dayCount[d]||0, dv=dayValue[d]||0;
     const tot=`<div class="tcal-tot${dc?'':' empty'}">${dc?`<b>${dc}</b><span>${COP(dv)}</span>`:'·'}</div>`;
-    return `<div class="tcal-row"><div class="tcal-day${dayCls}">${tCalDayLabel(d)}${tag}</div>${cells}${tot}</div>`;
+    const cost=dayCostOf(d);
+    const costCell=`<div class="tcal-cost">${cost>0?`<b>${COP(cost)}</b><small>costo día</small>`:`<small>no laborable</small>`}</div>`;
+    let prodCell;
+    if(cost>0){ const pct=Math.round(dv/cost*100), ok=dv>=cost; prodCell=`<div class="tcal-prod ${ok?'ok':'bad'}"><b>${pct}%</b><small>${ok?'productivo':'no rentó'}</small></div>`; }
+    else { prodCell = dv>0 ? `<div class="tcal-prod ok"><b>+${COP(dv)}</b><small>trabajo extra</small></div>` : `<div class="tcal-prod na"><b>—</b><small>no laboral</small></div>`; }
+    return `<div class="tcal-row"><div class="tcal-day${dayCls}">${tCalDayLabel(d)}${tag}</div>${cells}${tot}${costCell}${prodCell}</div>`;
   }).join('');
   // fila final de totales: nº de intervenciones por franja + gran total (intervenciones y valor)
   const gC=Object.values(dayCount).reduce((a,b)=>a+b,0), gV=Object.values(dayValue).reduce((a,b)=>a+b,0);
+  const gCost=dayList.reduce((s,d)=>s+dayCostOf(d),0);
+  const gPct=gCost>0?Math.round(gV/gCost*100):0, gOk=gV>=gCost;
   const footCells=cols.map(c=>`<div class="tcal-fcell">${slotCount[c]||''}</div>`).join('');
-  const foot=`<div class="tcal-row tcal-footrow"><div class="tcal-day">Total</div>${footCells}<div class="tcal-tot tcal-grand"><b>${gC}</b><span>${COP(gV)}</span></div></div>`;
+  const foot=`<div class="tcal-row tcal-footrow"><div class="tcal-day">Total</div>${footCells}<div class="tcal-tot tcal-grand"><b>${gC}</b><span>${COP(gV)}</span></div><div class="tcal-cost"><b>${COP(gCost)}</b><small>costo periodo</small></div><div class="tcal-prod ${gCost>0?(gOk?'ok':'bad'):'na'}"><b>${gCost>0?gPct+'%':'—'}</b><small>${gCost>0?(gOk?'productivo':'no rentó'):'—'}</small></div></div>`;
   return `<div class="tcal-scroll">${head}${rows}${foot}</div>`;
 }
 function showTCalDetail(key){
