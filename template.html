@@ -421,6 +421,13 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cal-row.rowsel .cal-veh{background:var(--tecc-amarillo);}
 .cal-row.rowsel .cal-veh b{color:#0A2342;}
 .cal-row.rowsel .cal-veh small{color:#0A2342;opacity:.75;}
+/* selección de columna (un día entero) */
+.cal-dh.clickable{cursor:pointer;}
+.cal-dh.clickable:hover{color:var(--tint);}
+.cal-cell.colsel{outline:1.5px solid var(--tint);outline-offset:-1px;z-index:1;}
+.cal-dh.colsel{color:#fff;background:var(--tint);border-radius:5px;font-weight:800;}
+.cal-dh.colsel .mlab{color:var(--ios-label2);}
+.cd-prov{color:#8E44AD;font-weight:700;}
 .cal-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:11px;font-size:12px;color:var(--ios-label2);}
 .cal-legend span{display:inline-flex;align-items:center;gap:6px;}
 .cal-legend .sw{width:13px;height:13px;border-radius:3px;display:inline-block;}
@@ -1072,6 +1079,7 @@ function anchorDate(){
 }
 let period='ALL', customStart=null, customEnd=null;
 let calSel=null;   // celda seleccionada del calendario (el periodo lo controla el selector compartido)
+let calDaySel=null; // día (columna) seleccionado
 const PRESETS=[['WEEK','Semana'],['FORTNIGHT','Quincena'],['PREVMONTH','Mes anterior'],['CUSTOM','Personalizado']];
 
 function resolveRange(){
@@ -1366,6 +1374,8 @@ function showCalDetail(veh,ymd){
              `<div class="cd-line"><span class="cd-k">Día</span><span class="cd-v cd-dia">${fmtDLong(r.fecha)}</span></div>`+
              // 2) conductor
              `<div class="cd-line"><span class="cd-k">Conductor</span><span class="cd-v">${cond||'—'}</span></div>`+
+             // 2b) proveedor externo (qué proveedor fue)
+             (prov?`<div class="cd-line"><span class="cd-k">Proveedor</span><span class="cd-v cd-prov">${capNombre(proveedor(r))||'—'}</span></div>`:'')+
              // 3) descripción del aseo hecho
              `<div class="cd-line"><span class="cd-k">Se hizo</span><span class="cd-v cd-chips">${chips}</span></div>`+
              // 4) fotos (omitidas si no existen)
@@ -1374,6 +1384,31 @@ function showCalDetail(veh,ymd){
   }).join('');
   const fnote=anyFoto?`<div class="cd-fnote">Toca una foto para abrirla en Drive. Las miniaturas cargan si tienes sesión en la cuenta de Google con acceso; para verlas siempre, comparte la carpeta como <b>“cualquiera con el enlace puede ver”</b>.</div>`:'';
   box.innerHTML=`<div class="cd-top"><b>${vehTitulo(veh)}</b>${recs.length>1?` · ${recs.length} aseos`:''}</div>${rows}${fnote}`;
+}
+function showDayDetail(ymd){
+  const box=$('#calDetail'); if(!box) return;
+  const recs=DATA.aseos.records.filter(r=>r.fecha===ymd);
+  if(!recs.length){ box.textContent='Sin aseos registrados ese día.'; return; }
+  const ord=r=>esProveedor(r)?2:esConductor(r)?1:0;
+  recs.sort((a,b)=>ord(a)-ord(b) || String(a.vehiculo||'').localeCompare(String(b.vehiculo||''),'es',{numeric:true}));
+  let nInt=0,nCond=0,nProv=0,valProv=0;
+  const rows=recs.map(r=>{
+    const prov=esProveedor(r), condR=esConductor(r);
+    if(prov){nProv++;valProv+=valorAseo(r);} else if(condR){nCond++;} else {nInt++;}
+    const tipos=tiposDe(r);
+    const chips=tipos.length? tipos.map(t=>`<span class="cd-t">${pretty(t)}</span>`).join('') : '<span class="cd-t cd-t0">sin detalle de tipo</span>';
+    const badge=prov?`<span class="cd-bad pe">● Proveedor externo</span>`:condR?`<span class="cd-bad cn">● Conductor propio</span>`:`<span class="cd-bad ci">● Lavador TECC</span>`;
+    const val=(prov||condR)?`<span class="cd-val ${prov?'pe':'cn'}">${COP(valorAseo(r))}</span>`:'';
+    return `<div class="cd-row${prov?' ext':condR?' cond':' int'}">`+
+      `<div class="cd-hd"><b>${vehTitulo(r.vehiculo||'—')}</b>${val}</div>`+
+      `<div class="cd-line"><span class="cd-k">Origen</span><span class="cd-v">${badge}</span></div>`+
+      (prov?`<div class="cd-line"><span class="cd-k">Proveedor</span><span class="cd-v cd-prov">${capNombre(proveedor(r))||'—'}</span></div>`:'')+
+      (condR?`<div class="cd-line"><span class="cd-k">Conductor</span><span class="cd-v">${capNombre((r.conductor||'').trim())||'—'}</span></div>`:'')+
+      `<div class="cd-line"><span class="cd-k">Se hizo</span><span class="cd-v cd-chips">${chips}</span></div>`+
+    `</div>`;
+  }).join('');
+  const resumen=`<b>${recs.length}</b> aseo${recs.length!==1?'s':''} · ${nInt} lavador · ${nCond} conductor${nCond!==1?'es':''} · ${nProv} proveedor${nProv!==1?'es':''}${valProv?` (${COP(valProv)})`:''}`;
+  box.innerHTML=`<div class="cd-top">📅 ${fmtDLong(ymd)} — ${resumen}</div>${rows}`;
 }
 /* ----- Flota completa (orden fijo). Cada entrada: [placa, número/etiqueta interna] -----
    El calendario SIEMPRE muestra estos vehículos en este orden, tengan o no aseo. */
@@ -1445,33 +1480,46 @@ function renderCalendar(){
   days.forEach((day,i)=>{
     const d=day.d, first=(d.getDate()===1)||i===0;
     const ml=first?`<span class="mlab">${monthN[d.getMonth()]} ${String(d.getFullYear()).slice(2)}</span>`:'';
-    head+=`<div class="cal-dh${d.getDate()===1?' mstart':''}">${ml}${d.getDate()}</div>`;
+    head+=`<div class="cal-dh clickable${d.getDate()===1?' mstart':''}" data-d="${i}" data-ymd="${day.ymd}" title="Ver todos los aseos del ${day.ymd}">${ml}${d.getDate()}</div>`;
   });
   let out='<div class="cal-head">'+head+'</div>';
   rows.forEach(rw=>{
     const g=rw.g;
     const rowCls='cal-row'+(rw.extra?' extra':'')+(g?'':' noact')+((calSel&&calSel.veh===rw.key)?' rowsel':'');
     let row=`<div class="cal-veh"><b>${rw.label}</b><small>${rw.placa}</small></div>`;
-    days.forEach(day=>{
+    days.forEach((day,di)=>{
       const c=g?g.days[day.ymd]:null; let cls='cal-cell';
       if(day.d.getDate()===1) cls+=' mstart';
       let tap='';
       if(c){const t=(c.int?1:0)+(c.cond?2:0)+(c.ext?4:0);cls+=t===1?' int':t===2?' cond':t===4?' ext':t===3?' int-cond':t===5?' int-ext':t===6?' cond-ext':' both';tap=` data-veh="${encodeURIComponent(rw.key)}" data-ymd="${day.ymd}"`;}
       const sel=(calSel&&calSel.veh===rw.key&&calSel.ymd===day.ymd)?' sel':'';
-      row+=`<div class="${cls}${sel}"${tap}></div>`;
+      row+=`<div class="${cls}${sel}" data-d="${di}"${tap}></div>`;
     });
     out+=`<div class="${rowCls}">${row}</div>`;
   });
   wrap.innerHTML=out;
-  // tap → detalle (sin re-render completo)
+  const clearColSel=()=>wrap.querySelectorAll('.colsel').forEach(x=>x.classList.remove('colsel'));
+  // tap celda → detalle del vehículo en ese día (resalta toda la fila)
   wrap.querySelectorAll('.cal-cell[data-ymd]').forEach(el=>el.onclick=()=>{
     wrap.querySelectorAll('.cal-cell.sel').forEach(x=>x.classList.remove('sel'));
     wrap.querySelectorAll('.cal-row.rowsel').forEach(x=>x.classList.remove('rowsel'));
+    clearColSel(); calDaySel=null;
     el.classList.add('sel');
     const r=el.closest('.cal-row'); if(r) r.classList.add('rowsel');   // resalta toda la fila hasta el vehículo
     const veh=decodeURIComponent(el.dataset.veh), ymd=el.dataset.ymd;
     calSel={veh,ymd}; showCalDetail(veh,ymd);
   });
+  // tap cabecera de día → selecciona toda la columna (el día) y muestra el detalle del día
+  wrap.querySelectorAll('.cal-dh[data-ymd]').forEach(el=>el.onclick=()=>{
+    wrap.querySelectorAll('.cal-cell.sel').forEach(x=>x.classList.remove('sel'));
+    wrap.querySelectorAll('.cal-row.rowsel').forEach(x=>x.classList.remove('rowsel'));
+    clearColSel(); calSel=null;
+    const di=el.dataset.d, ymd=el.dataset.ymd; calDaySel=ymd;
+    wrap.querySelectorAll('[data-d="'+di+'"]').forEach(c=>c.classList.add('colsel'));
+    showDayDetail(ymd);
+  });
+  // reaplicar selección de columna tras re-render
+  if(calDaySel){ const di=days.findIndex(x=>x.ymd===calDaySel); if(di>=0) wrap.querySelectorAll('[data-d="'+di+'"]').forEach(c=>c.classList.add('colsel')); }
 }
 
 function renderSMMLV(total,R){
