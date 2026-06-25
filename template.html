@@ -568,6 +568,20 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 .hero .sub{font-family:ui-monospace,'SF Mono',Menlo,monospace;letter-spacing:.5px;}
 .hero .chip{font-family:ui-monospace,'SF Mono',Menlo,monospace;text-transform:uppercase;letter-spacing:1px;font-weight:700;background:#E8F24A!important;color:#16241c!important;}
 .cursor-dot{position:fixed;width:7px;height:7px;border-radius:50%;background:var(--tecc-lima);pointer-events:none;z-index:9999;transform:translate(-50%,-50%) scale(1);opacity:.85;transition:opacity .5s ease,transform .5s ease;mix-blend-mode:multiply;}
+/* ===== Pestaña Vehículos ===== */
+.vtoolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+.vsearch{flex:1;min-width:200px;}
+.vbad{color:var(--red);} .vwarn{color:var(--orange);}
+.vtable-wrap{overflow:auto;border-radius:16px;border:1px solid var(--cardbd);background:var(--ios-bg2);box-shadow:var(--shadow-md);max-height:70vh;}
+.vtable{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap;}
+.vtable th{position:sticky;top:0;z-index:2;background:var(--ios-bg2);text-align:left;padding:9px 11px;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--ios-label3);border-bottom:1.5px solid var(--ios-sep);font-family:ui-monospace,'SF Mono',Menlo,monospace;}
+.vtable td{padding:7px 11px;border-bottom:1px solid var(--ios-sep);color:var(--ios-label);}
+.vtable tbody tr:hover{background:var(--hover);}
+.vcell[contenteditable]{cursor:text;border-radius:6px;}
+.vcell[contenteditable]:focus{outline:2px solid var(--tint);outline-offset:-2px;background:rgba(0,161,75,.06);}
+.vcell.ro{font-weight:700;color:var(--ios-label2);font-variant-numeric:tabular-nums;}
+.vcell.vvenc{background:rgba(229,57,46,.14);color:#b3261e;font-weight:700;}
+.vcell.vprox{background:rgba(240,140,30,.16);color:#9a5a00;font-weight:700;}
 @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;} }
 @media (prefers-color-scheme:dark) and (min-width:100000px){
   :root{--ios-bg:#0b0c0e;--ios-bg2:#17191d;--ios-sep:rgba(130,135,145,.22);--ios-label:#fff;--ios-label2:#EBEBF5;--tint:#5B9BFF;
@@ -665,6 +679,7 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
     <button data-tab="aseos" class="active">Aseos</button>
     <button data-tab="taller">Taller</button>
     <button data-tab="llantas">Llantas</button>
+    <button data-tab="vehiculos">Vehículos</button>
     <button data-tab="peajes">Peajes</button>
     <button data-tab="ajustes">Ajustes</button>
   </div>
@@ -889,6 +904,9 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 
   <!-- ============ AJUSTES ============ -->
   <!-- ============ PEAJES (pendiente de API) ============ -->
+  <!-- ============ VEHÍCULOS ============ -->
+  <div id="tab-vehiculos" class="hidden dash"></div>
+
   <div id="tab-peajes" class="hidden">
     <div class="section"><div class="card"><div class="empty">
       <div class="ic">🛣️</div>
@@ -2460,13 +2478,100 @@ function switchSub(s){
 }
 document.querySelectorAll('.subseg button').forEach(b=>b.onclick=()=>switchSub(b.dataset.sub));
 // navegación principal: Aseos | Taller | Ajustes
+/* ================= VEHÍCULOS ================= */
+const LS_VEH='tecc_veh_over_v1';
+let VEH_OVER=(()=>{try{return JSON.parse(localStorage.getItem(LS_VEH)||'{}')||{};}catch(e){return {};}})();
+function vehSaveOver(){localStorage.setItem(LS_VEH,JSON.stringify(VEH_OVER));}
+const VCOLS=[
+ {k:'numero',h:'#',ro:true},{k:'placa',h:'Placa',ro:true},{k:'clase',h:'Clase'},
+ {k:'marca',h:'Marca'},{k:'modelo',h:'Año'},{k:'capacidad',h:'Cap.'},
+ {k:'combustible',h:'Combustible'},{k:'empresaCliente',h:'Empresa'},
+ {k:'soat',h:'SOAT',venc:true},{k:'rtm',h:'RTM',venc:true},{k:'to',h:'T.O.',venc:true}
+];
+const VENC_KEYS=['soat','rtm','to','bimensual','extintor'];
+let vehFiltroClase='', vehBusca='';
+function vehKey(r){return (r.placa||'').toUpperCase();}
+function vget(r,k){
+  const ov=VEH_OVER[vehKey(r)]; if(ov&&k in ov) return ov[k];
+  if(VENC_KEYS.includes(k)) return (r.venc&&r.venc[k])||'';
+  return r[k]!=null?r[k]:'';
+}
+function vehDias(dstr){const m=String(dstr||'').match(/(\d{4})-(\d{2})-(\d{2})/);if(!m)return null;
+  const d=new Date(+m[1],+m[2]-1,+m[3]),now=new Date();now.setHours(0,0,0,0);return Math.round((d-now)/86400000);}
+function vencCls(dstr){const n=vehDias(dstr);if(n==null)return '';if(n<0)return 'vvenc';if(n<=30)return 'vprox';return '';}
+function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function vehFiltrados(){
+  let L=(DATA.vehiculos||[]).slice();
+  if(vehFiltroClase) L=L.filter(r=>(vget(r,'clase')||'(sin clase)')===vehFiltroClase);
+  return L;
+}
+function renderVehiculos(){
+  const root=$('#tab-vehiculos'); if(!root) return;
+  const all=DATA.vehiculos||[];
+  const claseCnt={}; all.forEach(r=>{const c=vget(r,'clase')||'(sin clase)';claseCnt[c]=(claseCnt[c]||0)+1;});
+  let venc=0,prox=0; all.forEach(r=>{['soat','rtm','to'].forEach(k=>{const n=vehDias(vget(r,k));if(n!=null){if(n<0)venc++;else if(n<=30)prox++;}});});
+  const clases=Object.keys(claseCnt).sort((a,b)=>claseCnt[b]-claseCnt[a]);
+  const chips=`<button class="fchip ${vehFiltroClase===''?'on':''}" data-cl="">Todas (${all.length})</button>`+
+    clases.map(c=>`<button class="fchip ${vehFiltroClase===c?'on':''}" data-cl="${esc(c)}">${esc(c)} (${claseCnt[c]})</button>`).join('');
+  const L=vehFiltrados();
+  const head=`<tr>`+VCOLS.map(c=>`<th>${c.h}</th>`).join('')+`</tr>`;
+  const body=L.map(r=>`<tr data-pk="${esc(vehKey(r))}">`+VCOLS.map(c=>{
+    const v=vget(r,c.k), cls=c.venc?vencCls(v):'';
+    return `<td ${c.ro?'':'contenteditable="true"'} data-k="${c.k}" class="vcell ${cls} ${c.ro?'ro':''}">${esc(v)}</td>`;
+  }).join('')+`</tr>`).join('');
+  root.innerHTML=`
+   <div class="section span2"><div class="hero">
+     <div class="chip">${all.length} vehículos</div>
+     <div class="cap">Parque automotor TECC</div>
+     <div class="num">${all.length}</div>
+     <div class="sub">${clases.length} clases · base consolidada</div>
+   </div>
+   <div class="kpis">
+     <div class="kpi"><div class="k">Vehículos</div><div class="v">${all.length}</div></div>
+     <div class="kpi"><div class="k">Doc. vencidos</div><div class="v ${venc?'vbad':''}">${venc}</div></div>
+     <div class="kpi"><div class="k">Por vencer ≤30 días</div><div class="v ${prox?'vwarn':''}">${prox}</div></div>
+     <div class="kpi"><div class="k">Clases</div><div class="v">${clases.length}</div></div>
+   </div></div>
+   <div class="section span2">
+     <div class="vtoolbar">
+       <input class="ios vsearch" id="vehBusca" placeholder="Buscar placa, #, marca, empresa…" value="${esc(vehBusca).replace(/"/g,'&quot;')}">
+       <button class="chip-btn" id="vehExport">⬇︎ Descargar Excel</button>
+     </div>
+     <div class="fchips" id="vehChips">${chips}</div>
+     <div class="note">Toca cualquier celda para editarla (se guarda en este dispositivo). <b style="color:#b3261e">Rojo</b> = vencido · <b style="color:#9a5a00">Ámbar</b> = vence en ≤30 días. La descarga respeta el filtro/búsqueda actual.</div>
+     <div class="vtable-wrap"><table class="vtable"><thead>${head}</thead><tbody>${body}</tbody></table></div>
+   </div>`;
+  root.querySelectorAll('#vehChips .fchip').forEach(b=>b.onclick=()=>{vehFiltroClase=b.dataset.cl;renderVehiculos();});
+  const sb=root.querySelector('#vehBusca');
+  if(sb) sb.oninput=()=>{ vehBusca=sb.value; const q=norm(sb.value);
+    root.querySelectorAll('.vtable tbody tr').forEach(tr=>{ tr.style.display=(!q||norm(tr.textContent).includes(q))?'':'none'; }); };
+  root.querySelectorAll('td.vcell[contenteditable]').forEach(td=>{
+    td.addEventListener('blur',()=>{ const pk=td.closest('tr').dataset.pk,k=td.dataset.k,val=td.textContent.trim();
+      (VEH_OVER[pk]=VEH_OVER[pk]||{})[k]=val; vehSaveOver();
+      if(VCOLS.find(c=>c.k===k&&c.venc)) td.className='vcell '+vencCls(val);
+      flashSaved&&flashSaved(); });
+  });
+  const ex=root.querySelector('#vehExport'); if(ex) ex.onclick=vehExport;
+}
+function vehExport(){
+  const root=$('#tab-vehiculos'); if(!root) return;
+  const byPk={}; (DATA.vehiculos||[]).forEach(r=>byPk[vehKey(r)]=r);
+  const vis=[...root.querySelectorAll('.vtable tbody tr')].filter(tr=>tr.style.display!=='none').map(tr=>byPk[tr.dataset.pk]).filter(Boolean);
+  const rows=[VCOLS.map(c=>c.h)].concat(vis.map(r=>VCOLS.map(c=>vget(r,c.k))));
+  const csv=rows.map(row=>row.map(v=>{v=(v==null?'':String(v));return /[",\r\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='TECC_Vehiculos.csv';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{a.remove();URL.revokeObjectURL(a.href);},120);
+  toast&&toast('Excel descargado ('+vis.length+' vehículos)');
+}
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
-  ['aseos','taller','llantas','peajes','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
+  ['aseos','taller','llantas','vehiculos','peajes','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
   if(b.dataset.tab==='aseos' && curSub==='general') renderCalendar();
   if(b.dataset.tab==='taller') renderTaller();   // re-render para dimensionar los gráficos al hacerse visible
   if(b.dataset.tab==='llantas') renderLlantas();
+  if(b.dataset.tab==='vehiculos') renderVehiculos();
   window.scrollTo({top:0,behavior:'smooth'});
 });
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}

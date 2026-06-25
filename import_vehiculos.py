@@ -31,7 +31,7 @@ def clean(v):
     if isinstance(v, datetime.date):
         return v.isoformat()
     s = str(v).strip()
-    return "" if s.upper() in ("NULL", "NONE", "#N/A", "-") else s
+    return "" if s.upper() in ("NULL", "NONE", "#N/A", "N/A", "N.A", "NA", "-", "--") else s
 
 def read_sheet(path, sheet, header_row):
     """Devuelve (filas) como lista de dicts {header_normalizado: valor}."""

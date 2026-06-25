@@ -3,8 +3,25 @@
  "count": 119,
  "vehiculos": [
   {
+   "placa": "IPV611",
+   "numero": "2023-10-19",
+   "clase": "Automóvil",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "VEHICULO EN MISION",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
    "placa": "MHQ346",
-   "numero": "N/A",
+   "numero": "",
    "clase": "Automóvil",
    "marca": "",
    "linea": "",
@@ -23,7 +40,7 @@
   },
   {
    "placa": "NMQ669",
-   "numero": "N/A",
+   "numero": "",
    "clase": "Automóvil",
    "marca": "",
    "linea": "",
@@ -39,23 +56,6 @@
    "fuentes": [
     "TODO-RIESGO"
    ]
-  },
-  {
-   "placa": "IPV611",
-   "numero": "N/A",
-   "clase": "Automóvil",
-   "marca": "",
-   "linea": "",
-   "modelo": "",
-   "combustible": "",
-   "capacidad": "",
-   "empresaAfiliadora": "",
-   "empresaCliente": "VEHICULO EN MISION",
-   "ruta": "",
-   "color": "",
-   "refLlantas": "",
-   "venc": {},
-   "fuentes": []
   },
   {
    "placa": "QIS275",
@@ -1406,7 +1406,7 @@
   },
   {
    "placa": "HMN106",
-   "numero": "N/A",
+   "numero": "",
    "clase": "Camioneta",
    "marca": "",
    "linea": "",
@@ -1423,7 +1423,7 @@
   },
   {
    "placa": "NXT292",
-   "numero": "N/A",
+   "numero": "",
    "clase": "Campero",
    "marca": "",
    "linea": "",
