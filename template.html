@@ -2458,6 +2458,27 @@ function cursorTrail(){
     setTimeout(function(){ d.remove(); },520);
   },{passive:true});
 }
+function animateNumbers(){
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  document.querySelectorAll('.hero .num, .kpi .v').forEach(function(el){
+    if(el.offsetParent===null) return;                 // solo lo visible
+    var raw=(el.textContent||'').trim();
+    if(/[\/%,]/.test(raw)) return;                      // saltar "9.0/10", "%", decimales
+    var m=raw.match(/\d[\d.]*/); if(!m) return;
+    var target=parseInt(m[0].replace(/\./g,''),10);
+    if(!isFinite(target)||target<5) return;
+    var prefix=raw.slice(0,m.index), suffix=raw.slice(m.index+m[0].length);
+    var myId=(el._animId=(el._animId||0)+1);
+    var dur=720, start=performance.now();
+    function step(){ if(el._animId!==myId) return;
+      var p=Math.max(0,Math.min(1,(performance.now()-start)/dur)), e=1-Math.pow(1-p,3);
+      el.textContent=prefix+Math.round(target*e).toLocaleString('es-CO')+suffix;
+      if(p<1) setTimeout(step,16); }
+    el.textContent=prefix+'0'+suffix; setTimeout(step,16);
+  });
+}
+['render','renderTaller','renderLlantas'].forEach(function(fn){ var o=window[fn];
+  if(typeof o==='function'){ window[fn]=function(){ var r=o.apply(this,arguments); try{animateNumbers();}catch(e){} return r; }; } });
 /* ---------- init ---------- */
 buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireIntro(); liveClocks(); cursorTrail();
 /* si hay API key guardada, intenta traer datos en vivo al abrir */
