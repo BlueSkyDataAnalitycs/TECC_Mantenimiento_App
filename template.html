@@ -96,7 +96,8 @@ select.ios,input.ios{font-family:inherit;font-size:15px;border:0;background:var(
 .bd-meta{font-size:12px;color:var(--ios-label3);margin-top:2px;}
 .bd-amt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
 .bar{height:6px;border-radius:3px;background:#E9E9EB;margin-top:8px;overflow:hidden;}
-.bar > i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--tecc-azul),#2E5E9E);}
+.bar > i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--tecc-verde),var(--tecc-lima));transform-origin:left center;animation:barGrow .8s cubic-bezier(.2,.7,.3,1) both;}
+@keyframes barGrow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
 .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:7px;margin-left:6px;vertical-align:middle;}
 .badge.sinvalor{background:#FFE9E6;color:var(--red);}
 /* settings editor */
@@ -327,7 +328,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cc-name{font-size:18px;font-weight:800;letter-spacing:-.3px;}
 .cc-val{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px;}
 .cc-bar{height:8px;border-radius:4px;background:#E9E9EB;overflow:hidden;margin:9px 0 7px;}
-.cc-bar>i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--tecc-azul),#2E5E9E);}
+.cc-bar>i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--tecc-verde),var(--tecc-lima));transform-origin:left center;animation:barGrow .8s cubic-bezier(.2,.7,.3,1) both;}
 .cc-meta{font-size:12.5px;color:var(--ios-label3);font-weight:600;}
 .cc-fin{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:11px;}
 .cc-fin-i{background:var(--ios-bg);border-radius:12px;padding:9px 11px;}
@@ -1535,9 +1536,11 @@ function shorten(t){return t.replace(/LAVADO DE LLANTAS \+ LLANTIL/g,'Llantas').
 function drawBar(id, labels, data, set, prev, hi=-1){
   if(prev) prev.destroy();
   const ctx=document.getElementById(id); if(!ctx)return;
-  const azul='#0A2342', am='#F2C94C';
-  const colors=data.map((_,i)=> i===hi?am:azul);
-  set(new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:hi>=0?colors:azul,borderRadius:6,maxBarThickness:46}]},
+  const g=ctx.getContext('2d').createLinearGradient(0,0,0,260);
+  g.addColorStop(0,'#27BE64'); g.addColorStop(1,'#008A3F');
+  const hiCol='#9BCA3C';
+  const colors=data.map((_,i)=> i===hi?hiCol:g);
+  set(new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:hi>=0?colors:g,borderRadius:6,maxBarThickness:46}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>COP(c.parsed.y)}}},
     scales:{y:{ticks:{callback:v=>'$'+(v/1000)+'k',font:{size:11}},grid:{color:'rgba(0,0,0,.05)'}},
             x:{ticks:{font:{size:11},maxRotation:0,autoSkip:true},grid:{display:false}}}}}));
@@ -1647,7 +1650,11 @@ function tBar(id,labels,data,setter,prev,opt){
   if(prev&&prev.destroy)prev.destroy();
   const ctx=document.getElementById(id); if(!ctx)return;
   const horiz=!!opt.horizontal, money=!!opt.money;
-  const ch=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:opt.colors||'#0A2342',borderRadius:6,maxBarThickness:opt.thick||40}]},
+  const g2d=ctx.getContext('2d');
+  const grad=horiz?g2d.createLinearGradient(0,0,340,0):g2d.createLinearGradient(0,0,0,240);
+  grad.addColorStop(0,horiz?'#008A3F':'#27BE64'); grad.addColorStop(1,horiz?'#27BE64':'#008A3F');
+  const fill=opt.colors||grad;
+  const ch=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:fill,borderRadius:6,maxBarThickness:opt.thick||40}]},
     options:{indexAxis:horiz?'y':'x',responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const v=horiz?c.parsed.x:c.parsed.y;return money?COP(v):(v+(opt.unit||''));}}}},
       scales:{
@@ -1895,12 +1902,12 @@ function renderTaller(){
   if(tcr) tcr.onclick=()=>{ if(confirm('¿Restablecer todos los costos tercerizados a la estimación automática de la app?')){ localStorage.removeItem(LS_TCOST); invalidateTCost(); renderTaller(); } };
 
   // --- dibujar gráficos (tras insertar el HTML) ---
-  if(sysE.length) tBar('tSysChart',sysE.map(e=>e[0]),sysE.map(e=>e[1]),c=>tSysChart=c,tSysChart,{horizontal:true,colors:'#2E5E9E',unit:' interv.',thick:26});
+  if(sysE.length) tBar('tSysChart',sysE.map(e=>e[0]),sysE.map(e=>e[1]),c=>tSysChart=c,tSysChart,{horizontal:true,colors:'#9BCA3C',unit:' interv.',thick:26});
   if(estN){
     const ec=[]; for(let i=1;i<=10;i++)ec.push(i<=4?'#FF3B30':(i<=6?'#FF9F0A':'#34C759'));
     tBar('tEstadoChart',['1','2','3','4','5','6','7','8','9','10'],estCounts.slice(1),c=>tEstadoChart=c,tEstadoChart,{colors:ec,unit:' veh.'});
   }
-  if(tl.labels.length) tBar('tTimeChart',tl.labels,tl.data,c=>tTimeChart=c,tTimeChart,{colors:'#0A2342',unit:' interv.'});
+  if(tl.labels.length) tBar('tTimeChart',tl.labels,tl.data,c=>tTimeChart=c,tTimeChart,{unit:' interv.'});
 }
 function tTimeBuckets(R,dayAgg){
   if(!R) return {labels:[],data:[]};
@@ -2333,8 +2340,8 @@ function renderLlantas(){
   // charts
   const bcol=['#FF3B30','#FF9F0A','#F2C94C','#7FC77F','#34C759','#1e8449'];
   tBar('llSurcoChart',['≤2','3-4','5-6','7-8','9-10','≥11'],buckets,c=>llSurcoChart=c,llSurcoChart,{colors:bcol,unit:' llantas'});
-  if(me.length) tBar('llMarcaChart',me.map(e=>e[0]),me.map(e=>e[1].n),c=>llMarcaChart=c,llMarcaChart,{horizontal:true,colors:'#2E5E9E',unit:' llantas',thick:22});
-  if(pe.length) tBar('llPosChart',pe.map(e=>'P'+e[0]),pe.map(e=>+(e[1].sum/e[1].n).toFixed(1)),c=>llPosChart=c,llPosChart,{colors:'#0A2342',unit:' mm'});
+  if(me.length) tBar('llMarcaChart',me.map(e=>e[0]),me.map(e=>e[1].n),c=>llMarcaChart=c,llMarcaChart,{horizontal:true,colors:'#9BCA3C',unit:' llantas',thick:22});
+  if(pe.length) tBar('llPosChart',pe.map(e=>'P'+e[0]),pe.map(e=>+(e[1].sum/e[1].n).toFixed(1)),c=>llPosChart=c,llPosChart,{unit:' mm'});
 }
 
 function apiKey(){return ((localStorage.getItem(LS_APIKEY)||'').trim())||APIKEY_DEFAULT;}
