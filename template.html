@@ -900,9 +900,14 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
   <!-- ============ AJUSTES ============ -->
   <div id="tab-ajustes" class="hidden">
     <div class="section">
-      <div class="section-h">Precios por tipo de aseo (COP)</div>
-      <div class="note">Edita el valor de cada combinación. Los cambios se guardan en este dispositivo y recalculan los totales al instante.</div>
+      <div class="section-h">Precios base por tipo de aseo (COP)</div>
+      <div class="note">Precio <b>base</b> de cada combinación, calibrado para <b>Microbús</b> (factor 1.0). El valor final de cada aseo = precio base × <b>factor de la clase del vehículo</b> (tabla siguiente). Se guarda en este dispositivo y recalcula al instante.</div>
       <div class="card" id="priceList"></div>
+    </div>
+    <div class="section">
+      <div class="section-h">Factor por tipo de vehículo</div>
+      <div class="note">Multiplicador del precio según la <b>clase</b> del vehículo (base de datos de vehículos). Un Bus/Buseta cuesta más que un Microbús; una camioneta/automóvil, menos.</div>
+      <div class="card" id="factorList"></div>
     </div>
     <div class="section" style="display:flex;gap:10px;">
       <button class="btn danger" id="resetPrices">Restablecer</button>
@@ -1005,17 +1010,34 @@ function esLavador(r){const q=norm(r.lugarAseo||'').trim();return q===''||q.incl
 function esConductor(r){return norm(r.lugarAseo||'').includes('conductor');}
 function esProveedor(r){const q=norm(r.lugarAseo||'').trim();return q!==''&&!q.includes('finca')&&!q.includes('piscu')&&!q.includes('conductor');}
 function esInterno(r){return esLavador(r);}
-function valorAseo(r){return esProveedor(r)?(r.valExt||0):priceOf(r.tipo).v;}
+function valorAseo(r){return esProveedor(r)?(r.valExt||0):priceOf(r.tipo, r).v;}
 function proveedor(r){return (r.lugarAseo||'').trim();}
 
 /* normalizador de combinación */
 function sig(tipo){return (tipo||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean).sort().join(' | ');}
 const SIG2KEY = {}; Object.keys(DATA.precios).forEach(k=>SIG2KEY[sig(k)]=k);
-function priceOf(tipo){
-  if(PRICES.hasOwnProperty(tipo)) return {v:PRICES[tipo],known:true};
-  const k=SIG2KEY[sig(tipo)];
-  if(k && PRICES.hasOwnProperty(k)) return {v:PRICES[k],known:true};
-  return {v:0,known:false};
+/* ----- clase de vehículo (base DATA.vehiculos) → factor de precio por tipo de vehículo ----- */
+let _vehMaps=null;
+function vehMaps(){ if(_vehMaps) return _vehMaps; const byNum={},byPlaca={};
+  (DATA.vehiculos||[]).forEach(v=>{ if(v.numero) byNum[String(v.numero).trim()]=v; if(v.placa) byPlaca[normPlaca(v.placa)]=v; });
+  _vehMaps={byNum,byPlaca}; return _vehMaps; }
+function vehInfo(r){ if(!r) return null; const m=vehMaps();
+  const num=(r.vehiculo!=null?String(r.vehiculo):'').trim();
+  return (num&&m.byNum[num]) || (r.placa&&m.byPlaca[normPlaca(r.placa)]) || null; }
+function vehClaseDe(r){ const v=vehInfo(r); return v?(v.clase||''):''; }
+const FACTOR_DEF={'Bus':1.30,'Buseta':1.15,'Microbús':1.00,'Campero':0.75,'Camioneta':0.60,'Automóvil':0.50,'(sin clase)':1.00};
+const CLASES_ORD=['Bus','Buseta','Microbús','Campero','Camioneta','Automóvil','(sin clase)'];
+const LS_FACTORS='tecc_factores_clase_v1';
+function loadFactors(){try{return {...FACTOR_DEF,...(JSON.parse(localStorage.getItem(LS_FACTORS)||'{}')||{})};}catch(e){return {...FACTOR_DEF};}}
+let FACTORS=loadFactors();
+function saveFactors(f){localStorage.setItem(LS_FACTORS,JSON.stringify(f));}
+function claseFactor(clase){const k=clase||'(sin clase)'; return (k in FACTORS)?(+FACTORS[k]||0):(+FACTORS['(sin clase)']||1);}
+function priceOf(tipo, rec){
+  let base=0, known=false;
+  if(PRICES.hasOwnProperty(tipo)){ base=PRICES[tipo]; known=true; }
+  else { const k=SIG2KEY[sig(tipo)]; if(k && PRICES.hasOwnProperty(k)){ base=PRICES[k]; known=true; } }
+  const f = rec ? claseFactor(vehClaseDe(rec)) : 1;
+  return {v: Math.round(base*f), known, base, factor:f};
 }
 
 /* ---------- periodo ---------- */
@@ -1108,7 +1130,7 @@ function render(){
   let total=0, sinValor=0; const veh=new Set();
   const byTipo={}, byCC={}, cntCC={};
   recs.forEach(r=>{
-    const p=priceOf(r.tipo); total+=p.v; if(!p.known) sinValor++;
+    const p=priceOf(r.tipo, r); total+=p.v; if(!p.known) sinValor++;
     if(r.vehiculo) veh.add(r.vehiculo);
     if(!byTipo[r.tipo]) byTipo[r.tipo]={n:0,sum:0,known:p.known};
     byTipo[r.tipo].n++; byTipo[r.tipo].sum+=p.v;
@@ -1154,7 +1176,7 @@ function render(){
   const ccE=Object.entries(byCC).sort((a,b)=>b[1]-a[1]);
   drawBar('ccChart', ccE.map(e=>e[0]), ccE.map(e=>e[1]), c=>ccChart=c, ccChart);
   // chart por mes (todo el periodo siempre · solo internos)
-  const mAgg={}; DATA.aseos.records.forEach(r=>{if(!esInterno(r))return;const p=priceOf(r.tipo);mAgg[r.ym]=(mAgg[r.ym]||0)+p.v;});
+  const mAgg={}; DATA.aseos.records.forEach(r=>{if(!esInterno(r))return;const p=priceOf(r.tipo, r);mAgg[r.ym]=(mAgg[r.ym]||0)+p.v;});
   const mk=months.slice();
   drawBar('monthChart', mk.map(fmtMonth), mk.map(m=>mAgg[m]||0), c=>monthChart=c, monthChart, months.includes(period)?mk.indexOf(period):-1);
   renderProveedores();
@@ -1218,7 +1240,7 @@ function renderConductores(){
   const recs=recordsForPeriod().filter(esConductor);
   let total=0,sinValor=0; const vehs=new Set(),conds={},byTipo={};
   recs.forEach(r=>{
-    const p=priceOf(r.tipo);total+=p.v;if(!p.known)sinValor++;
+    const p=priceOf(r.tipo, r);total+=p.v;if(!p.known)sinValor++;
     if(r.vehiculo)vehs.add(r.vehiculo);
     const cn=capNombre((r.conductor||'').trim())||'(sin conductor)';
     (conds[cn]=conds[cn]||{n:0,sum:0}).n++;conds[cn].sum+=p.v;
@@ -1254,7 +1276,7 @@ function renderConductores(){
       <div class="bd-amt">${COP(o.sum)}</div></div>
       <div class="bar cond"><i style="width:${Math.max(3,o.sum/maxS*100)}%"></i></div></div>`;
   }).join('')||'<div class="empty">Sin lavadas en este periodo</div>';
-  const mAgg={}; DATA.aseos.records.forEach(r=>{if(!esConductor(r))return;const p=priceOf(r.tipo);mAgg[r.ym]=(mAgg[r.ym]||0)+p.v;});
+  const mAgg={}; DATA.aseos.records.forEach(r=>{if(!esConductor(r))return;const p=priceOf(r.tipo, r);mAgg[r.ym]=(mAgg[r.ym]||0)+p.v;});
   const mk=months.slice();
   drawBar('condMonthChart',mk.map(fmtMonth),mk.map(m=>mAgg[m]||0),c=>condMonthChart=c,condMonthChart,months.includes(period)?mk.indexOf(period):-1);
 }
@@ -1511,7 +1533,7 @@ function renderCC404(recs){
   if(!all.length){ box.classList.add('hidden'); const list=$('#cc404List'); if(list)list.innerHTML=''; return; }
   box.classList.remove('hidden');
   const map=getCC404Map();
-  let val=0, redir=0; all.forEach(r=>{val+=priceOf(r.tipo).v; if(map[r.id])redir++;});
+  let val=0, redir=0; all.forEach(r=>{val+=priceOf(r.tipo, r).v; if(map[r.id])redir++;});
   $('#cc404n').textContent=`${all.length} aseos · ${COP(val)} · ${redir} redirigidos`;
   const optHtml=cur=>CC404_OPTS.map(x=>`<option value="${x}"${x===cur?' selected':''}>${CC404_LABEL[x]}</option>`).join('');
   const list=$('#cc404List');
@@ -1523,7 +1545,7 @@ function renderCC404(recs){
     const sub = r.vehiculo ? `${dateC} · ${shorten(r.tipo)}` : `${dateC}${cond?' · '+cond:''} · ${shorten(r.tipo)}`;
     return `<div class="cc404-item">
       <div class="i-veh"><span>N°</span>${r.vehiculo||'—'}</div>
-      <div class="i-info"><b><span class="v">${COP(priceOf(r.tipo).v)}</span></b><small>${sub}</small></div>
+      <div class="i-info"><b><span class="v">${COP(priceOf(r.tipo, r).v)}</span></b><small>${sub}</small></div>
       <select class="ios i-sel${cur?' set':''}" data-id="${encodeURIComponent(r.id)}" title="Redirigir N° ${r.vehiculo||'sin número'}">${optHtml(cur)}</select>
     </div>`;
   }).join('');
@@ -2025,6 +2047,18 @@ function renderPrices(){
       render(); flashSaved();
     });
   });
+  // factores por clase de vehículo
+  const fl=$('#factorList');
+  if(fl){
+    const seen={}, cc={};
+    DATA.aseos.records.forEach(r=>{const v=r.vehiculo; if(!v||seen[v])return; seen[v]=1; const cl=vehClaseDe(r)||'(sin clase)'; cc[cl]=(cc[cl]||0)+1;});
+    fl.innerHTML=CLASES_ORD.map(cl=>`<div class="price-row">
+      <div class="nm">${cl}<div class="cnt">${cc[cl]||0} vehículos con aseos · ×factor</div></div>
+      <input class="price-in" type="number" step="0.05" min="0" value="${FACTORS[cl]!=null?FACTORS[cl]:1}" data-cl="${encodeURIComponent(cl)}"></div>`).join('');
+    fl.querySelectorAll('.price-in').forEach(inp=>{
+      inp.addEventListener('input',()=>{ const cl=decodeURIComponent(inp.dataset.cl); FACTORS[cl]=+inp.value||0; saveFactors(FACTORS); render(); flashSaved(); });
+    });
+  }
   $('#costoSemanal').value=COSTO_SEM;
   $('#costoSemanal').oninput=e=>{COSTO_SEM=+e.target.value||0;localStorage.setItem(LS_COSTO,COSTO_SEM);renderTaller();flashSaved();};
   $('#genAt').textContent=DATA.generated_at;
@@ -2053,8 +2087,8 @@ function renderSalaryConfig(){
 let savedT;
 function flashSaved(){const b=$('#savedHint');b.textContent='Guardado ✓';clearTimeout(savedT);savedT=setTimeout(()=>b.textContent='Guardado automático ✓',1200);}
 $('#resetPrices').onclick=()=>{
-  if(!confirm('¿Restablecer todos los precios a los valores originales?'))return;
-  localStorage.removeItem(LS_PRICES);PRICES=loadPrices();renderPrices();render();toast('Precios restablecidos');
+  if(!confirm('¿Restablecer precios base y factores por clase a los valores originales?'))return;
+  localStorage.removeItem(LS_PRICES);localStorage.removeItem(LS_FACTORS);PRICES=loadPrices();FACTORS=loadFactors();renderPrices();render();toast('Precios y factores restablecidos');
 };
 
 /* ---------- conexión en vivo: procesamiento en el navegador ---------- */
