@@ -343,11 +343,19 @@ def main():
             taller_seed = json.load(f)
     taller_all = taller_seed + taller["records"]   # seed + lo que haya en el Sheet
 
+    # Base de datos de vehículos (consolidada de los 2 Excel; SIN PII). Ver import_vehiculos.py
+    vehiculos = []
+    veh_path = os.path.join(here, "vehiculos.json")
+    if os.path.exists(veh_path):
+        with open(veh_path, encoding="utf-8") as f:
+            vehiculos = json.load(f).get("vehiculos", [])
+
     data = {
         "generated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "aseos": {"records": recs, "months": months},
         "taller": {"headers": taller.get("headers", []), "records": taller_all},
         "tallerSeed": taller_seed,
+        "vehiculos": vehiculos,
         "precios": PRECIOS,
         "tallerConfig": TALLER_CONFIG,
         "salarioConfig": SALARIO_CONFIG,

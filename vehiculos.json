@@ -1,0 +1,2557 @@
+{
+ "generatedAt": "import_vehiculos",
+ "count": 119,
+ "vehiculos": [
+  {
+   "placa": "MHQ346",
+   "numero": "N/A",
+   "clase": "Automóvil",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "5",
+   "empresaAfiliadora": "",
+   "empresaCliente": "VEHICULO EN MISION",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "NMQ669",
+   "numero": "N/A",
+   "clase": "Automóvil",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "5",
+   "empresaAfiliadora": "",
+   "empresaCliente": "VEHICULO EN MISION",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "IPV611",
+   "numero": "N/A",
+   "clase": "Automóvil",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "VEHICULO EN MISION",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "QIS275",
+   "numero": "501",
+   "clase": "Bus",
+   "marca": "DONGFENG",
+   "linea": "",
+   "modelo": "2026",
+   "combustible": "DIESEL",
+   "capacidad": "44",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {
+    "soat": "2026-10-31",
+    "rtm": "2027-11-08",
+    "to": "2028-02-06",
+    "bimensual": "2026-08-24",
+    "extintor": "2027-02-28"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "WHU788",
+   "numero": "518",
+   "clase": "Bus",
+   "marca": "HYUNDAI",
+   "linea": "HD78",
+   "modelo": "2015",
+   "combustible": "DIESEL",
+   "capacidad": "37",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2027-02-18",
+    "rtm": "2027-02-02",
+    "to": "2027-06-25",
+    "bimensual": "2026-08-23",
+    "extintor": "2026-06-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WHU789",
+   "numero": "519",
+   "clase": "Bus",
+   "marca": "HYUNDAI",
+   "linea": "HD78",
+   "modelo": "2015",
+   "combustible": "DIESEL",
+   "capacidad": "37",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2027-04-29",
+    "rtm": "2027-05-12",
+    "to": "2027-06-25",
+    "bimensual": "2026-07-12",
+    "extintor": "2027-05-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WHV857",
+   "numero": "520",
+   "clase": "Bus",
+   "marca": "HINO",
+   "linea": "FC9JBUS",
+   "modelo": "2017",
+   "combustible": "DIESEL",
+   "capacidad": "45",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-06-29",
+    "rtm": "2026-07-14",
+    "to": "2026-09-27",
+    "bimensual": "2026-05-27",
+    "extintor": "2027-04-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TJX778",
+   "numero": "526",
+   "clase": "Bus",
+   "marca": "HYUNDAI",
+   "linea": "HD78",
+   "modelo": "2014",
+   "combustible": "DIESEL",
+   "capacidad": "37",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "YUPI",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-07-11",
+    "rtm": "2026-07-10",
+    "to": "2028-03-30",
+    "bimensual": "2026-07-06",
+    "extintor": "2026-10-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TJX335",
+   "numero": "535",
+   "clase": "Bus",
+   "marca": "HYUNDAI",
+   "linea": "HD78",
+   "modelo": "2014",
+   "combustible": "DIESEL",
+   "capacidad": "37",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5 / |",
+   "venc": {
+    "soat": "2027-01-31",
+    "rtm": "2027-02-03",
+    "to": "2028-02-23",
+    "bimensual": "2026-07-14",
+    "extintor": "2027-06-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WHV858",
+   "numero": "540",
+   "clase": "Bus",
+   "marca": "HINO",
+   "linea": "FC9JBUS",
+   "modelo": "2017",
+   "combustible": "DIESEL",
+   "capacidad": "45",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "FAMILIA",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-06-29",
+    "rtm": "2026-07-17",
+    "to": "2026-09-27",
+    "bimensual": "2026-06-23",
+    "extintor": "2026-11-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WDL741",
+   "numero": "541",
+   "clase": "Bus",
+   "marca": "CHEVROLET",
+   "linea": "FRR",
+   "modelo": "2021",
+   "combustible": "DIESEL",
+   "capacidad": "40",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "FAMILIA",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-09-17",
+    "rtm": "2026-09-30",
+    "to": "2026-12-25",
+    "bimensual": "2026-07-11",
+    "extintor": "2026-12-31"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WDL744",
+   "numero": "544",
+   "clase": "Bus",
+   "marca": "CHEVROLET",
+   "linea": "FRR",
+   "modelo": "2021",
+   "combustible": "DIESEL",
+   "capacidad": "40",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "FAMILIA",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-09-30",
+    "rtm": "2026-09-25",
+    "to": "2026-10-29",
+    "bimensual": "2026-03-28",
+    "extintor": "2026-05-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "EQM153",
+   "numero": "553",
+   "clase": "Bus",
+   "marca": "HINO",
+   "linea": "FC9JLTZ",
+   "modelo": "2020",
+   "combustible": "DIESEL",
+   "capacidad": "42",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "FAMILIA",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-07-16",
+    "rtm": "2026-07-18",
+    "to": "2027-08-18",
+    "bimensual": "2026-07-14",
+    "extintor": "2026-12-31"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "VCP938",
+   "numero": "555",
+   "clase": "Bus",
+   "marca": "CHEVROLET",
+   "linea": "",
+   "modelo": "2009",
+   "combustible": "DIESEL",
+   "capacidad": "29",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "EQM156",
+   "numero": "556",
+   "clase": "Bus",
+   "marca": "HINO",
+   "linea": "FC9JLTZ",
+   "modelo": "2020",
+   "combustible": "DIESEL",
+   "capacidad": "42",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "FAMILIA",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-07-16",
+    "rtm": "2026-07-19",
+    "to": "2027-08-18",
+    "bimensual": "2026-07-14",
+    "extintor": "2026-12-31"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TJX782",
+   "numero": "559",
+   "clase": "Bus",
+   "marca": "HYUNDAI",
+   "linea": "HD78",
+   "modelo": "2014",
+   "combustible": "DIESEL",
+   "capacidad": "37",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "YUPI",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-07-11",
+    "rtm": "2026-09-02",
+    "to": "2028-04-15",
+    "bimensual": "2026-07-14",
+    "extintor": "2027-02-28"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TZP996",
+   "numero": "600",
+   "clase": "Bus",
+   "marca": "HINO",
+   "linea": "",
+   "modelo": "2015",
+   "combustible": "DIESEL",
+   "capacidad": "41",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "TZP995",
+   "numero": "408",
+   "clase": "Buseta",
+   "marca": "HINO",
+   "linea": "",
+   "modelo": "2015",
+   "combustible": "DIESEL",
+   "capacidad": "30",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "VCZ175",
+   "numero": "409",
+   "clase": "Buseta",
+   "marca": "HYUNDAI",
+   "linea": "",
+   "modelo": "2013",
+   "combustible": "DIESEL",
+   "capacidad": "25",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "VBW706",
+   "numero": "410",
+   "clase": "Buseta",
+   "marca": "CHEVROLET",
+   "linea": "",
+   "modelo": "2000",
+   "combustible": "DIESEL",
+   "capacidad": "28",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {
+    "soat": "2024-05-25",
+    "rtm": "2024-08-10",
+    "to": "2024-12-31",
+    "bimensual": "2023-10-10"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "TZP397",
+   "numero": "425",
+   "clase": "Buseta",
+   "marca": "HYUNDAI",
+   "linea": "",
+   "modelo": "2015",
+   "combustible": "DIESEL",
+   "capacidad": "25",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "VCZ014",
+   "numero": "428",
+   "clase": "Buseta",
+   "marca": "HYUNDAI",
+   "linea": "",
+   "modelo": "2013",
+   "combustible": "DIESEL",
+   "capacidad": "25",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "TZO227",
+   "numero": "440",
+   "clase": "Buseta",
+   "marca": "HYUNDAI",
+   "linea": "",
+   "modelo": "2014",
+   "combustible": "DIESEL",
+   "capacidad": "25",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "TZP150",
+   "numero": "460",
+   "clase": "Buseta",
+   "marca": "HYUNDAI",
+   "linea": "",
+   "modelo": "2015",
+   "combustible": "DIESEL",
+   "capacidad": "25",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "VCX463",
+   "numero": "463",
+   "clase": "Buseta",
+   "marca": "GOLDEN DRAGON",
+   "linea": "",
+   "modelo": "2012",
+   "combustible": "DIESEL",
+   "capacidad": "18",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "205/70 R15",
+   "venc": {
+    "soat": "2025-02-11",
+    "rtm": "2024-12-13",
+    "to": "2026-03-29",
+    "bimensual": "2024-02-13",
+    "extintor": "2025-01-31"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "WMX011",
+   "numero": "502",
+   "clase": "Buseta",
+   "marca": "HINO",
+   "linea": "XZU710L-HKFRP1",
+   "modelo": "2017",
+   "combustible": "DIESEL",
+   "capacidad": "30",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "Disponible",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WMX012",
+   "numero": "504",
+   "clase": "Buseta",
+   "marca": "HINO",
+   "linea": "",
+   "modelo": "2017",
+   "combustible": "DIESEL",
+   "capacidad": "30",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "EQK671",
+   "numero": "505",
+   "clase": "Buseta",
+   "marca": "VOLKSWAGEN",
+   "linea": "VW 9.160 OD",
+   "modelo": "2018",
+   "combustible": "DIESEL",
+   "capacidad": "31",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "Disponible",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL267",
+   "numero": "510",
+   "clase": "Buseta",
+   "marca": "GOLDEN DRAGON",
+   "linea": "XML6700J15CND",
+   "modelo": "2023",
+   "combustible": "GAS",
+   "capacidad": "30",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA",
+   "ruta": "IGL-3",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TMO578",
+   "numero": "514",
+   "clase": "Buseta",
+   "marca": "CHEVROLET",
+   "linea": "NPR729",
+   "modelo": "2006",
+   "combustible": "DIESEL",
+   "capacidad": "28",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO MARFIL VERDE",
+   "refLlantas": "215/75 RIN 17.5",
+   "venc": {
+    "soat": "2027-02-08",
+    "rtm": "2026-07-15",
+    "to": "2027-04-29",
+    "bimensual": "2026-07-14",
+    "extintor": "2027-05-31"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL325",
+   "numero": "515",
+   "clase": "Buseta",
+   "marca": "GOLDEN DRAGON",
+   "linea": "XML6700J15CND",
+   "modelo": "2023",
+   "combustible": "GAS",
+   "capacidad": "30",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA",
+   "ruta": "IGL5",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "EQL712",
+   "numero": "516",
+   "clase": "Buseta",
+   "marca": "HINO",
+   "linea": "XZU710L-HKFRP1",
+   "modelo": "2019",
+   "combustible": "DIESEL",
+   "capacidad": "29",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "CV-2",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TJW285",
+   "numero": "521",
+   "clase": "Buseta",
+   "marca": "JAC",
+   "linea": "",
+   "modelo": "2012",
+   "combustible": "DIESEL",
+   "capacidad": "41",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {
+    "soat": "2024-03-22",
+    "rtm": "2023-06-30",
+    "to": "2025-03-18",
+    "bimensual": "2022-08-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "TJV525",
+   "numero": "525",
+   "clase": "Buseta",
+   "marca": "JAC",
+   "linea": "HFC 1083 KR1T",
+   "modelo": "2012",
+   "combustible": "DIESEL",
+   "capacidad": "37",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-09-25",
+    "rtm": "2026-09-17",
+    "to": "2026-10-01",
+    "bimensual": "2026-04-17",
+    "extintor": "2026-08-31"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "GVT528",
+   "numero": "528",
+   "clase": "Buseta",
+   "marca": "GOLDEN DRAGON",
+   "linea": "XML6700J15CND",
+   "modelo": "2023",
+   "combustible": "GAS",
+   "capacidad": "31",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "FAMILIA",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {
+    "soat": "2027-04-08",
+    "rtm": "2027-04-17",
+    "to": "2028-05-01",
+    "bimensual": "2026-08-19",
+    "extintor": "2026-12-31"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TMO792",
+   "numero": "530",
+   "clase": "Buseta",
+   "marca": "AGRALE",
+   "linea": "MA 8,5 TCA",
+   "modelo": "2008",
+   "combustible": "DIESEL",
+   "capacidad": "36",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO VERDE",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-07-18",
+    "rtm": "2026-09-10",
+    "to": "2027-12-05",
+    "bimensual": "2026-04-09",
+    "extintor": "2026-06-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "SMW259",
+   "numero": "542",
+   "clase": "Buseta",
+   "marca": "AGRALE",
+   "linea": "",
+   "modelo": "2009",
+   "combustible": "DIESEL",
+   "capacidad": "36",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {
+    "soat": "2025-01-06",
+    "rtm": "2025-01-31",
+    "to": "2025-01-20",
+    "bimensual": "2024-07-24",
+    "extintor": "2025-04-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "EQL 717",
+   "numero": "545",
+   "clase": "Buseta",
+   "marca": "HINO",
+   "linea": "",
+   "modelo": "2019",
+   "combustible": "DIESEL",
+   "capacidad": "29",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TJW306",
+   "numero": "546",
+   "clase": "Buseta",
+   "marca": "JAC",
+   "linea": "NPR729",
+   "modelo": "2012",
+   "combustible": "DIESEL",
+   "capacidad": "41",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-12-23",
+    "rtm": "2026-02-07",
+    "to": "2028-01-25",
+    "bimensual": "2025-09-10",
+    "extintor": "2027-02-28"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "EQL 716",
+   "numero": "548",
+   "clase": "Buseta",
+   "marca": "HINO",
+   "linea": "XZU710L-HKFRP1",
+   "modelo": "2019",
+   "combustible": "DIESEL",
+   "capacidad": "29",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "CVA-2",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WDL843",
+   "numero": "550",
+   "clase": "Buseta",
+   "marca": "MECEDES BENZ OF 917",
+   "linea": "OF 917",
+   "modelo": "2021",
+   "combustible": "DIESEL",
+   "capacidad": "29",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA - UNION PLASTICA",
+   "ruta": "CV-3",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WDL903",
+   "numero": "560",
+   "clase": "Buseta",
+   "marca": "MECEDES BENZ OF 917",
+   "linea": "OF 917",
+   "modelo": "2021",
+   "combustible": "DIESEL",
+   "capacidad": "29",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA - BIMBO",
+   "ruta": "Bimbo Cali",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "SMW258",
+   "numero": "564",
+   "clase": "Buseta",
+   "marca": "AGRALE",
+   "linea": "",
+   "modelo": "2009",
+   "combustible": "DIESEL",
+   "capacidad": "36",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {
+    "soat": "2025-01-06",
+    "rtm": "2025-04-01",
+    "to": "2025-01-20",
+    "bimensual": "2024-12-03",
+    "extintor": "2024-10-31"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "WDM021",
+   "numero": "565",
+   "clase": "Buseta",
+   "marca": "VOLKSWAGEN",
+   "linea": "9.160 OD",
+   "modelo": "2022",
+   "combustible": "DIESEL",
+   "capacidad": "29",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA",
+   "ruta": "CV-6",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "EQM 263",
+   "numero": "566",
+   "clase": "Buseta",
+   "marca": "WOLKSWAGEN",
+   "linea": "9.160 OD",
+   "modelo": "2020",
+   "combustible": "DIESEL",
+   "capacidad": "29",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "IGL-Candelaria",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL375",
+   "numero": "575",
+   "clase": "Buseta",
+   "marca": "GOLDEN DRAGON",
+   "linea": "XML6700J15CND",
+   "modelo": "2023",
+   "combustible": "GAS",
+   "capacidad": "31",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO",
+   "refLlantas": "215/75 RIN 17.5",
+   "venc": {
+    "soat": "2027-05-04",
+    "rtm": "2027-06-16",
+    "to": "2027-04-21",
+    "bimensual": "2026-08-16",
+    "extintor": "2027-05-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL351",
+   "numero": "577",
+   "clase": "Buseta",
+   "marca": "GOLDEN DRAGON",
+   "linea": "XML6700J15CND",
+   "modelo": "2023",
+   "combustible": "GAS",
+   "capacidad": "30",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CLUB CAMPESTRE - CERVECERIA - UNION PLASTICA",
+   "ruta": "Club Campestre",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "VCU060",
+   "numero": "590",
+   "clase": "Buseta",
+   "marca": "HINO",
+   "linea": "FC4JKUZ",
+   "modelo": "2011",
+   "combustible": "DIESEL",
+   "capacidad": "35",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "YUPI",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-09-02",
+    "rtm": "2026-08-08",
+    "to": "2028-04-06",
+    "bimensual": "2026-07-06",
+    "extintor": "2026-06-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "EQM846",
+   "numero": "595",
+   "clase": "Buseta",
+   "marca": "VOLKSWAGEN",
+   "linea": "9.160 OD",
+   "modelo": "2020",
+   "combustible": "DIESEL",
+   "capacidad": "30",
+   "empresaAfiliadora": "",
+   "empresaCliente": "BIMBO",
+   "ruta": "CV-Palmira",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WHV620",
+   "numero": "620",
+   "clase": "Buseta",
+   "marca": "HINO",
+   "linea": "FC9JBUS",
+   "modelo": "2016",
+   "combustible": "DIESEL",
+   "capacidad": "45",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "YUPI",
+   "color": "BLANCO",
+   "refLlantas": "235/75  RIN 17.5",
+   "venc": {
+    "soat": "2027-04-11",
+    "rtm": "2026-07-23",
+    "to": "2027-11-06",
+    "bimensual": "2026-07-14",
+    "extintor": "2026-07-31"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "GVT734",
+   "numero": "034",
+   "clase": "Camioneta",
+   "marca": "RENAULT",
+   "linea": "",
+   "modelo": "2025",
+   "combustible": "",
+   "capacidad": "5",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES TRES PERLAS PLUS S.A.S.",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "215/65 RIN 16",
+   "venc": {
+    "soat": "2026-08-14",
+    "rtm": "2027-08-26",
+    "to": "2026-09-03",
+    "bimensual": "2026-07-14",
+    "extintor": "2026-08-30"
+   },
+   "fuentes": [
+    "BD"
+   ]
+  },
+  {
+   "placa": "WHU837",
+   "numero": "115",
+   "clase": "Camioneta",
+   "marca": "B Y D",
+   "linea": "BYDS6 GLX-I",
+   "modelo": "2015",
+   "combustible": "GASOLINA",
+   "capacidad": "4",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO TIMO",
+   "refLlantas": "225/65 RIN 17",
+   "venc": {
+    "soat": "2027-03-27",
+    "rtm": "2027-03-10",
+    "to": "2027-11-06",
+    "bimensual": "2026-07-08",
+    "extintor": "2026-12-31"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "GVT717",
+   "numero": "17",
+   "clase": "Camioneta",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WCY204",
+   "numero": "1800",
+   "clase": "Camioneta",
+   "marca": "FOTON",
+   "linea": "BJ1037V3MD6-AA",
+   "modelo": "2016",
+   "combustible": "",
+   "capacidad": "4",
+   "empresaAfiliadora": "TRANSPORTES DOYFI S.A.S.",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO",
+   "refLlantas": "255/70 RIN 16",
+   "venc": {
+    "soat": "2027-04-23",
+    "rtm": "2026-07-15",
+    "to": "2027-07-28",
+    "bimensual": "2026-07-14",
+    "extintor": "2026-06-30"
+   },
+   "fuentes": [
+    "BD",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL492",
+   "numero": "2",
+   "clase": "Camioneta",
+   "marca": "",
+   "linea": "NUEVO MASTER",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "5",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "Adicionales",
+   "color": "BLANCO GLACIAL (V)",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "ESY678",
+   "numero": "201",
+   "clase": "Camioneta",
+   "marca": "RENAULT",
+   "linea": "DUSTER",
+   "modelo": "2019",
+   "combustible": "GASOLINA",
+   "capacidad": "4",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "215/65 RIN 16",
+   "venc": {
+    "soat": "2026-10-11",
+    "rtm": "2026-11-25",
+    "to": "2027-10-28",
+    "bimensual": "2026-07-19",
+    "extintor": "2026-08-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "ESY782",
+   "numero": "212",
+   "clase": "Camioneta",
+   "marca": "RENAULT",
+   "linea": "DUSTER",
+   "modelo": "2019",
+   "combustible": "GASOLINA",
+   "capacidad": "4",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "215/65 RIN 16 / 235/75  RIN 17.5",
+   "venc": {
+    "soat": "2026-12-05",
+    "rtm": "2027-02-12",
+    "to": "2027-10-25",
+    "bimensual": "2026-07-21",
+    "extintor": "2026-11-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "GVT034",
+   "numero": "34",
+   "clase": "Camioneta",
+   "marca": "",
+   "linea": "DUSTER",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "5",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL323",
+   "numero": "6",
+   "clase": "Camioneta",
+   "marca": "",
+   "linea": "DUSTER",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "5",
+   "empresaAfiliadora": "",
+   "empresaCliente": "INGREDION",
+   "ruta": "Adicionales",
+   "color": "BLANCO GLACIAL (V)",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "GVT393",
+   "numero": "7",
+   "clase": "Camioneta",
+   "marca": "",
+   "linea": "DUSTER",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "5",
+   "empresaAfiliadora": "",
+   "empresaCliente": "INGREDION",
+   "ruta": "Adicionales",
+   "color": "BLANCO GLACIAL (V)",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL289",
+   "numero": "8",
+   "clase": "Camioneta",
+   "marca": "RENAULT DUSTER",
+   "linea": "DUSTER",
+   "modelo": "2023",
+   "combustible": "GAS",
+   "capacidad": "5",
+   "empresaAfiliadora": "",
+   "empresaCliente": "INGREDION",
+   "ruta": "Ingredion Apoyo Admon Simón Bolívar",
+   "color": "BLANCO GLACIAL (V)",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "HMN106",
+   "numero": "N/A",
+   "clase": "Camioneta",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "VEHICULO EN MISION",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "NXT292",
+   "numero": "N/A",
+   "clase": "Campero",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "VEHICULO EN MISION",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "TJX779",
+   "numero": "101",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "SY6548J1S3BH",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "INGREDION",
+   "ruta": "Ingredion Oeste 1",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "NHQ281",
+   "numero": "1057",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "INGREDION",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "QIS434",
+   "numero": "1434",
+   "clase": "Microbús",
+   "marca": "FOTON",
+   "linea": "",
+   "modelo": "2026",
+   "combustible": "",
+   "capacidad": "16",
+   "empresaAfiliadora": "LEXURY CARS",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {
+    "soat": "2026-12-10",
+    "rtm": "2027-12-11",
+    "to": "2028-01-08",
+    "bimensual": "2026-07-14",
+    "extintor": "2026-12-31"
+   },
+   "fuentes": [
+    "BD"
+   ]
+  },
+  {
+   "placa": "GVT757",
+   "numero": "200",
+   "clase": "Microbús",
+   "marca": "FOTON",
+   "linea": "BJ6608B1DDC-B6",
+   "modelo": "2025",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA",
+   "ruta": "ING PALMIRA",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WDL789",
+   "numero": "202",
+   "clase": "Microbús",
+   "marca": "RENAULT  NUEVA MASTER",
+   "linea": "NUEVO MASTER",
+   "modelo": "2021",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "INGREDION",
+   "ruta": "Ingredion Distrito 1",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "ZNN739",
+   "numero": "207",
+   "clase": "Microbús",
+   "marca": "RENAULT NUEVA MASTER",
+   "linea": "NUEVO MASTER",
+   "modelo": "2022",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA",
+   "ruta": "CVA-3",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WDM092",
+   "numero": "208",
+   "clase": "Microbús",
+   "marca": "RENAULT  NUEVA MASTER",
+   "linea": "NUEVO MASTER",
+   "modelo": "2021",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "PGI",
+   "ruta": "PGI OESTE",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL331",
+   "numero": "211",
+   "clase": "Microbús",
+   "marca": "RENAULT NUEVA MASTER MAXI",
+   "linea": "NUEVO MASTER",
+   "modelo": "2023",
+   "combustible": "DIESEL",
+   "capacidad": "13",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA",
+   "ruta": "ING-6",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL259",
+   "numero": "215",
+   "clase": "Microbús",
+   "marca": "RENAULT NUEVA MASTER",
+   "linea": "NUEVO MASTER",
+   "modelo": "2023",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "PGI",
+   "ruta": "PGI ORIENTE",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WDL852",
+   "numero": "216",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "NUEVO MASTER",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "BIMBO",
+   "ruta": "CV-9",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "EQM818",
+   "numero": "218",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "NUEVO MASTER",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "PGI",
+   "ruta": "PGI SUR ORIENTE",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "ESZ203",
+   "numero": "220",
+   "clase": "Microbús",
+   "marca": "RENAULT  NUEVA MASTER",
+   "linea": "NUEVO MASTER",
+   "modelo": "2021",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "PGI",
+   "ruta": "CV-8",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WDL791",
+   "numero": "222",
+   "clase": "Microbús",
+   "marca": "RENAULT",
+   "linea": "NUEVO MASTER",
+   "modelo": "2021",
+   "combustible": "",
+   "capacidad": "16",
+   "empresaAfiliadora": "TRANSPORTE ESPECIAL UNITUR COLOMBIA SAS",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "215/75 RIN 17.5",
+   "venc": {
+    "soat": "2026-11-11",
+    "rtm": "2026-11-07",
+    "to": "2027-01-13",
+    "bimensual": "2026-07-11",
+    "extintor": "2026-09-30"
+   },
+   "fuentes": [
+    "BD",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "NWR622",
+   "numero": "226",
+   "clase": "Microbús",
+   "marca": "FOTON",
+   "linea": "BJ6608B1DDC-B6",
+   "modelo": "2026",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA",
+   "ruta": "CV-8",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL249",
+   "numero": "228",
+   "clase": "Microbús",
+   "marca": "RENAULT NUEVA MASTER",
+   "linea": "NUEVO MASTER",
+   "modelo": "2023",
+   "combustible": "DIESEL",
+   "capacidad": "13",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA",
+   "ruta": "CV-1",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "JYX241",
+   "numero": "241",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "NUEVO MASTER",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "PGI",
+   "ruta": "PGI SUR",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LKL460",
+   "numero": "2460",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "NUEVO MASTER",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "13",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA",
+   "ruta": "IGL-2",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL304",
+   "numero": "250",
+   "clase": "Microbús",
+   "marca": "RENAULT NUEVA MASTER PLUS",
+   "linea": "NUEVO MASTER",
+   "modelo": "2023",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "PGI",
+   "ruta": "PGI NORTE",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "NYK361",
+   "numero": "2561",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "BJ6608B1DDC-B6",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA",
+   "ruta": "IGL-4 Yumbo",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WDL766",
+   "numero": "266",
+   "clase": "Microbús",
+   "marca": "RENAULT  NUEVA MASTER",
+   "linea": "NUEVO MASTER",
+   "modelo": "2021",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "PGI",
+   "ruta": "CV-4",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "NQL475",
+   "numero": "275",
+   "clase": "Microbús",
+   "marca": "FOTON",
+   "linea": "BJ6608B1DDC-B6",
+   "modelo": "2025",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "FAMILIA",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {
+    "soat": "2027-04-04",
+    "rtm": "2027-04-11",
+    "to": "2027-04-22",
+    "bimensual": "2026-07-25",
+    "extintor": "2026-08-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "LFL324",
+   "numero": "277",
+   "clase": "Microbús",
+   "marca": "RENAULT NUEVA MASTER MAXI",
+   "linea": "NUEVO MASTER",
+   "modelo": "2023",
+   "combustible": "DIESEL",
+   "capacidad": "13",
+   "empresaAfiliadora": "",
+   "empresaCliente": "CERVECERIA",
+   "ruta": "CV-5",
+   "color": "BLANCO GLACIAL",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "NWR906",
+   "numero": "288",
+   "clase": "Microbús",
+   "marca": "DONGFENG",
+   "linea": "",
+   "modelo": "2026",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "TZN163",
+   "numero": "400",
+   "clase": "Microbús",
+   "marca": "JOYLONG",
+   "linea": "",
+   "modelo": "2014",
+   "combustible": "DIESEL",
+   "capacidad": "19",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TJX867",
+   "numero": "401",
+   "clase": "Microbús",
+   "marca": "JINBEI",
+   "linea": "SY6548J1S3BH",
+   "modelo": "2014",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "INGREDION",
+   "ruta": "Ingredion Admon Calle 5",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TZO397",
+   "numero": "403",
+   "clase": "Microbús",
+   "marca": "JINBEI",
+   "linea": "",
+   "modelo": "2015",
+   "combustible": "DIESEL",
+   "capacidad": "17",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TZN759",
+   "numero": "404",
+   "clase": "Microbús",
+   "marca": "JINBEI",
+   "linea": "",
+   "modelo": "2014",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "TZO228",
+   "numero": "407",
+   "clase": "Microbús",
+   "marca": "JINBEI",
+   "linea": "SY6548J1S3BH",
+   "modelo": "2015",
+   "combustible": "DIESEL",
+   "capacidad": "17",
+   "empresaAfiliadora": "",
+   "empresaCliente": "INGREDION",
+   "ruta": "Ingredion Norte 1",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "WCZ566",
+   "numero": "413",
+   "clase": "Microbús",
+   "marca": "JINBEI",
+   "linea": "SY6548J1S3BH",
+   "modelo": "2015",
+   "combustible": "DIESEL",
+   "capacidad": "17",
+   "empresaAfiliadora": "",
+   "empresaCliente": "INGREDION",
+   "ruta": "Ingredion Oeste 2",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TZO139",
+   "numero": "414",
+   "clase": "Microbús",
+   "marca": "JINBEI",
+   "linea": "SY6548J1S3BH",
+   "modelo": "2015",
+   "combustible": "DIESEL",
+   "capacidad": "17",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "Ingredion Sur 1",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "VCZ176",
+   "numero": "415",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "WHS779",
+   "numero": "417",
+   "clase": "Microbús",
+   "marca": "JIMBEI",
+   "linea": "SY6548J1S3BH",
+   "modelo": "2015",
+   "combustible": "DIESEL",
+   "capacidad": "20",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "IGA-1",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TZN758",
+   "numero": "418",
+   "clase": "Microbús",
+   "marca": "JINBEI",
+   "linea": "",
+   "modelo": "2014",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "ZNM657",
+   "numero": "421",
+   "clase": "Microbús",
+   "marca": "FOTON",
+   "linea": "BJ6549B1PDA-AA",
+   "modelo": "2017",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "Bimbo Yumbo",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "EQP975",
+   "numero": "430",
+   "clase": "Microbús",
+   "marca": "GOLDEN DRAGON",
+   "linea": "XML6482E-YJD",
+   "modelo": "2017",
+   "combustible": "GASOLINA",
+   "capacidad": "19",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "Disponible",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TLY131",
+   "numero": "431",
+   "clase": "Microbús",
+   "marca": "JIMBEI",
+   "linea": "SY6548J1S3BH",
+   "modelo": "2013",
+   "combustible": "",
+   "capacidad": "19",
+   "empresaAfiliadora": "LINCOLTUR S.A",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO",
+   "refLlantas": "225/70 RIN 15 / 205/75 RIN15",
+   "venc": {
+    "soat": "2026-11-10",
+    "rtm": "2026-12-13",
+    "to": "2026-12-12",
+    "bimensual": "2026-07-14",
+    "extintor": "2027-04-30"
+   },
+   "fuentes": [
+    "BD",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "EQL832",
+   "numero": "432",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "XML6482E-YJD",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "19",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "Ingredion Sur 2",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "EQL833",
+   "numero": "433",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "XML6482E-YJD",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "19",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "PGI SUR PALMIRA",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "EQK041",
+   "numero": "435",
+   "clase": "Microbús",
+   "marca": "JAC",
+   "linea": "HFC6591KHF",
+   "modelo": "2016",
+   "combustible": "DIESEL",
+   "capacidad": "18",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "Disponible",
+   "color": "BLANCO",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": [
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TJX130",
+   "numero": "436",
+   "clase": "Microbús",
+   "marca": "GOLDEN DRAGON",
+   "linea": "",
+   "modelo": "2014",
+   "combustible": "DIESEL",
+   "capacidad": "18",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "205/75 RIN15 / 225/70 RIN 15",
+   "venc": {
+    "soat": "2025-11-06",
+    "rtm": "2026-02-21",
+    "to": "2025-04-28",
+    "bimensual": "2025-04-21",
+    "extintor": "2025-11-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE"
+   ]
+  },
+  {
+   "placa": "TJX543",
+   "numero": "443",
+   "clase": "Microbús",
+   "marca": "JINBEI",
+   "linea": "",
+   "modelo": "2014",
+   "combustible": "DIESEL",
+   "capacidad": "16",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "225/70 RIN 15 / 205/70 R15",
+   "venc": {
+    "soat": "2027-05-20",
+    "rtm": "2027-05-21",
+    "to": "2027-02-14",
+    "bimensual": "2026-05-27",
+    "extintor": "2026-07-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TJX068",
+   "numero": "453",
+   "clase": "Microbús",
+   "marca": "JINBEI",
+   "linea": "SY6548J1S3BH",
+   "modelo": "2014",
+   "combustible": "DIESEL",
+   "capacidad": "19",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES CIUDAD DE CALI S.A.S",
+   "empresaCliente": "",
+   "ruta": "OMNILIFE",
+   "color": "BLANCO",
+   "refLlantas": "225/70 RIN 15 / 255/70 RIN 16",
+   "venc": {
+    "soat": "2026-09-08",
+    "rtm": "2026-09-09",
+    "to": "2026-09-27",
+    "bimensual": "2026-07-19",
+    "extintor": "2027-05-30"
+   },
+   "fuentes": [
+    "BD",
+    "RC-RCE",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "TTZ781",
+   "numero": "481",
+   "clase": "Microbús",
+   "marca": "JINBEI",
+   "linea": "SY6548J1S3BH",
+   "modelo": "2013",
+   "combustible": "",
+   "capacidad": "19",
+   "empresaAfiliadora": "TRANSPORTES ESPECIALES TRES PERLAS PLUS S.A.S.",
+   "empresaCliente": "",
+   "ruta": "ALCATEK",
+   "color": "BLANCO",
+   "refLlantas": "225/70 RIN 15",
+   "venc": {
+    "soat": "2027-04-29",
+    "rtm": "2027-06-18",
+    "to": "2027-03-12",
+    "bimensual": "2026-07-14",
+    "extintor": "2027-02-28"
+   },
+   "fuentes": [
+    "BD",
+    "TODO-RIESGO"
+   ]
+  },
+  {
+   "placa": "NWR920",
+   "numero": "",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "NWR919",
+   "numero": "",
+   "clase": "Microbús",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "WTV43E",
+   "numero": "2023-08-23",
+   "clase": "",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "VFM08E",
+   "numero": "2023-10-08",
+   "clase": "",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "JFX149",
+   "numero": "2023-10-26",
+   "clase": "",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "VKK673",
+   "numero": "2023-11-20",
+   "clase": "",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "JTS862",
+   "numero": "2023-12-02",
+   "clase": "",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "KDO564",
+   "numero": "2024-01-18",
+   "clase": "",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "ETL002",
+   "numero": "2024-03-01",
+   "clase": "",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "JKS850",
+   "numero": "2024-03-22",
+   "clase": "",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "VMU854",
+   "numero": "2024-05-27",
+   "clase": "",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "TMP388",
+   "numero": "2024-08-10",
+   "clase": "",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  },
+  {
+   "placa": "ETK696",
+   "numero": "",
+   "clase": "",
+   "marca": "",
+   "linea": "",
+   "modelo": "",
+   "combustible": "",
+   "capacidad": "",
+   "empresaAfiliadora": "",
+   "empresaCliente": "",
+   "ruta": "",
+   "color": "",
+   "refLlantas": "",
+   "venc": {},
+   "fuentes": []
+  }
+ ]
+}
