@@ -273,6 +273,30 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .llcal-legend{display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--ios-label2);flex-wrap:wrap;}
 .llcal-legend span{display:inline-flex;align-items:center;gap:6px;}
 .llcal-legend i{width:13px;height:13px;border-radius:3px;display:inline-block;}
+/* ===== Calendario de inspecciones rediseñado: vehículos (filas) × fechas (columnas) ===== */
+.lc-wrap{overflow:auto;max-height:72vh;-webkit-overflow-scrolling:touch;}
+.lc-head{display:flex;position:sticky;top:0;z-index:3;background:var(--ios-bg2);width:max-content;}
+.lc-row{display:flex;width:max-content;align-items:stretch;border-top:1px solid var(--ios-sep);}
+.lc-veh{position:sticky;left:0;z-index:2;flex:0 0 118px;width:118px;background:var(--ios-bg2);border-right:1px solid var(--ios-sep);padding:6px 8px;display:flex;flex-direction:column;justify-content:center;}
+.lc-veh b{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1;}
+.lc-veh small{font-size:10px;color:var(--ios-label3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lc-head .lc-veh{z-index:4;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3);font-weight:800;}
+.lc-d{flex:0 0 46px;width:46px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:9.5px;font-weight:700;color:var(--ios-label3);padding:5px 2px;line-height:1.15;font-variant-numeric:tabular-nums;}
+.lc-cell{flex:0 0 46px;width:46px;min-height:31px;display:flex;align-items:center;justify-content:center;}
+.lc-cell.on{cursor:pointer;}
+.lc-cell.on i{width:23px;height:23px;border-radius:7px;background:var(--tecc-verde);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;font-style:normal;box-shadow:0 1px 3px rgba(0,161,75,.45);transition:transform .14s;}
+.lc-cell.on.crit i{background:var(--red);box-shadow:0 1px 3px rgba(229,57,46,.45);}
+@media(hover:hover){.lc-cell.on:hover i{transform:scale(1.14);}}
+.lc-cell.sel i{outline:2px solid var(--ios-label);outline-offset:2px;}
+.lc-days{flex:0 0 92px;width:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-left:1px solid var(--ios-sep);font-size:13px;font-weight:800;padding:4px;text-align:center;font-variant-numeric:tabular-nums;}
+.lc-days small{font-size:8.5px;font-weight:600;color:var(--ios-label3);text-transform:uppercase;letter-spacing:.3px;}
+.lc-days.ok{color:var(--tecc-verde);} .lc-days.warn{color:var(--orange);} .lc-days.bad{color:var(--red);}
+.lc-head .lc-days{color:var(--ios-label3);font-size:9.5px;text-transform:uppercase;font-weight:800;}
+.lc-row.sel{background:rgba(0,161,75,.07);}
+.lc-row.sel .lc-veh{background:var(--tint);color:#fff;}
+.lc-row.sel .lc-veh b{color:#fff;} .lc-row.sel .lc-veh small{color:rgba(255,255,255,.82);}
+.lc-detail{margin-top:12px;background:var(--ios-bg2);border-radius:14px;padding:12px 14px;font-size:13px;box-shadow:var(--shadow-md);min-height:20px;}
+.lc-detail .cd-top{font-weight:700;margin-bottom:9px;}
 /* desglose por vehículo */
 .llveh{padding:9px 14px;border-bottom:1px solid var(--ios-sep);}
 .llveh:last-child{border-bottom:0;}
@@ -2524,14 +2548,27 @@ function renderLlantas(){
   const presHtml=presList.slice(0,40).map(p=>`<div class="lltire"><div class="pl">${p.placa}</div><div class="pos">P${p.pos}</div><div class="inf">Presión ${p.act} psi<small>deseada ${p.des} psi</small></div><div class="sv ${p.act<p.des?'a':'r'}">${p.act<p.des?'baja':'alta'}</div></div>`).join('')||'<div class="empty">Presiones dentro de rango</div>';
   H.push(`<div class="section"><div class="section-h">Presión fuera de rango (${presFuera})</div><div class="card">${presHtml}</div></div>`);
 
-  // 8) CALENDARIO — filas=fechas/días, columnas=placas
-  const byFP={}; all.forEach(r=>{const k=r.fecha+'|'+r.placa;const o=byFP[k]||(byFP[k]={n:0,crit:0});o.n++;const sm=surco(r);if(sm!=null&&sm<=lim(r))o.crit++;});
-  const head=`<div class="llcal-row llcal-headrow"><div class="llcal-d">Día / placa →</div>${placas.map(p=>`<div class="llcal-h"><span>${p}</span></div>`).join('')}</div>`;
-  const crows=fechas.slice().reverse().map(f=>`<div class="llcal-row"><div class="llcal-d">${TDIAS[parseDate(f).getDay()]} ${fmtDShort(f)}<small>${f.slice(0,4)}</small></div>${placas.map(p=>{const o=byFP[f+'|'+p];return o?`<div class="llcal-cell ${o.crit?'crit':'on'}" title="${p} · ${fmtD(f)} · ${o.n} llantas${o.crit?' · '+o.crit+' urgentes':''}">${o.crit||'✓'}</div>`:'<div class="llcal-cell"></div>';}).join('')}</div>`).join('');
+  // 8) CALENDARIO rediseñado — filas=vehículos, columnas=fechas de inspección, última col=días s/insp
+  const npl=p=>normPlaca(p);
+  const byFP={}; all.forEach(r=>{const k=r.fecha+'|'+npl(r.placa);const o=byFP[k]||(byFP[k]={n:0,crit:0});o.n++;const sm=surco(r);if(sm!=null&&sm<=lim(r))o.crit++;});
+  const lastNP={}; all.forEach(r=>{const k=npl(r.placa); if(!lastNP[k]||r.fecha>lastNP[k])lastNP[k]=r.fecha;});
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+  const diasOf=k=>{const f=lastNP[k]; return f?Math.round((hoy-parseDate(f))/86400000):null;};
+  const lrowsData=[]; const vistoNP=new Set();
+  FLEET.forEach(([pl,lab])=>{const k=npl(pl); if(vistoNP.has(k))return; vistoNP.add(k); lrowsData.push({placa:pl,label:lab,np:k});});
+  [...new Set(all.map(r=>npl(r.placa)))].forEach(k=>{ if(!vistoNP.has(k)){vistoNP.add(k); const raw=all.find(r=>npl(r.placa)===k); lrowsData.push({placa:raw?raw.placa:k,label:'(fuera de flota)',np:k});} });
+  lrowsData.sort((a,b)=>{const va=diasOf(a.np), vb=diasOf(b.np); return (vb==null?1e9:vb)-(va==null?1e9:va);});  // peor primero (nunca/más días arriba)
+  const dCls=d=>d==null?'bad':d>120?'bad':d>60?'warn':'ok';
+  const lhead=`<div class="lc-head"><div class="lc-veh">Vehículo</div>${fechas.map(f=>`<div class="lc-d">${f.slice(8,10)}/${f.slice(5,7)}<br>${f.slice(2,4)}</div>`).join('')}<div class="lc-days">Días s/insp.</div></div>`;
+  const lcrows=lrowsData.map(v=>{
+    const cells=fechas.map(f=>{const o=byFP[f+'|'+v.np]; return o?`<div class="lc-cell on${o.crit?' crit':''}" data-pl="${v.np}" data-f="${f}" title="${v.placa} · ${fmtD(f)} · ${o.n} llantas${o.crit?' · '+o.crit+' urgentes':''}"><i>✓</i></div>`:'<div class="lc-cell"></div>';}).join('');
+    const d=diasOf(v.np);
+    return `<div class="lc-row" data-pl="${v.np}"><div class="lc-veh"><b>${v.label}</b><small>${v.placa}</small></div>${cells}<div class="lc-days ${dCls(d)}">${d==null?'nunca':d+' d'}<small>${d==null?'sin registro':'desde última'}</small></div></div>`;
+  }).join('');
   H.push(`<div class="section span2"><div class="section-hero">Calendario de inspecciones</div>
-    <div class="note" style="margin:-4px 4px 9px"><b>Columnas = placas</b>, <b>filas = días</b> de inspección. <b style="color:var(--green)">Verde</b> = inspeccionada · <b style="color:var(--red)">rojo</b> = ese día tenía llantas bajo el mínimo (muestra cuántas).</div>
-    <div class="card" style="padding:10px"><div class="llcal-scroll">${head}${crows}</div></div>
-    <div class="llcal-legend"><span><i style="background:var(--green)"></i>Inspeccionada</span><span><i style="background:var(--red)"></i>Con llantas urgentes</span><span><i style="background:var(--ios-bg)"></i>Sin inspección ese día</span></div>
+    <div class="note" style="margin:-4px 4px 9px"><b>Filas = vehículos</b>, <b>columnas = fechas de inspección</b>. <b style="color:var(--green)">Verde ✓</b> = inspeccionada (rojo = tenía llantas urgentes) · vacío = sin inspección. La <b>última columna</b> = hace cuántos días fue la última inspección (rojo = +120 días o nunca). Toca un recuadro para resaltar el vehículo y ver el detalle abajo.</div>
+    <div class="card" style="padding:8px"><div class="lc-wrap">${lhead}${lcrows}</div></div>
+    <div class="lc-detail" id="llDetail">Toca un recuadro verde para ver el resumen de esa inspección (todas las llantas, dimensiones, surcos y presión).</div>
   </div>`);
 
   body.innerHTML=H.join('');
@@ -2540,6 +2577,37 @@ function renderLlantas(){
   tBar('llSurcoChart',['≤2','3-4','5-6','7-8','9-10','≥11'],buckets,c=>llSurcoChart=c,llSurcoChart,{colors:bcol,unit:' llantas'});
   if(me.length) tBar('llMarcaChart',me.map(e=>e[0]),me.map(e=>e[1].n),c=>llMarcaChart=c,llMarcaChart,{horizontal:true,colors:'#9BCA3C',unit:' llantas',thick:22});
   if(pe.length) tBar('llPosChart',pe.map(e=>'P'+e[0]),pe.map(e=>+(e[1].sum/e[1].n).toFixed(1)),c=>llPosChart=c,llPosChart,{unit:' mm'});
+  // calendario: click en recuadro → resalta toda la fila (vehículo) + detalle de la inspección
+  const lw=body.querySelector('.lc-wrap');
+  if(lw) lw.querySelectorAll('.lc-cell.on').forEach(c=>c.onclick=()=>{
+    lw.querySelectorAll('.lc-row.sel').forEach(x=>x.classList.remove('sel'));
+    lw.querySelectorAll('.lc-cell.sel').forEach(x=>x.classList.remove('sel'));
+    c.classList.add('sel'); const row=c.closest('.lc-row'); if(row) row.classList.add('sel');
+    llInspDetail(c.dataset.pl, c.dataset.f);
+  });
+}
+function llInspDetail(np, fecha){
+  const box=$('#llDetail'); if(!box) return;
+  const recs=llLoad().filter(r=>normPlaca(r.placa)===np && r.fecha===fecha)
+    .sort((a,b)=>((parseInt(a.pos,10)||99)-(parseInt(b.pos,10)||99)));
+  if(!recs.length){ box.textContent='Sin datos de esa inspección.'; return; }
+  const v=recs[0];
+  const surco=r=>{const xs=[r.s1,r.s2,r.s3].filter(x=>x!=null);return xs.length?Math.min(...xs):null;};
+  const lim=r=>r.surcoMin!=null?r.surcoMin:2;
+  const rows=recs.map(r=>{const sm=surco(r),L=lim(r);const cls=sm==null?'':sm<=L?'r':sm<=L+2?'a':'g';
+    const surcos=[r.s1,r.s2,r.s3].filter(x=>x!=null).join(' / ')||'—';
+    const pres=r.presAire!=null?(r.presAire+(r.presDes?(' / '+String(r.presDes).split(/[;,]/)[0]):'')+' psi'):'—';
+    return `<tr>
+      <td class="ro">P${r.pos||'—'}</td>
+      <td>${esc(r.marca||'—')} ${esc(r.diseno||'')}${/^r/i.test(r.vida||'')?' · <b>reenc.</b>':''}</td>
+      <td class="ro">${esc(r.dim||'—')}</td>
+      <td class="ro">${esc(r.vida||'—')}</td>
+      <td class="ro">${surcos}</td>
+      <td class="ro sv ${cls}">${sm==null?'—':sm+' mm'}</td>
+      <td class="ro">${esc(pres)}</td></tr>`;}).join('');
+  const ncrit=recs.filter(r=>{const s=surco(r);return s!=null&&s<=lim(r);}).length;
+  box.innerHTML=`<div class="cd-top">🛞 <b>${esc(v.placa)}</b>${v.idExterno?' · N° '+esc(v.idExterno):''}${v.marcaVeh?' · '+esc(v.marcaVeh)+' '+esc(v.modeloVeh||''):''} — ${fmtDLong(fecha)} · <b>${recs.length}</b> llanta${recs.length!==1?'s':''}${v.km!=null?' · '+v.km+' km':''}${ncrit?` · <span style="color:var(--red)">${ncrit} urgente${ncrit!==1?'s':''}</span>`:''}</div>
+    <div class="vtable-wrap" style="max-height:none"><table class="vtable"><thead><tr><th>Pos</th><th>Llanta</th><th>Dim.</th><th>Vida</th><th>Surcos (mm)</th><th>Mín</th><th>Presión</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function apiKey(){return ((localStorage.getItem(LS_APIKEY)||'').trim())||APIKEY_DEFAULT;}
