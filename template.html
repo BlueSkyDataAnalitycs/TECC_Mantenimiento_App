@@ -579,6 +579,16 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 @media (hover:hover) and (pointer:fine){
   .seg button,.subseg button,.chip-btn,.fchip,.btn,.refresh-btn{transition:transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease, background-color .16s ease, border-color .16s ease, color .14s ease, filter .16s ease;will-change:transform;}
 }
+/* ===== Loader (logo TECC flotante) ===== */
+.loaderwrap{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(238,243,241,.72);-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%);}
+.loaderwrap[hidden]{display:none;}
+.loaderbox{display:flex;flex-direction:column;align-items:center;gap:16px;animation:loaderIn .55s cubic-bezier(.22,1,.36,1) both;}
+.loaderlogo{display:none;height:72px;width:auto;filter:drop-shadow(0 12px 22px rgba(16,40,30,.18));animation:loaderFloat 3.4s ease-in-out infinite;}
+.loaderfallback{font-family:'Space Grotesk','Inter',sans-serif;font-size:54px;font-weight:700;letter-spacing:1px;animation:loaderFloat 3.4s ease-in-out infinite;}
+.loadertext{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--ios-label3);}
+@keyframes loaderIn{from{opacity:0;transform:scale(.5);}to{opacity:1;transform:none;}}
+@keyframes loaderFloat{0%{transform:translate(0,0) rotate(0deg);}25%{transform:translate(6px,-8px) rotate(4deg);}50%{transform:translate(0,0) rotate(0deg);}75%{transform:translate(-6px,8px) rotate(-4deg);}100%{transform:translate(0,0) rotate(0deg);}}
+@media (prefers-reduced-motion:reduce){ .loaderlogo,.loaderfallback{animation:none;} }
 /* ===== Pestaña Vehículos ===== */
 .vtoolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
 .vsearch{flex:1;min-width:200px;}
@@ -605,6 +615,14 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 </style>
 </head>
 <body>
+<!-- ===== Loader (logo TECC flotante) para todas las cargas ===== -->
+<div id="loader" class="loaderwrap" hidden>
+  <div class="loaderbox">
+    <img id="loaderLogo" class="loaderlogo" src="logo.png" alt="TECC" onload="this.style.display='block';var f=document.getElementById('loaderFallback');if(f)f.style.display='none';">
+    <div id="loaderFallback" class="loaderfallback"><span class="logotype">TECC</span></div>
+    <div class="loadertext" id="loaderText">Cargando…</div>
+  </div>
+</div>
 <!-- ===== Intro: bus TECC que arranca al hacer scroll ===== -->
 <div id="intro">
   <div class="iframe"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div>
@@ -2479,10 +2497,13 @@ async function fetchSheet(id,key){
   const j=await r.json(); return j.values||[];
 }
 let liveBusy=false;
+function showLoader(msg){ const l=$('#loader'); if(!l) return; const t=$('#loaderText'); if(t&&msg)t.textContent=msg; l.hidden=false; }
+function hideLoader(){ const l=$('#loader'); if(l) l.hidden=true; }
 async function refreshLive(){
   const key=apiKey();
   if(!key){setLiveStatus('🟡 Falta la API key — pégala abajo');toast('Agrega tu API key');const i=$('#apiKeyIn');if(i)i.focus();return;}
   if(liveBusy) return; liveBusy=true;
+  showLoader('Actualizando datos en vivo…');
   const btn=$('#refreshLive'); if(btn){btn.disabled=true;btn.textContent='Actualizando…';}
   const top=$('#topRefresh'); if(top) top.classList.add('spin');
   setLiveStatus('⏳ Conectando con Google Sheets…');
@@ -2504,6 +2525,7 @@ async function refreshLive(){
   }finally{
     liveBusy=false; if(btn){btn.disabled=false;btn.textContent='Actualizar en vivo';}
     if(top) top.classList.remove('spin');
+    hideLoader();
   }
 }
 function wireLive(){
@@ -2682,15 +2704,21 @@ function animateNumbers(){
     if(!isFinite(target)||target<5) return;
     var prefix=raw.slice(0,m.index), suffix=raw.slice(m.index+m[0].length);
     var myId=(el._animId=(el._animId||0)+1);
-    var dur=720, start=performance.now();
+    // resorte tipo Framer useSpring (stiffness 300, damping 20, masa 1) → leve rebote y asentamiento.
+    // Integración por TIEMPO REAL transcurrido (sub-pasos) → robusto aunque el timer se frene.
+    var pos=0, vel=0, k=300, c=20, last=performance.now();
+    el.textContent=prefix+'0'+suffix;
     function step(){ if(el._animId!==myId) return;
-      var p=Math.max(0,Math.min(1,(performance.now()-start)/dur)), e=1-Math.pow(1-p,3);
-      el.textContent=prefix+Math.round(target*e).toLocaleString('es-CO')+suffix;
-      if(p<1) setTimeout(step,16); }
-    el.textContent=prefix+'0'+suffix; setTimeout(step,16);
+      var now=performance.now(), dt=Math.min(0.05,(now-last)/1000); last=now;
+      for(var acc=dt; acc>0;){ var h=Math.min(1/120,acc); var f=-k*(pos-1)-c*vel; vel+=f*h; pos+=vel*h; acc-=h; }
+      var done=Math.abs(pos-1)<0.0008 && Math.abs(vel)<0.0008;
+      el.textContent=prefix+Math.round(target*(done?1:pos)).toLocaleString('es-CO')+suffix;
+      if(!done) setTimeout(step,16);
+    }
+    setTimeout(step,16);
   });
 }
-['render','renderTaller','renderLlantas'].forEach(function(fn){ var o=window[fn];
+['render','renderTaller','renderLlantas','renderVehiculos'].forEach(function(fn){ var o=window[fn];
   if(typeof o==='function'){ window[fn]=function(){ var r=o.apply(this,arguments); try{animateNumbers();}catch(e){} return r; }; } });
 function wireMagnetic(){
   if(!window.matchMedia || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
