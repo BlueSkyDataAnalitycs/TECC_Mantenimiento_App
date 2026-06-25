@@ -575,6 +575,10 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 .hero .sub{font-family:ui-monospace,'SF Mono',Menlo,monospace;letter-spacing:.5px;}
 .hero .chip{font-family:ui-monospace,'SF Mono',Menlo,monospace;text-transform:uppercase;letter-spacing:1px;font-weight:700;background:#E8F24A!important;color:#16241c!important;}
 .cursor-dot{position:fixed;width:7px;height:7px;border-radius:50%;background:var(--tecc-lima);pointer-events:none;z-index:9999;transform:translate(-50%,-50%) scale(1);opacity:.85;transition:opacity .5s ease,transform .5s ease;mix-blend-mode:multiply;}
+/* Botones magnéticos: el transform vuelve con efecto resorte (overshoot) */
+@media (hover:hover) and (pointer:fine){
+  .seg button,.subseg button,.chip-btn,.fchip,.btn,.refresh-btn{transition:transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease, background-color .16s ease, border-color .16s ease, color .14s ease, filter .16s ease;will-change:transform;}
+}
 /* ===== Pestaña Vehículos ===== */
 .vtoolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
 .vsearch{flex:1;min-width:200px;}
@@ -2688,8 +2692,25 @@ function animateNumbers(){
 }
 ['render','renderTaller','renderLlantas'].forEach(function(fn){ var o=window[fn];
   if(typeof o==='function'){ window[fn]=function(){ var r=o.apply(this,arguments); try{animateNumbers();}catch(e){} return r; }; } });
+function wireMagnetic(){
+  if(!window.matchMedia || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const SEL='.seg button, .subseg button, .chip-btn, .fchip, .btn, .refresh-btn';
+  const STR=0.32, MAX=9; let cur=null;
+  const reset=el=>{ if(el) el.style.transform=''; };
+  document.addEventListener('mousemove', function(e){
+    const btn=e.target.closest(SEL);
+    if(btn!==cur){ reset(cur); cur=btn; }
+    if(!btn) return;
+    const r=btn.getBoundingClientRect();
+    let dx=(e.clientX-(r.left+r.width/2))*STR, dy=(e.clientY-(r.top+r.height/2))*STR;
+    dx=Math.max(-MAX,Math.min(MAX,dx)); dy=Math.max(-MAX,Math.min(MAX,dy));
+    btn.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px)';
+  }, {passive:true});
+  window.addEventListener('mouseout', function(e){ if(!e.relatedTarget && cur){ reset(cur); cur=null; } });
+}
 /* ---------- init ---------- */
-buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireIntro(); liveClocks(); cursorTrail();
+buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
 /* si hay API key guardada, intenta traer datos en vivo al abrir */
 if(apiKey()) refreshLive();
 </script>
