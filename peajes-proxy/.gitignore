@@ -1,0 +1,11 @@
+# Secretos — NUNCA se suben al repo
+.env
+certs/
+*.p12
+*.pfx
+*.pem
+*.key
+*.crt
+__pycache__/
+venv/
+.venv/

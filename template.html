@@ -603,6 +603,12 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 .vcell.ro{font-weight:700;color:var(--ios-label2);font-variant-numeric:tabular-nums;}
 .vcell.vvenc{background:rgba(229,57,46,.14);color:#b3261e;font-weight:700;}
 .vcell.vprox{background:rgba(240,140,30,.16);color:#9a5a00;font-weight:700;}
+/* ===== Pestaña Peajes ===== */
+.pj-form{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+.pj-f{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ios-label3);}
+.pj-f .ios{min-width:150px;}
+.pj-status{margin-top:11px;font-size:12.5px;color:var(--ios-label2);font-family:ui-monospace,'SF Mono',Menlo,monospace;}
+.pj-status code{background:var(--ios-bg);padding:1px 5px;border-radius:5px;}
 @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;} }
 @media (prefers-color-scheme:dark) and (min-width:100000px){
   :root{--ios-bg:#0b0c0e;--ios-bg2:#17191d;--ios-sep:rgba(130,135,145,.22);--ios-label:#fff;--ios-label2:#EBEBF5;--tint:#5B9BFF;
@@ -936,12 +942,28 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
   <!-- ============ VEHÍCULOS ============ -->
   <div id="tab-vehiculos" class="hidden dash"></div>
 
-  <div id="tab-peajes" class="hidden">
-    <div class="section"><div class="card"><div class="empty">
-      <div class="ic">🛣️</div>
-      <h3>Pendiente de API</h3>
-      <div>El módulo de peajes estará funcionando próximamente.</div>
-    </div></div></div>
+  <div id="tab-peajes" class="hidden dash">
+    <div class="section span2">
+      <div class="section-hero">Peajes · Flypass</div>
+      <div class="note">Movimientos de peajes de la flota vía el <b>proxy seguro</b> (las credenciales viven en el proxy, no en la app). Pega la URL del proxy y consulta.</div>
+      <div class="card pad">
+        <div class="pj-form">
+          <label class="pj-f"><span>URL del proxy</span><input class="ios" id="pjProxy" placeholder="http://localhost:8088"></label>
+          <label class="pj-f"><span>Tipo</span><select class="ios" id="pjTipo">
+            <option value="CONSUMPTION">Peajes (consumo)</option>
+            <option value="ALL">Todos</option>
+            <option value="PAYMENT">Recargas</option>
+            <option value="ADJUSTMENT">Ajustes</option>
+            <option value="COMMISSION">Comisiones</option>
+          </select></label>
+          <label class="pj-f"><span>Desde</span><input class="ios" id="pjDesde" type="date"></label>
+          <label class="pj-f"><span>Hasta</span><input class="ios" id="pjHasta" type="date"></label>
+          <button class="btn primary" id="pjGo" style="align-self:flex-end">Consultar</button>
+        </div>
+        <div class="pj-status" id="pjStatus">Configura la URL del proxy (ver <code>peajes-proxy/README.md</code>). Máximo 90 días por consulta.</div>
+      </div>
+    </div>
+    <div class="section span2" id="pjResults"></div>
   </div>
 
   <!-- ============ AJUSTES ============ -->
@@ -2646,6 +2668,7 @@ document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
   if(b.dataset.tab==='taller') renderTaller();   // re-render para dimensionar los gráficos al hacerse visible
   if(b.dataset.tab==='llantas') renderLlantas();
   if(b.dataset.tab==='vehiculos') renderVehiculos();
+  if(b.dataset.tab==='peajes') pjInit();
   window.scrollTo({top:0,behavior:'smooth'});
 });
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
@@ -2720,6 +2743,82 @@ function animateNumbers(){
 }
 ['render','renderTaller','renderLlantas','renderVehiculos'].forEach(function(fn){ var o=window[fn];
   if(typeof o==='function'){ window[fn]=function(){ var r=o.apply(this,arguments); try{animateNumbers();}catch(e){} return r; }; } });
+/* ================= PEAJES (Flypass vía proxy) ================= */
+const LS_PJ='tecc_peajes_proxy_v1';
+let PJ_DATA=[], tPjVeh;
+function pjInit(){
+  const p=$('#pjProxy'); if(p&&!p.dataset.wired){ p.value=localStorage.getItem(LS_PJ)||''; p.dataset.wired='1';
+    p.onchange=()=>localStorage.setItem(LS_PJ,p.value.trim()); }
+  const h=$('#pjHasta'), d=$('#pjDesde');
+  if(h&&!h.value){ const now=new Date(); h.value=now.toISOString().slice(0,10);
+    d.value=new Date(now.getTime()-30*86400000).toISOString().slice(0,10); }
+  const go=$('#pjGo'); if(go&&!go.dataset.wired){ go.dataset.wired='1'; go.onclick=fetchPeajes; }
+}
+function pjFechaFly(ymd,end){ return (ymd||'').replace(/-/g,'')+(end?'235959':'000000'); }
+function pjPlaca(m){ const fk=(m.flyKeys||[]).find(k=>(k.type||'').toUpperCase()==='PLATE'); return fk?String(fk.id||'').toUpperCase():''; }
+async function fetchPeajes(){
+  const base=((localStorage.getItem(LS_PJ)||($('#pjProxy')||{}).value||'')+'').trim().replace(/\/+$/,'');
+  const st=$('#pjStatus');
+  if(!base){ if(st)st.textContent='⚠️ Pega primero la URL del proxy.'; return; }
+  localStorage.setItem(LS_PJ,base);
+  const tx=$('#pjTipo').value, d1=$('#pjDesde').value, d2=$('#pjHasta').value;
+  if(!d1||!d2){ if(st)st.textContent='⚠️ Elige el rango de fechas.'; return; }
+  if((new Date(d2)-new Date(d1))>90*86400000){ if(st)st.textContent='⚠️ El rango no puede superar 90 días.'; return; }
+  const url=base+'/api/peajes?transactionType='+encodeURIComponent(tx)+'&dateType=1&startDate='+pjFechaFly(d1)+'&endDate='+pjFechaFly(d2,true)+'&size=80';
+  showLoader('Consultando peajes…'); if(st)st.textContent='⏳ Conectando con Flypass…';
+  try{
+    const r=await fetch(url); let j={}; try{j=await r.json();}catch(e){}
+    if(!r.ok||j.error){ throw new Error(j.error||j.detalle||('HTTP '+r.status)); }
+    PJ_DATA=j.movements||[];
+    if(st)st.textContent='🟢 '+(j.total!=null?j.total:PJ_DATA.length)+' movimientos · '+tx+' · '+d1+' → '+d2+(j.env?(' · '+j.env):'');
+    renderPeajes();
+  }catch(e){
+    if(st)st.textContent='🔴 '+e.message;
+    $('#pjResults').innerHTML='<div class="card pad"><div class="empty"><div class="ic">🛣️</div><h3>No se pudo consultar</h3><div>Revisa que el proxy esté corriendo, la URL sea correcta y las credenciales del <code>.env</code> sean válidas.</div></div></div>';
+  }finally{ hideLoader(); }
+}
+function renderPeajes(){
+  const root=$('#pjResults'); if(!root) return;
+  const movs=PJ_DATA||[];
+  if(!movs.length){ root.innerHTML='<div class="card pad"><div class="empty"><div class="ic">🛣️</div><h3>Sin movimientos</h3><div>No hubo peajes en el rango/tipo seleccionado.</div></div></div>'; return; }
+  let total=0; const byVeh={}, ptos=new Set();
+  movs.forEach(m=>{ const a=+m.amount||0; total+=a;
+    const pl=pjPlaca(m)||'(sin placa)'; (byVeh[pl]=byVeh[pl]||{n:0,sum:0}); byVeh[pl].n++; byVeh[pl].sum+=a;
+    const pt=(m.attentionPoint&&m.attentionPoint.name)||''; if(pt)ptos.add(pt);
+  });
+  const vehE=Object.entries(byVeh).sort((a,b)=>b[1].sum-a[1].sum);
+  const placas=vehE.length;
+  // ordenar movimientos por fecha desc
+  const rows=movs.slice().sort((a,b)=>String(b.movementDate||'').localeCompare(String(a.movementDate||'')));
+  const cap=400, shown=rows.slice(0,cap);
+  const trs=shown.map(m=>{
+    const pl=pjPlaca(m), num=pl?placaANumero(pl):'';
+    const pt=(m.attentionPoint&&m.attentionPoint.name)||'—';
+    return `<tr><td class="ro">${(m.movementDate||'').slice(0,16)}</td>`+
+      `<td class="ro">${pl||'—'}${num?' · '+num:''}</td>`+
+      `<td>${esc(pt)}</td><td>${esc(m.direction||'—')}</td>`+
+      `<td class="ro" style="text-align:right">${COP(+m.amount||0)}</td></tr>`;
+  }).join('');
+  const top=vehE.slice(0,10);
+  root.innerHTML=`
+   <div class="section span2"><div class="hero">
+     <div class="chip">Peajes</div>
+     <div class="cap">Gasto en peajes · periodo consultado</div>
+     <div class="num">${COP(total)}</div>
+     <div class="sub">${movs.length} movimientos · ${placas} vehículos · ${ptos.size} puntos</div>
+   </div>
+   <div class="kpis">
+     <div class="kpi"><div class="k">Total peajes</div><div class="v small">${COP(total)}</div></div>
+     <div class="kpi"><div class="k">Movimientos</div><div class="v">${movs.length}</div></div>
+     <div class="kpi"><div class="k">Vehículos</div><div class="v">${placas}</div></div>
+     <div class="kpi"><div class="k">Puntos de peaje</div><div class="v">${ptos.size}</div></div>
+   </div></div>
+   <div class="section"><div class="section-h">Gasto por vehículo (top 10)</div>
+     <div class="card chartbox"><div class="cwrap"><canvas id="pjVehChart"></canvas></div></div></div>
+   <div class="section span2"><div class="section-h">Movimientos${rows.length>cap?` (mostrando ${cap} de ${rows.length})`:''}</div>
+     <div class="vtable-wrap"><table class="vtable"><thead><tr><th>Fecha</th><th>Placa · N°</th><th>Punto de peaje</th><th>Sentido</th><th style="text-align:right">Monto</th></tr></thead><tbody>${trs}</tbody></table></div></div>`;
+  if(top.length) tBar('pjVehChart', top.map(e=>e[0]), top.map(e=>e[1].sum), c=>tPjVeh=c, tPjVeh, {horizontal:true, money:true, thick:22});
+}
 function wireMagnetic(){
   if(!window.matchMedia || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
   if(matchMedia('(prefers-reduced-motion:reduce)').matches) return;
