@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#00A14B">
 <title>Mantenimiento TECC</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -656,6 +657,11 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 .pj-f .ios{min-width:150px;}
 .pj-status{margin-top:11px;font-size:12.5px;color:var(--ios-label2);font-family:ui-monospace,'SF Mono',Menlo,monospace;}
 .pj-status code{background:var(--ios-bg);padding:1px 5px;border-radius:5px;}
+/* ===== Inspecciones ===== */
+.insp-period{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:12px 0 0;}
+.insp-tchip{display:inline-flex;align-items:center;gap:6px;background:var(--ios-bg);border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:700;}
+.insp-tchip b{font-family:'Space Grotesk','Inter',sans-serif;}
+.insp-types{display:flex;gap:8px;flex-wrap:wrap;}
 @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;} }
 @media (prefers-color-scheme:dark) and (min-width:100000px){
   :root{--ios-bg:#0b0c0e;--ios-bg2:#17191d;--ios-sep:rgba(130,135,145,.22);--ios-label:#fff;--ios-label2:#EBEBF5;--tint:#5B9BFF;
@@ -762,6 +768,7 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
     <button data-tab="taller">Taller</button>
     <button data-tab="llantas">Llantas</button>
     <button data-tab="vehiculos">Vehículos</button>
+    <button data-tab="inspecciones">Inspecciones</button>
     <button data-tab="peajes">Peajes</button>
     <button data-tab="ajustes">Ajustes</button>
   </div>
@@ -1004,6 +1011,29 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
   <!-- ============ PEAJES (pendiente de API) ============ -->
   <!-- ============ VEHÍCULOS ============ -->
   <div id="tab-vehiculos" class="hidden dash"></div>
+
+  <!-- ============ INSPECCIONES ============ -->
+  <div id="tab-inspecciones" class="hidden dash">
+    <div class="section span2">
+      <div class="section-hero">Inspecciones de seguridad</div>
+      <div class="cal-intro">Carga los Excel de inspecciones (<b>botiquín, extintor, bodega, PP/EPP, cinturón, consolidado</b>). El tipo se detecta por el nombre del archivo. Se procesan <b>en este dispositivo, sin llaves</b>.</div>
+      <div id="inspDrop" class="lldrop">
+        <div class="ic">🛡️</div>
+        <h3>Arrastra aquí los Excel de inspecciones</h3>
+        <p>Uno o varios <b>.xlsx / .csv</b>. El tipo (botiquín, extintor…) se detecta por el nombre. Para verlos desde Google, exporta/publica el Sheet de cada inspección y cárgalo aquí (o pásame las URLs públicas y lo conecto keyless como en aseos).</p>
+        <span class="llbtn" id="inspPick">Seleccionar archivos…</span>
+        <input type="file" id="inspFile" accept=".xlsx,.xls,.csv" multiple hidden>
+      </div>
+      <div class="insp-period">
+        <label class="pj-f"><span>Desde</span><input class="ios" id="inspDesde" type="date"></label>
+        <label class="pj-f"><span>Hasta</span><input class="ios" id="inspHasta" type="date"></label>
+        <button class="chip-btn" id="inspExport">⬇︎ Excel</button>
+        <button class="chip-btn" id="inspClear" style="color:var(--red)">Borrar todo</button>
+      </div>
+      <div class="note" id="inspMeta"></div>
+    </div>
+    <div class="section span2" id="inspBody"></div>
+  </div>
 
   <div id="tab-peajes" class="hidden dash">
     <div class="section span2">
@@ -2788,11 +2818,12 @@ function vehExport(){
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
-  ['aseos','taller','llantas','vehiculos','peajes','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
+  ['aseos','taller','llantas','vehiculos','inspecciones','peajes','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
   if(b.dataset.tab==='aseos' && curSub==='general') renderCalendar();
   if(b.dataset.tab==='taller') renderTaller();   // re-render para dimensionar los gráficos al hacerse visible
   if(b.dataset.tab==='llantas') renderLlantas();
   if(b.dataset.tab==='vehiculos') renderVehiculos();
+  if(b.dataset.tab==='inspecciones') renderInspecciones();
   if(b.dataset.tab==='peajes') pjInit();
   window.scrollTo({top:0,behavior:'smooth'});
 });
@@ -2944,6 +2975,188 @@ function renderPeajes(){
      <div class="vtable-wrap"><table class="vtable"><thead><tr><th>Fecha</th><th>Placa · N°</th><th>Punto de peaje</th><th>Sentido</th><th style="text-align:right">Monto</th></tr></thead><tbody>${trs}</tbody></table></div></div>`;
   if(top.length) tBar('pjVehChart', top.map(e=>e[0]), top.map(e=>e[1].sum), c=>tPjVeh=c, tPjVeh, {horizontal:true, money:true, thick:22});
 }
+/* ================= INSPECCIONES (reconstrucción vanilla del TECC KPI Analysis Tool) ================= */
+const LS_INSP='tecc_insp_v1';
+const INSP_TYPES=['Botiquín','Extintor','Bodega','PP/EPP','Cinturón','Consolidado'];
+const INSP_EXPECT=[{name:'Familia',vehicles:7},{name:'Omnilife',vehicles:14},{name:'Yupi',vehicles:3},{name:'Alcatec',vehicles:1},{name:'Bimbo',vehicles:2},{name:'Club Campestre',vehicles:1},{name:'Unión Plástica',vehicles:2},{name:'Cervecería del Valle',vehicles:11},{name:'PGI',vehicles:7}];
+function inspLoad(){try{return JSON.parse(localStorage.getItem(LS_INSP)||'[]')||[];}catch(e){return [];}}
+function inspSaveAll(rows){localStorage.setItem(LS_INSP,JSON.stringify(rows));}
+function inspNormClient(raw){ if(!raw)return 'Sin empresa'; const n=raw.toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+  if(n.includes('familia'))return 'Familia'; if(n.includes('omnilife'))return 'Omnilife'; if(n.includes('yupi'))return 'Yupi';
+  if(n.includes('alcatec')||n.includes('alcatek'))return 'Alcatec'; if(n.includes('bimbo'))return 'Bimbo'; if(n.includes('campestre'))return 'Club Campestre';
+  if(n.includes('union plastica'))return 'Unión Plástica'; if(n.includes('cerveceria'))return 'Cervecería del Valle'; if(n.includes('pgi'))return 'PGI';
+  return raw.toString().trim(); }
+function inspDetectType(name){ const n=(name||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  if(n.includes('botiq'))return 'Botiquín'; if(n.includes('extint'))return 'Extintor'; if(n.includes('bodega'))return 'Bodega';
+  if(n.includes('cinturon'))return 'Cinturón'; if(n.includes('consolidad'))return 'Consolidado'; if(n.includes('epp'))return 'PP/EPP';
+  return 'Consolidado'; }
+function inspParseFile(file){ return new Promise((res,rej)=>{ const rd=new FileReader();
+  rd.onload=e=>{ try{ const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true}); const ws=wb.Sheets[wb.SheetNames[0]]; res(XLSX.utils.sheet_to_json(ws,{defval:null})); }catch(err){rej(err);} };
+  rd.onerror=rej; rd.readAsArrayBuffer(file); }); }
+function inspCols(rows){
+  if(!rows.length)return null; const keys=Object.keys(rows[0]);
+  const sc={}; keys.forEach(k=>{ const vals=rows.slice(0,10).map(r=>r[k]).filter(v=>v!=null&&v!==''); let veh=0,name=0,date=0;
+    vals.forEach(v=>{ const s=v.toString().trim(); if(/^\d{2,4}$/.test(s))veh+=2; else if(/^\d+$/.test(s))veh+=1;
+      if(s.includes(' ')&&/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(s))name+=2; if(v instanceof Date||!isNaN(Date.parse(s)))date+=1; }); sc[k]={veh,name,date}; });
+  const find=(terms,t)=>{ const prim=keys.find(k=>{const kl=k.toLowerCase().trim();return terms.some(x=>kl===x||kl.includes(x));});
+    if(prim&&(!t||sc[prim][t]>0))return prim;
+    if(t){ let best=null; keys.forEach(c=>{ if(sc[c][t]>(best?sc[best][t]:-1))best=c; }); if(best&&sc[best][t]>0)return best; }
+    return prim||null; };
+  let coord=find(['inspector','coordinador','responsable','quien realiza','realizado por','auditor','usuario','analista','tecnico','técnico'],'name');
+  if(!coord)coord=find(['cargo','oficio','posicion','perfil']); if(!coord&&keys.length>1)coord=keys[1];
+  return { timestamp:find(['marca temporal','fecha','dia','date','momento','created','periodo'],'date'),
+    client:find(['cliente','empresa','socio','compañia','compañía','unidad','proyecto','asociado','entidad']),
+    coordinator:coord, driver:find(['nombre conductor','conductor','chofer','empleado','operador'],'name'),
+    vehicle:find(['numero interno','número interno','no. interno','no interno','interno','placa','vehiculo','vehículo','movil','móvil','equipo','unidad','nro'],'veh'),
+    result:find(['resultado','estado','cumplimiento','concepto','calificación','calificacion','veredicto','aprobacion','aprobación','final']) }; }
+function inspMap(rows,type){
+  const cols=inspCols(rows); if(!cols)return []; const today=new Date(); today.setHours(0,0,0,0);
+  return rows.map(row=>{
+    const tsr=row[cols.timestamp||'']; let ts=tsr instanceof Date?tsr:(tsr?new Date(tsr):null); if(ts&&isNaN(ts))ts=null;
+    const client=inspNormClient(row[cols.client||'']||'Sin empresa');
+    const coordinator=(row[cols.coordinator||'']!=null?row[cols.coordinator||'']:'No identificable').toString().trim();
+    const driver=(row[cols.driver||'']||row[cols.coordinator||'']||'No identificado').toString().trim();
+    let vehicle=row[cols.vehicle||'']!=null?row[cols.vehicle||''].toString().toUpperCase().trim():'S/V'; if(vehicle.endsWith('.0'))vehicle=vehicle.slice(0,-2);
+    const resultVal=row[cols.result||'']!=null?row[cols.result||''].toString().toLowerCase():'';
+    const failures=[], hallazgos=[];
+    Object.entries(row).forEach(([key,val])=>{
+      if(val==null||val===''||key===cols.timestamp||key===cols.client||key===cols.vehicle||key===cols.coordinator)return;
+      const vStr=val.toString().toLowerCase().trim(), kLow=key.toLowerCase(); let isF=false,reason='',item=key;
+      if(val instanceof Date||(typeof val==='string'&&/^\d{4}-\d{2}-\d{2}/.test(val))){ const ex=new Date(val); if(!isNaN(ex)&&ex<today){isF=true;reason='Vencimiento expirado';} }
+      if(type==='Botiquín'&&kLow.includes('registre las novedades')){ if(['ninguna','ninguno','n/a','sin novedades'].indexOf(vStr)<0&&vStr.length>2){isF=true;reason='Novedad reportada';item=val.toString();} }
+      if(vStr.includes('mal estado')||vStr==='malo'){isF=true;reason='Mal estado';}
+      if((type==='PP/EPP'||type==='Bodega')&&kLow.includes('observacion')&&(vStr.includes('daño')||vStr.includes('deterioro')||vStr.includes('cambio')||vStr.includes('falla'))){isF=true;reason='Observación negativa';item='Observación: '+val.toString();}
+      if(type==='Consolidado'){ if(vStr.includes('no vigente')){isF=true;reason='No vigente';} else if(vStr.includes('no tiene')){isF=true;reason='No tiene';} }
+      if(isF){ failures.push({vehicle,source:type,date:ts?ts.toISOString():null,item:String(item).slice(0,140),status:reason,inspector:coordinator}); hallazgos.push(key); }
+    });
+    let result=null; if(resultVal){ if(/cumple|vigente|buen|^si$/.test(resultVal))result='Cumple'; else if(/no|falla|deficiente|incorrecto|mal/.test(resultVal))result='No Cumple'; }
+    return { type, ts: ts?ts.toISOString():null, client, coordinator: coordinator||'No identificable', driver, vehicle: vehicle==='S/V'?null:vehicle,
+      result: result||(hallazgos.length?'No Cumple':'Cumple'), hallazgos, failures }; }); }
+async function inspIngest(files){
+  const arr=[...files].filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name)); if(!arr.length){toast('Arrastra Excel (.xlsx/.csv)');return;}
+  showLoader('Procesando inspecciones…');
+  try{
+    const map={}; const keyOf=r=>r.type+'|'+(r.ts||'')+'|'+(r.vehicle||'')+'|'+r.coordinator+'|'+r.client+'|'+(r.hallazgos[0]||'');
+    inspLoad().forEach(r=>map[keyOf(r)]=r); let added=0;
+    for(const f of arr){ const type=inspDetectType(f.name); let rows; try{ rows=await inspParseFile(f); }catch(e){ console.error('insp',f.name,e); continue; }
+      inspMap(rows,type).forEach(r=>{ const k=keyOf(r); if(!(k in map))added++; map[k]=r; }); }
+    inspSaveAll(Object.values(map)); toast(added+' inspecciones cargadas ('+arr.length+' archivo'+(arr.length!==1?'s':'')+')');
+    renderInspecciones();
+  }finally{ hideLoader(); }
+}
+function inspFmtD(iso){ if(!iso)return '—'; const d=new Date(iso); if(isNaN(d))return '—'; return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
+function inspSummary(){
+  const all=inspLoad().map(r=>({...r,_ts:r.ts?new Date(r.ts):null}));
+  const dEl=$('#inspDesde'), hEl=$('#inspHasta');
+  const start=dEl&&dEl.value?parseDate(dEl.value):null, end=hEl&&hEl.value?parseDate(hEl.value):null; if(end)end.setHours(23,59,59,999);
+  const weekly=all.filter(r=> (!start||(r._ts&&r._ts>=start)) && (!end||(r._ts&&r._ts<=end)) );
+  const today=new Date(); today.setHours(0,0,0,0);
+  const days=(start&&end)?Math.max(1,Math.ceil((end-start)/86400000)):30; const scaling=days/30;
+  const byType={}; weekly.forEach(i=>byType[i.type]=(byType[i.type]||0)+1);
+  const coordMap={}; weekly.forEach(i=>{ const c=coordMap[i.coordinator]||(coordMap[i.coordinator]={name:i.coordinator,total:0,Botiquín:0,Extintor:0,Bodega:0,Consolidado:0,Cinturón:0,'PP/EPP':0}); c.total++; if(c[i.type]!=null)c[i.type]++; });
+  const byCoordinator=Object.values(coordMap).sort((a,b)=>b.total-a.total);
+  const clientMap={}; weekly.forEach(i=>{ const c=clientMap[i.client]||(clientMap[i.client]={name:i.client,total:0}); c.total++; });
+  const findings={}; INSP_TYPES.forEach(t=>{ const g=weekly.filter(i=>i.type===t); if(!g.length){findings[t]={rate:'N/A',top:[]};return;}
+    const ok=g.filter(i=>i.result==='Cumple').length; const fm={}; g.forEach(i=>i.hallazgos.forEach(h=>fm[h]=(fm[h]||0)+1));
+    findings[t]={rate:((ok/g.length)*100).toFixed(0)+'%', top:Object.entries(fm).map(([item,c])=>({item,c})).sort((a,b)=>b.c-a.c).slice(0,3)}; });
+  const allFailures=weekly.flatMap(i=>i.failures||[]);
+  // top vencidos: histórico últimos 90 días
+  const h3=all.filter(r=>r._ts&&r._ts>=addDays(today,-90)&&r._ts<=today);
+  const placas=[...new Set(h3.filter(i=>i.vehicle).map(i=>i.vehicle))];
+  const overdue=placas.map(plate=>{ const vh=h3.filter(i=>i.vehicle===plate); let maxDays=-1,worst='Consolidado',lastD=null,lastI='N/A'; const missing=[];
+    ['Botiquín','Extintor','Bodega','Cinturón','Consolidado'].forEach(t=>{ const logs=vh.filter(i=>i.type===t).sort((a,b)=>(b._ts?b._ts.getTime():0)-(a._ts?a._ts.getTime():0)); const last=logs[0];
+      if(last&&last._ts){ const dd=Math.floor((today-last._ts)/86400000); if(dd>maxDays){maxDays=dd;worst=t;lastD=last._ts;lastI=last.coordinator;} } else missing.push(t); });
+    return {plate,client:vh[0]?vh[0].client:'Sin empresa',days:maxDays<0?0:maxDays,worst,lastD,lastI,missing}; }).filter(v=>v.days>0).sort((a,b)=>b.days-a.days).slice(0,20);
+  const totalReal=weekly.length;
+  const expectClients=INSP_EXPECT.map(b=>{ const target=(b.vehicles*6)*scaling; const real=(clientMap[b.name]||{}).total||0;
+    return {name:b.name,vehicles:b.vehicles,expected:Math.ceil(target),real,rate:target>0?(real/target)*100:0}; });
+  const totalExpected=Math.ceil(expectClients.reduce((a,b)=>a+(b.vehicles*6)*scaling,0));
+  const cumple=weekly.filter(i=>i.result==='Cumple').length; const compliance=totalReal?Math.round(cumple/totalReal*100):0;
+  return {weekly,byType,byCoordinator,byClient:Object.values(clientMap).sort((a,b)=>b.total-a.total),findings,allFailures,overdue,
+    expectations:{clients:expectClients,totalExpected,totalReal,totalRate:totalExpected>0?(totalReal/totalExpected)*100:0},
+    totalReal,compliance,days,
+    lectura:`Análisis de ${days} día${days!==1?'s':''}: cobertura ${totalExpected>0?((totalReal/totalExpected)*100).toFixed(0):0}% de la meta (${totalReal}/${totalExpected}), cumplimiento ${compliance}% y ${allFailures.length} novedad${allFailures.length!==1?'es':''} crítica${allFailures.length!==1?'s':''}.` }; }
+function renderInspecciones(){
+  inspWirePeriod();
+  const body=$('#inspBody'), meta=$('#inspMeta'); if(!body)return;
+  const all=inspLoad();
+  if(!all.length){ if(meta)meta.textContent=''; body.innerHTML='<div class="card"><div class="empty"><div class="ic">🛡️</div><h3>Aún no has cargado inspecciones</h3><div>Arrastra arriba los Excel de inspecciones (botiquín, extintor, bodega, PP/EPP, cinturón, consolidado).</div></div></div>'; return; }
+  const s=inspSummary();
+  const fechas=all.map(r=>r.ts).filter(Boolean).sort();
+  if(meta) meta.innerHTML=`<b>${all.length}</b> inspecciones cargadas · ${INSP_TYPES.filter(t=>s.byType[t]).length} tipos · rango de datos ${fechas.length?inspFmtD(fechas[0])+' → '+inspFmtD(fechas[fechas.length-1]):'—'}`;
+  const H=[];
+  // HERO + KPIs
+  H.push(`<div class="section span2"><div class="hero">
+    <div class="chip">${s.days} días</div><div class="cap">Inspecciones de seguridad · periodo</div>
+    <div class="num">${s.totalReal}</div><div class="sub">${s.allFailures.length} novedades · cumplimiento ${s.compliance}% · ${s.overdue.length} vehículos vencidos</div></div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Inspecciones</div><div class="v">${s.totalReal}</div></div>
+      <div class="kpi"><div class="k">Cumplimiento</div><div class="v small ${s.compliance>=80?'':'vwarn'}">${s.compliance}%</div></div>
+      <div class="kpi"><div class="k">Novedades</div><div class="v ${s.allFailures.length?'vbad':''}">${s.allFailures.length}</div></div>
+      <div class="kpi"><div class="k">Cobertura meta</div><div class="v small">${s.expectations.totalRate.toFixed(0)}%</div></div>
+    </div></div>`);
+  // RESUMEN EJECUTIVO + por tipo
+  H.push(`<div class="section span2"><div class="section-hero">Resumen ejecutivo</div>
+    <div class="card pad"><div class="note" style="font-size:13.5px;opacity:.95">${esc(s.lectura)}</div>
+    <div class="insp-types" style="margin-top:10px">${INSP_TYPES.map(t=>`<span class="insp-tchip">${t} <b>${s.byType[t]||0}</b></span>`).join('')}</div></div></div>`);
+  // POR SOCIO (meta vs real)
+  H.push(`<div class="section span2"><div class="section-hero">Cumplimiento por socio</div>
+    <div class="vtable-wrap" style="max-height:none"><table class="vtable"><thead><tr><th>Socio</th><th>Vehículos</th><th>Meta</th><th>Realizadas</th><th>% Logro</th></tr></thead><tbody>`+
+    s.expectations.clients.map(c=>`<tr><td>${esc(c.name)}</td><td class="ro">${c.vehicles}</td><td class="ro">${c.expected}</td><td class="ro">${c.real}</td><td class="ro" style="color:${c.rate>=100?'var(--tecc-verde)':c.rate>=60?'var(--orange)':'var(--red)'};font-weight:800">${c.rate.toFixed(0)}%</td></tr>`).join('')+
+    `<tr style="font-weight:800;border-top:2px solid var(--ios-sep)"><td>TOTAL</td><td></td><td class="ro">${s.expectations.totalExpected}</td><td class="ro">${s.expectations.totalReal}</td><td class="ro">${s.expectations.totalRate.toFixed(0)}%</td></tr>`+
+    `</tbody></table></div></div>`);
+  // POR COORDINADOR
+  H.push(`<div class="section span2"><div class="section-hero">Desempeño por coordinador / inspector</div>
+    <div class="vtable-wrap" style="max-height:420px"><table class="vtable"><thead><tr><th>Coordinador</th><th>Total</th><th>Botiquín</th><th>Extintor</th><th>Bodega</th><th>Consolidado</th><th>Cinturón</th></tr></thead><tbody>`+
+    s.byCoordinator.map(c=>`<tr><td>${esc(c.name)}</td><td class="ro" style="font-weight:800">${c.total}</td><td class="ro">${c['Botiquín']||0}</td><td class="ro">${c['Extintor']||0}</td><td class="ro">${c['Bodega']||0}</td><td class="ro">${c['Consolidado']||0}</td><td class="ro">${c['Cinturón']||0}</td></tr>`).join('')+
+    `</tbody></table></div></div>`);
+  // HALLAZGOS por tipo
+  H.push(`<div class="section span2"><div class="section-hero">Hallazgos y cumplimiento por tipo</div><div class="card">`+
+    INSP_TYPES.map(t=>{const f=s.findings[t];return `<div class="lltire"><div class="pl">${t}</div><div class="inf">${f.top.length?esc(f.top.map(x=>x.item+' ('+x.c+')').join(' · ')).slice(0,90):'Sin hallazgos'}</div><div class="sv ${f.rate==='N/A'?'':parseInt(f.rate)>=80?'g':parseInt(f.rate)>=60?'a':'r'}">${f.rate}</div></div>`;}).join('')+
+    `</div></div>`);
+  // NOVEDADES
+  H.push(`<div class="section span2"><div class="section-hero">Novedades críticas detectadas (${s.allFailures.length})</div>
+    <div class="vtable-wrap"><table class="vtable"><thead><tr><th>Vehículo</th><th>Origen</th><th>Fecha</th><th>Elemento</th><th>Estado</th></tr></thead><tbody>`+
+    (s.allFailures.length?s.allFailures.slice(0,400).map(f=>`<tr><td class="ro">${esc(f.vehicle||'—')}</td><td>${esc(f.source)}</td><td class="ro">${inspFmtD(f.date)}</td><td>${esc(f.item)}</td><td class="ro" style="color:var(--red);font-weight:700">${esc(f.status)}</td></tr>`).join('')
+      :'<tr><td colspan="5" style="text-align:center;color:var(--ios-label3);padding:14px">Sin novedades críticas en el periodo 🎉</td></tr>')+
+    `</tbody></table></div></div>`);
+  // TOP-20 VENCIDOS
+  H.push(`<div class="section span2"><div class="section-hero">Top-20 vehículos con mayor atraso</div>
+    <div class="note" style="margin:-4px 4px 9px">Días desde la última inspección (histórico de 90 días). Rojo = más atrasado.</div>
+    <div class="vtable-wrap"><table class="vtable"><thead><tr><th>Vehículo</th><th>Cliente</th><th>Días atraso</th><th>Tipo crítico</th><th>Última</th><th>Faltantes</th></tr></thead><tbody>`+
+    (s.overdue.length?s.overdue.map(v=>`<tr><td class="ro" style="font-weight:800">${esc(v.plate)}</td><td>${esc(v.client)}</td><td class="ro" style="color:${v.days>30?'var(--red)':v.days>15?'var(--orange)':'inherit'};font-weight:800">${v.days}</td><td>${esc(v.worst)}</td><td class="ro">${v.lastD?inspFmtD(v.lastD.toISOString()):'—'}</td><td>${esc(v.missing.join(', ')||'—')}</td></tr>`).join('')
+      :'<tr><td colspan="6" style="text-align:center;color:var(--ios-label3);padding:14px">Sin vehículos atrasados</td></tr>')+
+    `</tbody></table></div></div>`);
+  body.innerHTML=H.join('');
+}
+let _inspWired=false;
+function inspWirePeriod(){
+  if(_inspWired)return; _inspWired=true;
+  const all=inspLoad(); const fechas=all.map(r=>r.ts).filter(Boolean).sort();
+  const d=$('#inspDesde'), h=$('#inspHasta');
+  if(d&&!d.value&&fechas.length) d.value=ymdOf(new Date(fechas[0]));            // fecha LOCAL (evita corrimiento UTC)
+  if(h&&!h.value) h.value=ymdOf(new Date(fechas.length?fechas[fechas.length-1]:Date.now()));
+  if(d)d.onchange=renderInspecciones; if(h)h.onchange=renderInspecciones;
+  const ex=$('#inspExport'); if(ex)ex.onclick=inspExport;
+  const cl=$('#inspClear'); if(cl)cl.onclick=()=>{ if(confirm('¿Borrar todas las inspecciones cargadas?')){localStorage.removeItem(LS_INSP);_inspWired=false;renderInspecciones();} };
+}
+function inspExport(){
+  const s=inspSummary(); if(!s.totalReal){toast('No hay inspecciones para exportar');return;}
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(s.expectations.clients.map(c=>({Socio:c.name,Vehículos:c.vehicles,Meta:c.expected,Realizadas:c.real,'% Logro':c.rate.toFixed(1)+'%'}))),'Socios');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(s.byCoordinator.map(c=>({Coordinador:c.name,Total:c.total,Botiquín:c['Botiquín']||0,Extintor:c['Extintor']||0,Bodega:c['Bodega']||0,Consolidado:c['Consolidado']||0,Cinturón:c['Cinturón']||0}))),'Coordinadores');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(s.allFailures.map(f=>({Vehículo:f.vehicle,Origen:f.source,Fecha:inspFmtD(f.date),Elemento:f.item,Estado:f.status,Inspector:f.inspector}))),'Novedades');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(s.overdue.map(v=>({Vehículo:v.plate,Cliente:v.client,'Días atraso':v.days,'Tipo crítico':v.worst,Última:v.lastD?inspFmtD(v.lastD.toISOString()):'',Faltantes:v.missing.join(', ')}))),'Top20 Atraso');
+  XLSX.writeFile(wb,'TECC_Inspecciones.xlsx'); toast('Excel de inspecciones descargado');
+}
+function wireInspDrop(){
+  const dz=$('#inspDrop'), inp=$('#inspFile'); if(!dz||dz.dataset.wired)return; dz.dataset.wired='1';
+  dz.addEventListener('click',e=>{ if(e.target.id!=='inspFile') inp.click(); });
+  inp.addEventListener('change',()=>{ if(inp.files.length) inspIngest(inp.files); inp.value=''; });
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();if(ev==='dragleave'&&dz.contains(e.relatedTarget))return;dz.classList.remove('drag');}));
+  dz.addEventListener('drop',e=>{ const fs=e.dataTransfer&&e.dataTransfer.files; if(fs&&fs.length) inspIngest(fs); });
+}
 function wireMagnetic(){
   if(!window.matchMedia || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
   if(matchMedia('(prefers-reduced-motion:reduce)').matches) return;
@@ -2962,7 +3175,7 @@ function wireMagnetic(){
   window.addEventListener('mouseout', function(e){ if(!e.relatedTarget && cur){ reset(cur); cur=null; } });
 }
 /* ---------- init ---------- */
-buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
+buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireInspDrop(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
 </script>
 </body>
 </html>
