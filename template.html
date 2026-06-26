@@ -782,6 +782,7 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
     <span class="empbar-lbl">🏢 Empresa / cliente</span>
     <select class="ios" id="empSel" title="Filtra TODOS los módulos por la empresa cliente que atiende cada vehículo"></select>
     <span class="empbar-hint" id="empHint"></span>
+    <button class="chip-btn" id="globalExport" style="margin-left:auto" title="Exporta a Excel el módulo/submódulo activo (respeta período y empresa)">⬇︎ Exportar Excel</button>
   </div>
 
   <!-- ============ ASEOS (Internos · Externos · General) ============ -->
@@ -1261,6 +1262,7 @@ function wireEmp(){
   sel.value=EMP;
   const upd=()=>{ const h=$('#empHint'); if(!h)return; h.textContent = !EMP ? `${CLIENTES_LISTA.length} clientes mapeados` : (EMP==='(sin cliente)' ? 'Vehículos sin cliente en el mapeo' : `${(CLIENTE_VEH[EMP]||[]).length} vehículos · filtrando todos los módulos`); };
   upd();
+  const ex=$('#globalExport'); if(ex)ex.onclick=exportActive;
   sel.onchange=()=>{ EMP=sel.value; upd();
     render();
     if($('#tab-taller')&&!$('#tab-taller').classList.contains('hidden')) renderTaller();
@@ -1268,6 +1270,51 @@ function wireEmp(){
     if($('#tab-inspecciones')&&!$('#tab-inspecciones').classList.contains('hidden')) renderInspecciones();
     if($('#tab-vehiculos')&&!$('#tab-vehiculos').classList.contains('hidden')) renderVehiculos();
   };
+}
+/* ================= EXPORT A EXCEL (global, sensible al módulo/submódulo activo) ================= */
+function xlsxExport(filebase, sheets){
+  try{
+    const wb=XLSX.utils.book_new(); let any=false;
+    (sheets||[]).forEach(s=>{ if(s&&s.rows&&s.rows.length){ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(s.rows),String(s.name||'Datos').slice(0,31)); any=true; } });
+    if(!any){ toast('No hay datos para exportar en esta vista'); return; }
+    XLSX.writeFile(wb,(filebase||'TECC_export').replace(/[^\w\-]+/g,'_')+'.xlsx');
+    toast('Excel descargado');
+  }catch(e){ console.error('export',e); toast('No se pudo exportar'); }
+}
+function aseoRow(r){ return {Fecha:r.fecha,'N° interno':r.vehiculo,Placa:r.placa||'',Empresa:empresaDeVeh(r.vehiculo)||'(sin cliente)',Centro:r.centro||'',Conductor:r.conductor||'',Tipo:r.tipo||'','Duración(min)':r.durMin||'',Lugar:r.lugarAseo||r.lugar||'','Valor externo':(+r.valExt||0)}; }
+function consolRows(){
+  const recs=recordsForPeriod(); const byVeh={}; recs.forEach(r=>{const v=r.vehiculo||'—';(byVeh[v]=byVeh[v]||[]).push(r);});
+  return Object.entries(byVeh).map(([v,list])=>({'N° interno':v,Empresa:empresaDeVeh(v)||'(sin cliente)','Aseos en periodo':list.length,
+    'Por lavador':list.filter(esLavador).length,'Por proveedor':list.filter(esProveedor).length,'Por conductor':list.filter(esConductor).length})).sort((a,b)=>b['Aseos en periodo']-a['Aseos en periodo']);
+}
+function tallerExportSheets(){
+  const all=(DATA.taller.records||[]).filter(r=>matchEmp(r.placa)); const R=tRange();
+  const recs=(tPeriod==='ALL'||!R)?all.slice():all.filter(r=>r.fecha&&r.fecha>=R.start&&r.fecha<=R.end);
+  const inter=recs.map(r=>({Fecha:r.fecha||'','N° interno':r.placa||'',Empresa:empresaDeVeh(r.placa)||'(sin cliente)',Sistema:tallerSistema(r)||'',Categoría:tallerCat(r)||'(sin categoría)',Detalle:r.especifique||'','Estado previo':estVal(r)!=null?estVal(r):'','Costo tercerizado':tCostOf(r)||0,'Centro/Cédula':r.cc||'',KM:r.km||''}));
+  const dayMap={}; recs.forEach(r=>{ if(!r.fecha)return; const d=dayMap[r.fecha]||(dayMap[r.fecha]={Fecha:r.fecha,Intervenciones:0,'Valor intervenido':0}); d.Intervenciones++; d['Valor intervenido']+=(tCostOf(r)||0); });
+  return [{name:'Intervenciones',rows:inter},{name:'Por día (calendario)',rows:Object.values(dayMap).sort((a,b)=>a.Fecha<b.Fecha?-1:1)}];
+}
+function llExportSheets(){
+  const recs=llLoad().filter(r=>matchEmp(r.placa));
+  return [{name:'Mediciones llantas',rows:recs.map(r=>({Fecha:r.fecha||'',Placa:r.placa||'',Empresa:empresaDeVeh(r.placa)||'(sin cliente)','Posición':r.pos||'',Marca:r.marca||'','Diseño':r.diseno||'',Dimensión:r.dim||'',Vida:r.vida||'','Prof. mínima(mm)':r.surcoMin||'',KM:r.km||'',Observación:r.obs||r.notas||''}))}];
+}
+function exportActive(){
+  const ab=document.querySelector('.seg button.active'); const tab=ab?ab.dataset.tab:'aseos'; const sfx=EMP?('_'+EMP):'';
+  if(tab==='aseos'){
+    const sb=document.querySelector('#tab-aseos .subseg button.active'); const sub=sb?sb.dataset.sub:'lavador';
+    const recs=recordsForPeriod(); let sheets;
+    if(sub==='lavador') sheets=[{name:'Aseos lavador',rows:recs.filter(esLavador).map(aseoRow)}];
+    else if(sub==='conductores') sheets=[{name:'Aseos conductores',rows:recs.filter(esConductor).map(aseoRow)}];
+    else if(sub==='proveedores') sheets=[{name:'Aseos proveedores',rows:recs.filter(esProveedor).map(aseoRow)}];
+    else if(sub==='consolidado') sheets=[{name:'Consolidado',rows:consolRows()},{name:'Detalle aseos',rows:recs.map(aseoRow)}];
+    else sheets=[{name:'Aseos (general)',rows:recs.map(aseoRow)}];
+    xlsxExport('TECC_Aseos_'+sub+sfx,sheets);
+  }
+  else if(tab==='taller'){ xlsxExport('TECC_Taller'+sfx,tallerExportSheets()); }
+  else if(tab==='llantas'){ xlsxExport('TECC_Llantas'+sfx,llExportSheets()); }
+  else if(tab==='inspecciones'){ inspExport(); }
+  else if(tab==='vehiculos'){ xlsxExport('TECC_Vehiculos'+sfx,[{name:'Parque automotor',rows:vehFiltrados().map(r=>Object.fromEntries(VCOLS.map(c=>[c.h,vget(r,c.k)])))}]); }
+  else { toast('Este módulo no tiene datos exportables'); }
 }
 function recordsForPeriod(){
   const R=resolveRange(); if(!R)return [];
