@@ -1070,21 +1070,8 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
       <div class="note"><b>Reglas de asignación:</b> NIDIA GASCA, CARLOS GASCA y TECC = <b>4 días/mes los 3 juntos</b> (en conjunto, repartidos por su valor de aseos y prorrateado al rango). WG = <b>todos los demás días</b> del mes (divisor − días fijos = 20 días/mes). El CC 404 no carga salario: se redirige por aseo en la pestaña Aseos.</div>
     </div>
     <div class="section">
-      <div class="section-h">Conexión en vivo (Google Sheets API)</div>
-      <div class="card">
-        <div class="price-row" style="flex-wrap:wrap;gap:8px">
-          <div class="nm" style="flex:1 1 100%">API key de Google
-            <div class="cnt">Se guarda solo en este dispositivo. Permite leer los formularios en tiempo real.</div>
-          </div>
-          <input class="price-in" id="apiKeyIn" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false" style="flex:1;width:auto;text-align:left;min-width:180px">
-        </div>
-      </div>
-      <div class="section" style="display:flex;gap:10px;margin:12px 0 0">
-        <button class="btn ghost" id="toggleKey" style="flex:0 0 auto;width:auto;padding:13px 16px">👁 Ver</button>
-        <button class="btn primary" id="refreshLive">Actualizar en vivo</button>
-      </div>
-      <div class="note" id="liveStatus">Sin conexión en vivo · usando datos del último build.py</div>
-      <div class="note" style="opacity:.85">¿No tienes API key? Créala gratis en Google Cloud (habilita <b>Google Sheets API</b>) y pégala aquí. Los Sheets ya están compartidos como “cualquiera con el enlace”, así que la key basta para leerlos.</div>
+      <div class="section-h">Origen de los datos</div>
+      <div class="card"><div class="note" style="opacity:.95">🔒 <b>Sin llaves en el sitio.</b> Los datos de aseos y taller se leen de los Google Sheets (compartidos como “cualquiera con el enlace”) <b>al regenerar la app con <code>build.py</code></b>, usando su CSV público — <b>sin ninguna API key</b>. No hay claves expuestas en el front-end. El botón ↻ de arriba recarga la última versión publicada.</div></div>
     </div>
     <div class="section">
       <div class="section-h">Datos</div>
@@ -1105,11 +1092,8 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 const DATA = __DATA_JSON__;
 const COP = n => '$' + Math.round(n||0).toLocaleString('es-CO');
 const $ = s => document.querySelector(s);
-const LS_PRICES='tecc_precios_v1', LS_COSTO='tecc_costo_semanal_v1', LS_APIKEY='tecc_apikey_v1';
-const SHEET_ASEOS='1cTsB7riRbd7u0h3DsTdlItYnUPg_b-s2YcCXIhtx9HY';
-const SHEET_TALLER='1jaxw_YLSa9KNh0F7LZWyTpaixUIGYQpvJloV_yOwvZ0';
-/* API key incrustada (solo lectura de Sheets). Si el usuario pega otra en Ajustes, esa tiene prioridad. */
-const APIKEY_DEFAULT='AIzaSyBB608z6V9FvejeBY0vsLBfKNFUyJy1Ggk';
+const LS_PRICES='tecc_precios_v1', LS_COSTO='tecc_costo_semanal_v1';
+/* SIN llaves en el front-end: los datos los baja build.py por el CSV público de los Sheets (sin API key). */
 
 /* ---------- precios (defaults + overrides locales) ---------- */
 function loadPrices(){
@@ -2632,55 +2616,14 @@ function llInspDetail(np, fecha){
     <div class="vtable-wrap" style="max-height:none"><table class="vtable"><thead><tr><th>Pos</th><th>Llanta</th><th>Dim.</th><th>Vida</th><th>Surcos (mm)</th><th>Mín</th><th>Presión</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-function apiKey(){return ((localStorage.getItem(LS_APIKEY)||'').trim())||APIKEY_DEFAULT;}
-function setLiveStatus(m){const el=$('#liveStatus'); if(el) el.textContent=m;}
-async function fetchSheet(id,key){
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${id}/values/A:AD?key=${encodeURIComponent(key)}`;
-  const r=await fetch(url);
-  if(!r.ok){let msg='HTTP '+r.status;try{const j=await r.json();if(j.error&&j.error.message)msg=j.error.message;}catch(_){}throw new Error(msg);}
-  const j=await r.json(); return j.values||[];
-}
-let liveBusy=false;
+// Loader (lo usa Peajes y cualquier carga)
 function showLoader(msg){ const l=$('#loader'); if(!l) return; const t=$('#loaderText'); if(t&&msg)t.textContent=msg; l.hidden=false; }
 function hideLoader(){ const l=$('#loader'); if(l) l.hidden=true; }
-async function refreshLive(){
-  const key=apiKey();
-  if(!key){setLiveStatus('🟡 Falta la API key — pégala abajo');toast('Agrega tu API key');const i=$('#apiKeyIn');if(i)i.focus();return;}
-  if(liveBusy) return; liveBusy=true;
-  showLoader('Actualizando datos en vivo…');
-  const btn=$('#refreshLive'); if(btn){btn.disabled=true;btn.textContent='Actualizando…';}
-  const top=$('#topRefresh'); if(top) top.classList.add('spin');
-  setLiveStatus('⏳ Conectando con Google Sheets…');
-  try{
-    const [aRows,tRows]=await Promise.all([fetchSheet(SHEET_ASEOS,key),fetchSheet(SHEET_TALLER,key)]);
-    DATA.aseos=processAseos(aRows);
-    // El taller siempre conserva el histórico (seed) + lo nuevo del Sheet
-    const liveTaller=processTaller(tRows);
-    DATA.taller={headers:liveTaller.headers, records:(DATA.tallerSeed||[]).concat(liveTaller.records)};
-    DATA.generated_at=new Date().toLocaleString('es-CO');
-    months.length=0; DATA.aseos.months.forEach(m=>months.push(m));
-    period='ALL';
-    buildPeriodUI(); render(); renderTaller(); renderPrices();
-    setLiveStatus('🟢 En vivo · '+DATA.generated_at+' · '+DATA.aseos.records.length+' aseos · '+DATA.taller.records.length+' taller');
-    toast('Datos actualizados en vivo');
-  }catch(e){
-    setLiveStatus('🔴 Error: '+(e.message||e)+'  (revisa la API key / que la Sheets API esté habilitada)');
-    toast('No se pudo actualizar');
-  }finally{
-    liveBusy=false; if(btn){btn.disabled=false;btn.textContent='Actualizar en vivo';}
-    if(top) top.classList.remove('spin');
-    hideLoader();
-  }
-}
+/* SIN llaves en el sitio público: el front-end NO consulta Google directamente (eso expondría la API key).
+   build.py baja los Sheets por su CSV público (sin llave) y embebe los datos. El botón ↻ recarga la página
+   para traer la última versión publicada. */
 function wireLive(){
-  const inp=$('#apiKeyIn'); if(inp){
-    inp.value=apiKey();
-    inp.addEventListener('input',()=>localStorage.setItem(LS_APIKEY,inp.value.trim()));
-  }
-  const tg=$('#toggleKey'); if(tg) tg.onclick=()=>{inp.type=inp.type==='password'?'text':'password';tg.textContent=inp.type==='password'?'👁 Ver':'🙈 Ocultar';};
-  const rb=$('#refreshLive'); if(rb) rb.onclick=refreshLive;
-  const tr=$('#topRefresh'); if(tr) tr.onclick=refreshLive;
-  if(apiKey()) setLiveStatus('🔵 Conectado · listo para actualizar');
+  const tr=$('#topRefresh'); if(tr) tr.onclick=()=>location.reload();
 }
 
 /* ---------- tabs ---------- */
@@ -3020,8 +2963,6 @@ function wireMagnetic(){
 }
 /* ---------- init ---------- */
 buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
-/* si hay API key guardada, intenta traer datos en vivo al abrir */
-if(apiKey()) refreshLive();
 </script>
 </body>
 </html>

@@ -11,3 +11,6 @@ __pycache__/
 
 # Excel originales con datos personales (NO publicar en repo público)
 data_vehiculos/
+
+# Secretos / llaves (NUNCA se suben). La app NO usa llaves; esto es solo para build.py opcional.
+.env

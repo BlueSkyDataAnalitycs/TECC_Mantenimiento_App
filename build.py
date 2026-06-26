@@ -90,12 +90,39 @@ SALARIO_CONFIG = {
 }
 
 
+def _env(key):
+    """Lee una variable de .env (gitignored) sin dependencias externas."""
+    v = os.environ.get(key)
+    if v:
+        return v.strip()
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(p):
+        for line in open(p, encoding="utf-8"):
+            line = line.strip()
+            if line.startswith("#") or "=" not in line:
+                continue
+            k, val = line.split("=", 1)
+            if k.strip() == key:
+                return val.strip()
+    return ""
+
 def fetch_csv(sheet_id):
+    """Primario: CSV público de Google (SIN llave). Respaldo opcional: Sheets API con GOOGLE_API_KEY del .env."""
     url = GVIZ.format(id=sheet_id)
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=40) as r:
-        raw = r.read().decode("utf-8", errors="replace")
-    return list(csv.reader(io.StringIO(raw)))
+    try:
+        with urllib.request.urlopen(req, timeout=40) as r:
+            raw = r.read().decode("utf-8", errors="replace")
+        return list(csv.reader(io.StringIO(raw)))
+    except Exception as e:
+        key = _env("GOOGLE_API_KEY")
+        if not key:
+            raise
+        print("  ↺ CSV público falló (", e, ") — usando Sheets API con la llave del .env")
+        api = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/A:AD?key={key}"
+        with urllib.request.urlopen(urllib.request.Request(api), timeout=40) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        return data.get("values", [])
 
 
 def col_index(header, *needles):
