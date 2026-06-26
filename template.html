@@ -662,6 +662,11 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 .insp-tchip{display:inline-flex;align-items:center;gap:6px;background:var(--ios-bg);border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:700;}
 .insp-tchip b{font-family:'Space Grotesk','Inter',sans-serif;}
 .insp-types{display:flex;gap:8px;flex-wrap:wrap;}
+/* ===== Barra global de filtro por empresa ===== */
+.empbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;padding:10px 14px;background:var(--ios-bg2);border:1px solid var(--ios-sep);border-radius:14px;}
+.empbar-lbl{font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--ios-label2);text-transform:uppercase;}
+.empbar #empSel{flex:0 1 300px;min-width:180px;}
+.empbar-hint{font-size:12px;color:var(--ios-label3);}
 @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;} }
 @media (prefers-color-scheme:dark) and (min-width:100000px){
   :root{--ios-bg:#0b0c0e;--ios-bg2:#17191d;--ios-sep:rgba(130,135,145,.22);--ios-label:#fff;--ios-label2:#EBEBF5;--tint:#5B9BFF;
@@ -771,6 +776,12 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
     <button data-tab="inspecciones">Inspecciones</button>
     <button data-tab="peajes">Peajes</button>
     <button data-tab="ajustes">Ajustes</button>
+  </div>
+
+  <div class="empbar">
+    <span class="empbar-lbl">🏢 Empresa / cliente</span>
+    <select class="ios" id="empSel" title="Filtra TODOS los módulos por la empresa cliente que atiende cada vehículo"></select>
+    <span class="empbar-hint" id="empHint"></span>
   </div>
 
   <!-- ============ ASEOS (Internos · Externos · General) ============ -->
@@ -1226,10 +1237,43 @@ function monthsCovered(R){
   }
   return frac;
 }
+/* ----- Cliente (empresa) que atiende cada vehículo, por N° interno (mapeo curado del parque) ----- */
+const CLIENTE_VEH={
+ 'Familia':['556','553','528','541','544','540','275','501'],
+ 'Yupi':['590','526','620'],
+ 'Alcatec':['222'],
+ 'Omnilife':['1434','1800','115','201','212','34','519','481','453','431','514','518','535','559'],
+ 'Club Campestre':['516'],
+ 'Unión Plástica':['550','560'],
+ 'Bimbo':['595','216'],
+ 'PGI':['208','215','250','241','218','220','266'],
+ 'Cervecería del Valle':['211','510','2460','200','228','2561','515','226','277','565','476','4260']
+};
+const CLIENTES_LISTA=Object.keys(CLIENTE_VEH);
+const CLIENTE_BY_NUM={}; Object.entries(CLIENTE_VEH).forEach(([cli,nums])=>nums.forEach(n=>{CLIENTE_BY_NUM[String(n).replace(/^0+/,'')]=cli;}));
+function empresaDe(veh){ if(veh==null||veh==='')return ''; const k=String(veh).trim().replace(/^0+/,''); return CLIENTE_BY_NUM[k]||''; }
+function empresaDeVeh(v){ if(v==null||v==='')return ''; let e=empresaDe(v); if(e)return e; const n=(typeof placaANumero==='function')?placaANumero(v):''; return n?empresaDe(n):''; }
+let EMP='';   // filtro global por empresa/cliente ('' = todas)
+function matchEmp(veh){ if(!EMP)return true; const e=empresaDeVeh(veh); return EMP==='(sin cliente)'? !e : e===EMP; }
+function wireEmp(){
+  const sel=$('#empSel'); if(!sel)return;
+  sel.innerHTML='<option value="">Todas las empresas</option>'+CLIENTES_LISTA.map(c=>`<option value="${c}">${c} (${CLIENTE_VEH[c].length} veh.)</option>`).join('')+'<option value="(sin cliente)">— Sin cliente asignado —</option>';
+  sel.value=EMP;
+  const upd=()=>{ const h=$('#empHint'); if(!h)return; h.textContent = !EMP ? `${CLIENTES_LISTA.length} clientes mapeados` : (EMP==='(sin cliente)' ? 'Vehículos sin cliente en el mapeo' : `${(CLIENTE_VEH[EMP]||[]).length} vehículos · filtrando todos los módulos`); };
+  upd();
+  sel.onchange=()=>{ EMP=sel.value; upd();
+    render();
+    if($('#tab-taller')&&!$('#tab-taller').classList.contains('hidden')) renderTaller();
+    if($('#tab-llantas')&&!$('#tab-llantas').classList.contains('hidden')) renderLlantas();
+    if($('#tab-inspecciones')&&!$('#tab-inspecciones').classList.contains('hidden')) renderInspecciones();
+    if($('#tab-vehiculos')&&!$('#tab-vehiculos').classList.contains('hidden')) renderVehiculos();
+  };
+}
 function recordsForPeriod(){
   const R=resolveRange(); if(!R)return [];
-  if(period==='ALL')return DATA.aseos.records;
-  return DATA.aseos.records.filter(r=>r.fecha>=R.start&&r.fecha<=R.end);
+  let recs = (period==='ALL') ? DATA.aseos.records : DATA.aseos.records.filter(r=>r.fecha>=R.start&&r.fecha<=R.end);
+  if(EMP) recs=recs.filter(r=>matchEmp(r.vehiculo));
+  return recs;
 }
 function buildPeriodUI(){
   const sel=$('#periodSel'); sel.innerHTML='';
@@ -1899,7 +1943,7 @@ function tBar(id,labels,data,setter,prev,opt){
 function renderTaller(){
   const body=$('#tallerBody'); if(!body) return;
   tBuildPeriodUI();
-  const all=DATA.taller.records||[];
+  const all=(DATA.taller.records||[]).filter(r=>matchEmp(r.placa));   // placa = N° interno en taller
   const info=$('#tRangeInfo');
   if(!all.length){
     if(info) info.innerHTML='Sin registros del formulario del taller todavía.';
@@ -2468,7 +2512,7 @@ function wireLlantaDrop(){
 const LL_SURCO=v=>v==null?null:Math.min(...v);
 function renderLlantas(){
   const body=$('#llBody'); if(!body)return;
-  const all=llLoad(); const meta=$('#llMeta');
+  const all=llLoad().filter(r=>matchEmp(r.placa)); const meta=$('#llMeta');
   if(!all.length){ if(meta)meta.textContent=''; body.innerHTML='<div class="section"><div class="card"><div class="empty"><div class="ic">🛞</div><h3>Aún no has cargado inspecciones</h3><div>Arrastra los CSV de inspección de llantas en la zona de arriba para ver el análisis.</div></div></div></div>'; return; }
   const surco=r=>{const xs=[r.s1,r.s2,r.s3].filter(v=>v!=null);return xs.length?Math.min(...xs):null;};
   const spread=r=>{const xs=[r.s1,r.s2,r.s3].filter(v=>v!=null);return xs.length>1?(Math.max(...xs)-Math.min(...xs)):null;};
@@ -2754,6 +2798,7 @@ function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g
 function vehFiltrados(){
   let L=(DATA.vehiculos||[]).slice();
   if(vehFiltroClase) L=L.filter(r=>(vget(r,'clase')||'(sin clase)')===vehFiltroClase);
+  if(EMP) L=L.filter(r=>matchEmp(vget(r,'numero')||vget(r,'placa')));
   return L;
 }
 function renderVehiculos(){
@@ -3049,7 +3094,8 @@ function inspSummary(){
   const all=inspLoad().map(r=>({...r,_ts:r.ts?new Date(r.ts):null}));
   const dEl=$('#inspDesde'), hEl=$('#inspHasta');
   const start=dEl&&dEl.value?parseDate(dEl.value):null, end=hEl&&hEl.value?parseDate(hEl.value):null; if(end)end.setHours(23,59,59,999);
-  const weekly=all.filter(r=> (!start||(r._ts&&r._ts>=start)) && (!end||(r._ts&&r._ts<=end)) );
+  const weekly=all.filter(r=> (!start||(r._ts&&r._ts>=start)) && (!end||(r._ts&&r._ts<=end))
+    && (!EMP || (EMP==='(sin cliente)' ? !CLIENTES_LISTA.includes(r.client) : r.client===EMP)) );
   const today=new Date(); today.setHours(0,0,0,0);
   const days=(start&&end)?Math.max(1,Math.ceil((end-start)/86400000)):30; const scaling=days/30;
   const byType={}; weekly.forEach(i=>byType[i.type]=(byType[i.type]||0)+1);
@@ -3175,7 +3221,7 @@ function wireMagnetic(){
   window.addEventListener('mouseout', function(e){ if(!e.relatedTarget && cur){ reset(cur); cur=null; } });
 }
 /* ---------- init ---------- */
-buildPeriodUI(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireInspDrop(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
+buildPeriodUI(); wireEmp(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireInspDrop(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
 </script>
 </body>
 </html>
