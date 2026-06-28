@@ -667,6 +667,36 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 .empbar-lbl{font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--ios-label2);text-transform:uppercase;}
 .empbar #empSel{flex:0 1 300px;min-width:180px;}
 .empbar-hint{font-size:12px;color:var(--ios-label3);}
+/* ===== Empleados ===== */
+.emp-toolbar{display:flex;gap:9px;flex-wrap:wrap;margin:4px 0 14px;}
+.emp-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+@media(min-width:760px){.emp-grid{grid-template-columns:1fr 1fr;}}
+.emp-card{background:var(--ios-bg2);border:1px solid var(--cardbd);border-radius:18px;padding:15px 16px;box-shadow:var(--shadow-md);cursor:pointer;transition:transform .15s,box-shadow .2s;}
+.emp-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(10,35,66,.14);}
+.emp-card.sel{border-color:var(--tint);box-shadow:0 0 0 2px rgba(0,161,75,.25);}
+.emp-card h4{margin:0 0 2px;font-size:16px;font-family:'Space Grotesk','Inter',sans-serif;}
+.emp-card .meta{font-size:12.5px;color:var(--ios-label2);margin-bottom:9px;}
+.emp-badge{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;margin-left:6px;}
+.emp-badge.cond{background:rgba(0,161,75,.14);color:#067a3c;}
+.emp-bar{height:8px;border-radius:6px;background:var(--ios-bg);overflow:hidden;}
+.emp-bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#00A14B,#27BE64);transition:width .5s cubic-bezier(.2,.7,.3,1);}
+.emp-bar.r i{background:linear-gradient(90deg,#E0392B,#F2774A);}
+.emp-bar.a i{background:linear-gradient(90deg,#E08A00,#F2C24A);}
+.emp-pct{font-size:12px;font-weight:800;margin-top:4px;}
+.emp-alert{display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:12px;margin-bottom:6px;font-size:13px;}
+.emp-alert.venc{background:rgba(224,57,43,.10);color:#b3271d;}
+.emp-alert.prox{background:rgba(224,138,0,.12);color:#9c6100;}
+.emp-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:560px){.emp-form{grid-template-columns:1fr;}.emp-toolbar{flex-direction:column;}}
+.emp-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--ios-label2);}
+.emp-form .full{grid-column:1/-1;}
+.emp-dstat{font-weight:800;font-size:12px;padding:2px 8px;border-radius:8px;}
+.emp-dstat.tiene{background:rgba(0,161,75,.14);color:#067a3c;}
+.emp-dstat.pendiente{background:rgba(224,57,43,.12);color:#b3271d;}
+.emp-dstat.na{background:var(--ios-bg);color:var(--ios-label3);}
+.emp-nivel{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:6px;}
+.emp-nivel.ob{background:rgba(10,35,66,.10);color:var(--tecc-azul,#0A2342);}
+.emp-nivel.re{background:rgba(127,127,127,.12);color:var(--ios-label2);}
 @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;} }
 @media (prefers-color-scheme:dark) and (min-width:100000px){
   :root{--ios-bg:#0b0c0e;--ios-bg2:#17191d;--ios-sep:rgba(130,135,145,.22);--ios-label:#fff;--ios-label2:#EBEBF5;--tint:#5B9BFF;
@@ -774,6 +804,7 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
     <button data-tab="llantas">Llantas</button>
     <button data-tab="vehiculos">Vehículos</button>
     <button data-tab="inspecciones">Inspecciones</button>
+    <button data-tab="empleados">Empleados</button>
     <button data-tab="peajes">Peajes</button>
     <button data-tab="ajustes">Ajustes</button>
   </div>
@@ -1047,6 +1078,11 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
     <div class="section span2" id="inspBody"></div>
   </div>
 
+  <!-- ============ EMPLEADOS ============ -->
+  <div id="tab-empleados" class="hidden dash">
+    <div id="empBody"></div>
+  </div>
+
   <div id="tab-peajes" class="hidden dash">
     <div class="section span2">
       <div class="section-hero">Peajes · Flypass</div>
@@ -1269,6 +1305,7 @@ function wireEmp(){
     if($('#tab-llantas')&&!$('#tab-llantas').classList.contains('hidden')) renderLlantas();
     if($('#tab-inspecciones')&&!$('#tab-inspecciones').classList.contains('hidden')) renderInspecciones();
     if($('#tab-vehiculos')&&!$('#tab-vehiculos').classList.contains('hidden')) renderVehiculos();
+    if($('#tab-empleados')&&!$('#tab-empleados').classList.contains('hidden')) renderEmpleados();
   };
 }
 /* ================= EXPORT A EXCEL (global, sensible al módulo/submódulo activo) ================= */
@@ -1314,7 +1351,205 @@ function exportActive(){
   else if(tab==='llantas'){ xlsxExport('TECC_Llantas'+sfx,llExportSheets()); }
   else if(tab==='inspecciones'){ inspExport(); }
   else if(tab==='vehiculos'){ xlsxExport('TECC_Vehiculos'+sfx,[{name:'Parque automotor',rows:vehFiltrados().map(r=>Object.fromEntries(VCOLS.map(c=>[c.h,vget(r,c.k)])))}]); }
+  else if(tab==='empleados'){ xlsxExport('TECC_Empleados'+sfx, empExportSheets()); }
   else { toast('Este módulo no tiene datos exportables'); }
+}
+
+/* ================= EMPLEADOS (gestión de personal + documentos laborales · Colombia 2026) ================= */
+const LS_EMP='tecc_emp_v1', LS_EMPDOC='tecc_empdoc_v1';
+const EMP_CARGOS=['Conductor','Auxiliar','Mecánico','Lavador','Administrativo','Supervisor','Coordinador','Otro'];
+const EMP_CONTRATOS=['Indefinido','Término fijo','Obra o labor','Prestación de servicios','Aprendiz'];
+// Catálogo por defecto (verificado adversarialmente vs. legislación laboral colombiana 2026). nivel: 'ob'=obligatorio, 're'=recomendado/buena práctica. Editable por el usuario.
+const EMP_DOC_DEFAULT=[
+ {key:'ced',nombre:'Documento de identidad (cédula)',cat:'Identificación',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Decreto-Ley 1260/1970',notas:'Cédula; extranjeros: PPT/permiso de trabajo (Dec 1067/2015).'},
+ {key:'hv',nombre:'Hoja de vida con soportes',cat:'Identificación',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Buena práctica de selección',notas:'Datos, formación y experiencia con anexos.'},
+ {key:'contrato',nombre:'Contrato de trabajo escrito',cat:'Contractual',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'CST arts. 37-47',notas:'Escrito obligatorio en término fijo y obra/labor.'},
+ {key:'datos',nombre:'Autorización tratamiento de datos personales',cat:'Contractual',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 1581/2012; Dec 1377/2013',notas:'Consentimiento para datos personales y sensibles.'},
+ {key:'rit',nombre:'Constancia entrega Reglamento Interno de Trabajo',cat:'Contractual',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'CST arts. 104-125',notas:'Obligatorio sobre el umbral de trabajadores; constancia de divulgación.'},
+ {key:'eps',nombre:'Afiliación a EPS (salud)',cat:'Seguridad social',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 100/1993',notas:'Antes del inicio de labores.'},
+ {key:'afp',nombre:'Afiliación a Fondo de Pensiones',cat:'Seguridad social',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 100/1993; Ley 2381/2024',notas:'Reforma pensional 2024 (sistema de pilares). Distinto de cesantías.'},
+ {key:'ces',nombre:'Afiliación a Fondo de Cesantías',cat:'Seguridad social',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 50/1990',notas:'Prestación independiente del fondo de pensiones (FNA o privado).'},
+ {key:'arl',nombre:'Afiliación a ARL (riesgos laborales)',cat:'Seguridad social',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 1562/2012; Dec 1072/2015',notas:'Antes de iniciar; aporte 100% del empleador. Crítica en transporte.'},
+ {key:'caja',nombre:'Afiliación a Caja de Compensación Familiar',cat:'Seguridad social',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 21/1982',notas:'Parafiscal 4% a cargo del empleador.'},
+ {key:'medIng',nombre:'Examen médico ocupacional de ingreso',cat:'Médico / SST',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Res. 2346/2007',notas:'Preocupacional según profesiograma del cargo.'},
+ {key:'medPer',nombre:'Exámenes médicos ocupacionales periódicos',cat:'Médico / SST',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'según profesiograma (anual)',baseLegal:'Res. 2346/2007',notas:'Conductores: profesiograma con visiometría, audiometría, osteomuscular, cardiovascular y fatiga.'},
+ {key:'medEgr',nombre:'Examen médico ocupacional de egreso',cat:'Médico / SST',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'al retiro',baseLegal:'Res. 2346/2007 art. 18',notas:'Obligatorio al terminar la relación laboral.'},
+ {key:'indSST',nombre:'Inducción / reinducción SG-SST',cat:'Médico / SST',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'ingreso + reinducción anual',baseLegal:'Dec 1072/2015; Res 0312/2019',notas:'Política SST, reglamento de higiene y seguridad.'},
+ {key:'dot',nombre:'Registro de entrega de dotación',cat:'Dotación / SST',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'3/año: 30 abr, 31 ago, 20 dic',baseLegal:'CST arts. 230 y 232',notas:'Calzado y vestido; >3 meses de servicio y salario ≤2 SMLMV; no se paga en dinero.'},
+ {key:'epp',nombre:'Entrega de EPP',cat:'Dotación / SST',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'según matriz / desgaste',baseLegal:'Dec 1072/2015; Res 0312/2019',notas:'Según matriz de riesgos del cargo (distinto de dotación de ley).'},
+ {key:'banco',nombre:'Certificación bancaria',cat:'Nómina',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Operativo (CST art. 134)',notas:'Para dispersión de nómina; titular = trabajador.'},
+ {key:'depend',nombre:'Declaración de dependientes (retención en la fuente)',cat:'Nómina',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'anual',baseLegal:'E.T. art. 387',notas:'Solo aplica si supera base de retención y desea deducir dependientes.'},
+ {key:'certLab',nombre:'Certificados laborales / de experiencia',cat:'Educación/Experiencia',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Buena práctica',notas:'Verificación de referencias.'},
+ {key:'certEst',nombre:'Certificados de estudios',cat:'Educación/Experiencia',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Según requisitos del cargo',notas:'Solo si el cargo lo exige.'},
+ {key:'milit',nombre:'Definición de situación militar (hombres)',cat:'Identificación',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Ley 1861/2017',notas:'No condiciona la contratación; puede regularizarse después. Solo hombres.'},
+ {key:'antPol',nombre:'Certificado de antecedentes (Policía Nacional)',cat:'Antecedentes',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'verificar al ingreso (vigente a la fecha)',baseLegal:'Debida diligencia',notas:'En sector privado debe justificarse por el cargo (habeas data).'},
+ {key:'antProc',nombre:'Antecedentes Procuraduría (CDDP)',cat:'Antecedentes',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'vigencia ~3 meses',baseLegal:'Ley 1952/2019',notas:'Obligatorio solo para vinculación pública; en privado = debida diligencia / exigencia del cliente.'},
+ {key:'antContr',nombre:'Antecedentes Contraloría (resp. fiscal)',cat:'Antecedentes',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'vigencia ~3 meses',baseLegal:'Ley 610/2000; Ley 1474/2011',notas:'Boletín de responsables fiscales.'},
+ {key:'rnmc',nombre:'Medidas correctivas (RNMC)',cat:'Antecedentes',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'verificar al ingreso',baseLegal:'Ley 1801/2016',notas:'Consulta Policía Nacional.'},
+ {key:'lic',nombre:'Licencia de conducción vigente (servicio público)',cat:'Licencias',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'3 años (1 año 60-80; 6 meses >80)',baseLegal:'Ley 769/2002; Ley 1383/2010; Res 0217/2014',notas:'C1 vehículos pequeños s.público; C2 buses/busetas/microbuses; C3 articulados/carga pesada. La categoría debe corresponder a la clase y capacidad del vehículo asignado. Condicionada al CRC.'},
+ {key:'runt',nombre:'Consulta RUNT (estado de licencia)',cat:'Verificaciones',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'evidencia ~30 días; verificar antes de operar',baseLegal:'Ley 1005/2006',notas:'Confirma licencia activa, categoría, vigencia del CRC, suspensiones.'},
+ {key:'simit',nombre:'Reporte SIMIT (comparendos / paz y salvo)',cat:'Verificaciones',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'verificación periódica',baseLegal:'Ley 769/2002; Ley 1843/2017',notas:'Comparendos, acuerdos de pago y estado de paz y salvo.'},
+ {key:'crc',nombre:'Certificado psicosensométrico (CRC)',cat:'Verificaciones',aplicaA:'conductor',nivel:'re',vence:true,periodicidad:'ligada a la licencia',baseLegal:'Res 1555/2005',notas:'Insumo del CRC para expedir/renovar la licencia (se verifica vía RUNT); no es documento de archivo obligatorio. Distinto del examen ocupacional SST.'},
+ {key:'defensivo',nombre:'Curso de manejo defensivo',cat:'Capacitación',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'inicial + refuerzo anual',baseLegal:'Ley 1503/2011; PESV',notas:'Competencia técnica del componente de comportamiento humano del PESV.'},
+ {key:'pesv',nombre:'Reinducción PESV (seguridad vial)',cat:'Capacitación',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'anual o por cambios',baseLegal:'Dec 1079/2015; Res 40595/2022',notas:'Módulo vial dentro del SG-SST: conducción segura, horas de conducción/descanso, alcohol/drogas, protocolos.'},
+ {key:'alcohol',nombre:'Pruebas de alcohol y sustancias (política + consentimiento)',cat:'SST conductor',aplicaA:'conductor',nivel:'ob',vence:false,periodicidad:'según política/PESV',baseLegal:'Ley 1503/2011; Ley 1696/2013',notas:'Requiere política escrita de cero alcohol/drogas y consentimiento informado; positivo se maneja con debido proceso.'},
+ {key:'jornada',nombre:'Control de horas de conducción y descanso',cat:'SST conductor',aplicaA:'conductor',nivel:'re',vence:false,periodicidad:'registro continuo',baseLegal:'Ley 1503/2011; PESV',notas:'Soporte de fatiga del PESV.'},
+ {key:'inhab',nombre:'Consulta inhabilidades delitos sexuales (si transporta menores)',cat:'Verificaciones',aplicaA:'conductor',nivel:'re',vence:true,periodicidad:'verificar al ingreso',baseLegal:'Ley 1918/2018; Dec 753/2019',notas:'OBLIGATORIO en transporte escolar / de menores.'}
+];
+let empSelId=null, empShowForm=false, empShowCat=false;
+function empDocLoad(){ try{const a=JSON.parse(localStorage.getItem(LS_EMPDOC)); if(Array.isArray(a)&&a.length)return a;}catch(e){} return EMP_DOC_DEFAULT.map(d=>({...d})); }
+function empDocSave(a){ localStorage.setItem(LS_EMPDOC, JSON.stringify(a)); }
+function empLoad(){ try{return JSON.parse(localStorage.getItem(LS_EMP))||[];}catch(e){return [];} }
+function empSave(a){ localStorage.setItem(LS_EMP, JSON.stringify(a)); }
+function empDocsFor(e){ return empDocLoad().filter(d=> d.aplicaA==='todos' || (d.aplicaA==='conductor'&&e.esConductor)); }
+function empCompletion(e){ const ds=empDocsFor(e); let req=0,ok=0; ds.forEach(d=>{ const st=(e.docs&&e.docs[d.key])||{}; if(st.estado==='na')return; req++; if(st.estado==='tiene')ok++; }); return req?Math.round(ok/req*100):0; }
+function empVenc(e){ const out=[]; empDocsFor(e).forEach(d=>{ if(!d.vence)return; const st=(e.docs&&e.docs[d.key])||{}; if(!st.vence)return; const dias=vehDias(st.vence); if(dias==null)return; out.push({nombre:d.nombre,vence:st.vence,dias}); }); return out; }
+function matchEmpCliente(cli){ if(!EMP)return true; const ok=cli&&CLIENTES_LISTA.indexOf(cli)>=0; return EMP==='(sin cliente)'? !ok : cli===EMP; }
+function empFiltered(){ return empLoad().filter(e=> matchEmpCliente(e.empresa)); }
+function renderEmpleados(){
+  const body=$('#empBody'); if(!body)return;
+  const emps=empFiltered(), cat=empDocLoad();
+  const conductores=emps.filter(e=>e.esConductor).length;
+  let vencidos=0, prox=0, pctSum=0;
+  emps.forEach(e=>{ pctSum+=empCompletion(e); empVenc(e).forEach(v=>{ if(v.dias<0)vencidos++; else if(v.dias<=30)prox++; }); });
+  const pctProm=emps.length?Math.round(pctSum/emps.length):0;
+  // alertas (top urgentes)
+  const alertas=[]; emps.forEach(e=> empVenc(e).filter(v=>v.dias<=30).forEach(v=>alertas.push({emp:e.nombre,...v})) );
+  alertas.sort((a,b)=>a.dias-b.dias);
+  const H=[];
+  H.push(`<div class="section span2"><div class="hero">
+    <div class="chip">${EMP||'Toda la flota'}</div><div class="cap">Gestión de empleados · documentos laborales</div>
+    <div class="num">${emps.length}</div><div class="sub">${conductores} conductores · ${pctProm}% documentación promedio · ${vencidos} doc. vencidos</div></div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Empleados</div><div class="v">${emps.length}</div></div>
+      <div class="kpi"><div class="k">Conductores</div><div class="v small">${conductores}</div></div>
+      <div class="kpi"><div class="k">Doc. vencidos</div><div class="v ${vencidos?'vbad':''}">${vencidos}</div></div>
+      <div class="kpi"><div class="k">Por vencer ≤30d</div><div class="v ${prox?'vwarn':''}">${prox}</div></div>
+    </div></div>`);
+  H.push(`<div class="section span2">
+    <div class="emp-toolbar">
+      <button class="btn primary" onclick="empToggleForm()">${empShowForm?'✕ Cerrar':'＋ Crear empleado'}</button>
+      <button class="chip-btn" onclick="empImportConductores()">Importar conductores de aseos</button>
+      <button class="chip-btn" onclick="empToggleCat()">${empShowCat?'✕ Cerrar catálogo':'⚙︎ Gestionar documentos exigidos'}</button>
+      <span class="empbar-hint">${cat.length} documentos en el catálogo · ${cat.filter(d=>d.nivel==='ob').length} obligatorios</span>
+    </div>`);
+  if(empShowForm) H.push(empFormHTML());
+  if(empShowCat) H.push(empCatHTML(cat));
+  if(alertas.length) H.push(`<div class="card pad" style="margin-bottom:14px"><div class="section-hero" style="margin-bottom:8px">⚠️ Documentos por vencer / vencidos</div>`+
+    alertas.slice(0,12).map(a=>`<div class="emp-alert ${a.dias<0?'venc':'prox'}"><b>${esc(a.emp)}</b> · ${esc(a.nombre)} · ${a.dias<0?('vencido hace '+(-a.dias)+'d'):('vence en '+a.dias+'d')} (${a.vence})</div>`).join('')+`</div>`);
+  // lista
+  if(!emps.length){ H.push(`<div class="card"><div class="empty"><div class="ic">👷</div><h3>Sin empleados ${EMP?('para '+esc(EMP)):'todavía'}</h3><div>Crea un empleado o importa los conductores de los aseos.</div></div></div>`); }
+  else {
+    H.push(`<div class="emp-grid">`+emps.map(e=>empCardHTML(e,cat)).join('')+`</div>`);
+  }
+  H.push(`</div>`);
+  body.innerHTML=H.join('');
+}
+function empCardHTML(e,cat){
+  const pct=empCompletion(e), cls=pct>=80?'':pct>=50?'a':'r';
+  const sel=empSelId===e.id;
+  const vs=empVenc(e), nv=vs.filter(v=>v.dias<0).length;
+  return `<div class="emp-card ${sel?'sel':''}">
+    <div onclick="empSelect('${e.id}')" style="cursor:pointer">
+      <h4>${esc(e.nombre||'(sin nombre)')}${e.esConductor?'<span class="emp-badge cond">Conductor</span>':''}${e.estado==='incompleto'?'<span class="emp-badge" style="background:rgba(224,138,0,.14);color:#9c6100">incompleto</span>':''}</h4>
+      <div class="meta">${e.cedula?('CC '+esc(e.cedula)+' · '):''}${esc(e.cargo||'—')}${e.empresa?(' · '+esc(e.empresa)):''}${e.vehiculo?(' · veh '+esc(e.vehiculo)):''}</div>
+      <div class="emp-bar ${cls}"><i style="width:${pct}%"></i></div>
+      <div class="emp-pct" style="color:${pct>=80?'var(--tecc-verde,#067a3c)':pct>=50?'#9c6100':'#b3271d'}">${pct}% documentación${nv?(' · '+nv+' vencido'+(nv>1?'s':'')):''}</div>
+    </div>
+    ${sel?empChecklistHTML(e,cat):''}
+  </div>`;
+}
+function empChecklistHTML(e,cat){
+  const ds=empDocsFor(e);
+  const rows=ds.map(d=>{ const st=(e.docs&&e.docs[d.key])||{estado:'pendiente',vence:'',notas:''};
+    const dias=d.vence&&st.vence?vehDias(st.vence):null;
+    const vcol=dias==null?'':dias<0?'color:#b3271d;font-weight:800':dias<=30?'color:#9c6100;font-weight:700':'color:#067a3c';
+    return `<tr>
+      <td>${esc(d.nombre)} <span class="emp-nivel ${d.nivel==='ob'?'ob':'re'}">${d.nivel==='ob'?'Obligatorio':'Recomendado'}</span><div style="font-size:11px;color:var(--ios-label3)">${esc(d.baseLegal)}${d.periodicidad?(' · '+esc(d.periodicidad)):''}</div></td>
+      <td><select class="ios" onchange="empSetDoc('${e.id}','${d.key}','estado',this.value)">
+        <option value="pendiente"${st.estado==='pendiente'||!st.estado?' selected':''}>Pendiente</option>
+        <option value="tiene"${st.estado==='tiene'?' selected':''}>Tiene</option>
+        <option value="na"${st.estado==='na'?' selected':''}>No aplica</option></select></td>
+      <td>${d.vence?`<input type="date" class="ios" value="${st.vence||''}" onchange="empSetDoc('${e.id}','${d.key}','vence',this.value)"><div style="font-size:11px;${vcol}">${dias==null?'':dias<0?('vencido '+(-dias)+'d'):(dias+'d')}</div>`:'<span style="color:var(--ios-label3)">—</span>'}</td>
+      <td><input class="ios" placeholder="notas" value="${esc(st.notas||'').replace(/"/g,'&quot;')}" onchange="empSetDoc('${e.id}','${d.key}','notas',this.value)"></td>
+    </tr>`; }).join('');
+  return `<div style="margin-top:12px;border-top:1px solid var(--ios-sep);padding-top:10px" onclick="event.stopPropagation()">
+    <div class="vtable-wrap" style="max-height:none"><table class="vtable"><thead><tr><th>Documento</th><th>Estado</th><th>Vence</th><th>Notas</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="chip-btn" onclick="empMarkAll('${e.id}','tiene')">Marcar todos: tiene</button>
+      <button class="chip-btn" onclick="empEditMeta('${e.id}')">Editar datos</button>
+      <button class="chip-btn" style="color:var(--red)" onclick="empDelete('${e.id}')">Eliminar empleado</button>
+    </div></div>`;
+}
+function empFormHTML(){
+  const empresaOpts=['',...CLIENTES_LISTA].map(c=>`<option value="${c}"${EMP&&EMP!=='(sin cliente)'&&c===EMP?' selected':''}>${c||'(sin asignar)'}</option>`).join('');
+  return `<div class="card pad" style="margin-bottom:14px"><div class="section-hero" style="margin-bottom:10px">Nuevo empleado</div>
+    <div class="emp-form">
+      <label class="full">Nombre completo<input class="ios" id="empfNombre" placeholder="Nombre y apellidos"></label>
+      <label>Cédula<input class="ios" id="empfCedula" placeholder="N° de documento"></label>
+      <label>Cargo<select class="ios" id="empfCargo" onchange="if($('#empfCond'))$('#empfCond').checked=(this.value==='Conductor')">${EMP_CARGOS.map(c=>`<option ${c==='Conductor'?'selected':''}>${c}</option>`).join('')}</select></label>
+      <label>Empresa / cliente<select class="ios" id="empfEmpresa">${empresaOpts}</select></label>
+      <label>Vehículo asignado (N° interno)<input class="ios" id="empfVeh" placeholder="ej. 212"></label>
+      <label>Fecha de ingreso<input type="date" class="ios" id="empfIngreso"></label>
+      <label>Tipo de contrato<select class="ios" id="empfContrato">${EMP_CONTRATOS.map(c=>`<option>${c}</option>`).join('')}</select></label>
+      <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="empfCond" checked> Es conductor (exige documentos de conducción)</label>
+    </div>
+    <div style="margin-top:12px"><button class="btn primary" onclick="empCrear()">Crear empleado con sus documentos</button></div>
+    <div class="note" style="margin-top:8px">Se exige el mismo catálogo de documentos a todos. Los datos se guardan solo en este navegador (no se publican).</div></div>`;
+}
+function empCatHTML(cat){
+  const rows=cat.map((d,i)=>`<tr>
+    <td><input class="ios" value="${esc(d.nombre).replace(/"/g,'&quot;')}" onchange="empCatSet(${i},'nombre',this.value)"></td>
+    <td><select class="ios" onchange="empCatSet(${i},'aplicaA',this.value)"><option value="todos"${d.aplicaA==='todos'?' selected':''}>Todos</option><option value="conductor"${d.aplicaA==='conductor'?' selected':''}>Conductor</option></select></td>
+    <td><select class="ios" onchange="empCatSet(${i},'nivel',this.value)"><option value="ob"${d.nivel==='ob'?' selected':''}>Obligatorio</option><option value="re"${d.nivel==='re'?' selected':''}>Recomendado</option></select></td>
+    <td style="text-align:center"><input type="checkbox" ${d.vence?'checked':''} onchange="empCatSet(${i},'vence',this.checked)"></td>
+    <td><input class="ios" value="${esc(d.baseLegal||'').replace(/"/g,'&quot;')}" onchange="empCatSet(${i},'baseLegal',this.value)"></td>
+    <td><button class="chip-btn" style="color:var(--red)" onclick="empCatDel(${i})">✕</button></td></tr>`).join('');
+  return `<div class="card pad" style="margin-bottom:14px"><div class="section-hero" style="margin-bottom:8px">Catálogo de documentos exigidos</div>
+    <div class="note" style="margin-bottom:8px">Ajusta el set a lo que tu empresa exige. Aplica a TODOS los empleados (los de "Conductor" solo a quienes lo sean).</div>
+    <div class="vtable-wrap"><table class="vtable"><thead><tr><th>Documento</th><th>Aplica a</th><th>Nivel</th><th>¿Vence?</th><th>Base legal</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="chip-btn" onclick="empCatAdd()">＋ Agregar documento</button>
+      <button class="chip-btn" style="color:var(--red)" onclick="empCatReset()">Restaurar set legal por defecto</button></div></div>`;
+}
+function empToggleForm(){ empShowForm=!empShowForm; if(empShowForm)empShowCat=false; renderEmpleados(); }
+function empToggleCat(){ empShowCat=!empShowCat; if(empShowCat)empShowForm=false; renderEmpleados(); }
+function empSelect(id){ empSelId=(empSelId===id?null:id); renderEmpleados(); }
+function empCrear(){
+  const g=id=>{const el=$('#'+id);return el?el.value.trim():'';};
+  const nombre=g('empfNombre'); if(!nombre){toast('El nombre es obligatorio');return;}
+  const ced=g('empfCedula'); const emps=empLoad();
+  if(ced && emps.some(e=>e.cedula===ced)){ toast('Ya existe un empleado con esa cédula'); return; }
+  emps.push({id:'e'+Date.now().toString(36),nombre,cedula:ced,cargo:g('empfCargo')||'Otro',
+    esConductor:$('#empfCond')?$('#empfCond').checked:false,empresa:g('empfEmpresa'),vehiculo:g('empfVeh'),
+    fechaIngreso:g('empfIngreso'),tipoContrato:g('empfContrato')||'Indefinido',estado:'activo',docs:{}});
+  empSave(emps); empShowForm=false; empSelId=emps[emps.length-1].id; toast('Empleado creado'); renderEmpleados();
+}
+function empSetDoc(id,key,field,val){ const emps=empLoad(); const e=emps.find(x=>x.id===id); if(!e)return; e.docs=e.docs||{}; e.docs[key]=e.docs[key]||{estado:'pendiente',vence:'',notas:''}; e.docs[key][field]=val; if(e.estado==='incompleto'&&e.cedula)e.estado='activo'; empSave(emps); renderEmpleados(); }
+function empMarkAll(id,estado){ const emps=empLoad(); const e=emps.find(x=>x.id===id); if(!e)return; e.docs=e.docs||{}; empDocsFor(e).forEach(d=>{ e.docs[d.key]=e.docs[d.key]||{estado:'pendiente',vence:'',notas:''}; e.docs[d.key].estado=estado; }); empSave(emps); renderEmpleados(); }
+function empEditMeta(id){ const emps=empLoad(); const e=emps.find(x=>x.id===id); if(!e)return;
+  const nv=prompt('Editar (nombre | cédula | cargo | empresa | vehículo | contrato):',[e.nombre,e.cedula,e.cargo,e.empresa,e.vehiculo,e.tipoContrato].join(' | '));
+  if(nv==null)return; const p=nv.split('|').map(s=>s.trim());
+  e.nombre=p[0]||e.nombre; e.cedula=p[1]||''; e.cargo=p[2]||e.cargo; e.empresa=p[3]||''; e.vehiculo=p[4]||''; e.tipoContrato=p[5]||e.tipoContrato;
+  e.esConductor=e.cargo.toLowerCase()==='conductor'?true:e.esConductor; empSave(emps); renderEmpleados(); }
+function empDelete(id){ if(!confirm('¿Eliminar este empleado?'))return; empSave(empLoad().filter(e=>e.id!==id)); if(empSelId===id)empSelId=null; toast('Empleado eliminado'); renderEmpleados(); }
+function empImportConductores(){
+  const recs=DATA.aseos.records||[]; const names=[...new Set(recs.map(r=>(r.conductor||'').trim()).filter(n=>n&&n.length>1))];
+  const emps=empLoad(); const have=new Set(emps.map(e=>(e.nombre||'').toLowerCase())); let add=0;
+  names.forEach(n=>{ if(have.has(n.toLowerCase()))return; const rs=recs.filter(r=>(r.conductor||'').trim()===n);
+    const veh=(rs.find(r=>r.vehiculo)||{}).vehiculo||''; const emp=empresaDeVeh(veh)||'';
+    emps.push({id:'e'+Date.now().toString(36)+(add),nombre:n,cedula:'',cargo:'Conductor',esConductor:true,empresa:emp,vehiculo:veh,fechaIngreso:'',tipoContrato:'Indefinido',estado:'incompleto',docs:{}}); add++; });
+  empSave(emps); toast(add?(add+' conductores importados'):'Sin conductores nuevos para importar'); renderEmpleados();
+}
+function empCatSet(i,field,val){ const c=empDocLoad(); if(!c[i])return; c[i][field]=val; if(field==='nombre'&&!c[i].key)c[i].key='c'+i+Date.now().toString(36); empDocSave(c); renderEmpleados(); }
+function empCatDel(i){ const c=empDocLoad(); c.splice(i,1); empDocSave(c); renderEmpleados(); }
+function empCatAdd(){ const c=empDocLoad(); c.push({key:'c'+Date.now().toString(36),nombre:'Nuevo documento',cat:'Otro',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'',notas:''}); empDocSave(c); renderEmpleados(); }
+function empCatReset(){ if(!confirm('¿Restaurar el catálogo legal por defecto? Se perderán tus cambios al catálogo (los empleados se conservan).'))return; localStorage.removeItem(LS_EMPDOC); renderEmpleados(); }
+function empExportSheets(){
+  const emps=empFiltered(), cat=empDocLoad();
+  const rows=emps.map(e=>({Nombre:e.nombre,Cédula:e.cedula||'',Cargo:e.cargo||'',Conductor:e.esConductor?'Sí':'No',Empresa:e.empresa||'(sin cliente)',Vehículo:e.vehiculo||'',Contrato:e.tipoContrato||'',Ingreso:e.fechaIngreso||'',Estado:e.estado||'activo','Documentación %':empCompletion(e)}));
+  const matrix=emps.map(e=>{ const r={Empleado:e.nombre,Cédula:e.cedula||''}; cat.forEach(d=>{ if(d.aplicaA==='conductor'&&!e.esConductor){r[d.nombre]='N/A';return;} const st=(e.docs&&e.docs[d.key])||{}; r[d.nombre]= st.estado==='tiene'?(st.vence?('Sí (vence '+st.vence+')'):'Sí'): st.estado==='na'?'N/A':'PENDIENTE'; }); return r; });
+  return [{name:'Empleados',rows},{name:'Matriz documentos',rows:matrix}];
 }
 function recordsForPeriod(){
   const R=resolveRange(); if(!R)return [];
@@ -2910,12 +3145,13 @@ function vehExport(){
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
-  ['aseos','taller','llantas','vehiculos','inspecciones','peajes','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
+  ['aseos','taller','llantas','vehiculos','inspecciones','empleados','peajes','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
   if(b.dataset.tab==='aseos' && curSub==='general') renderCalendar();
   if(b.dataset.tab==='taller') renderTaller();   // re-render para dimensionar los gráficos al hacerse visible
   if(b.dataset.tab==='llantas') renderLlantas();
   if(b.dataset.tab==='vehiculos') renderVehiculos();
   if(b.dataset.tab==='inspecciones') renderInspecciones();
+  if(b.dataset.tab==='empleados') renderEmpleados();
   if(b.dataset.tab==='peajes') pjInit();
   window.scrollTo({top:0,behavior:'smooth'});
 });
