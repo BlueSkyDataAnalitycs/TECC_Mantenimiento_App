@@ -1357,46 +1357,69 @@ function exportActive(){
 
 /* ================= EMPLEADOS (gestión de personal + documentos laborales · Colombia 2026) ================= */
 const LS_EMP='tecc_emp_v1', LS_EMPDOC='tecc_empdoc_v1';
-const EMP_CARGOS=['Conductor','Auxiliar','Mecánico','Lavador','Administrativo','Supervisor','Coordinador','Otro'];
-const EMP_CONTRATOS=['Indefinido','Término fijo','Obra o labor','Prestación de servicios','Aprendiz'];
-// Catálogo por defecto (verificado adversarialmente vs. legislación laboral colombiana 2026). nivel: 'ob'=obligatorio, 're'=recomendado/buena práctica. Editable por el usuario.
-const EMP_DOC_DEFAULT=[
- {key:'ced',nombre:'Documento de identidad (cédula)',cat:'Identificación',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Decreto-Ley 1260/1970',notas:'Cédula; extranjeros: PPT/permiso de trabajo (Dec 1067/2015).'},
- {key:'hv',nombre:'Hoja de vida con soportes',cat:'Identificación',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Buena práctica de selección',notas:'Datos, formación y experiencia con anexos.'},
- {key:'contrato',nombre:'Contrato de trabajo escrito',cat:'Contractual',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'CST arts. 37-47',notas:'Escrito obligatorio en término fijo y obra/labor.'},
- {key:'datos',nombre:'Autorización tratamiento de datos personales',cat:'Contractual',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 1581/2012; Dec 1377/2013',notas:'Consentimiento para datos personales y sensibles.'},
- {key:'rit',nombre:'Constancia entrega Reglamento Interno de Trabajo',cat:'Contractual',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'CST arts. 104-125',notas:'Obligatorio sobre el umbral de trabajadores; constancia de divulgación.'},
- {key:'eps',nombre:'Afiliación a EPS (salud)',cat:'Seguridad social',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 100/1993',notas:'Antes del inicio de labores.'},
- {key:'afp',nombre:'Afiliación a Fondo de Pensiones',cat:'Seguridad social',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 100/1993; Ley 2381/2024',notas:'Reforma pensional 2024 (sistema de pilares). Distinto de cesantías.'},
- {key:'ces',nombre:'Afiliación a Fondo de Cesantías',cat:'Seguridad social',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 50/1990',notas:'Prestación independiente del fondo de pensiones (FNA o privado).'},
- {key:'arl',nombre:'Afiliación a ARL (riesgos laborales)',cat:'Seguridad social',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 1562/2012; Dec 1072/2015',notas:'Antes de iniciar; aporte 100% del empleador. Crítica en transporte.'},
- {key:'caja',nombre:'Afiliación a Caja de Compensación Familiar',cat:'Seguridad social',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 21/1982',notas:'Parafiscal 4% a cargo del empleador.'},
- {key:'medIng',nombre:'Examen médico ocupacional de ingreso',cat:'Médico / SST',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Res. 2346/2007',notas:'Preocupacional según profesiograma del cargo.'},
- {key:'medPer',nombre:'Exámenes médicos ocupacionales periódicos',cat:'Médico / SST',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'según profesiograma (anual)',baseLegal:'Res. 2346/2007',notas:'Conductores: profesiograma con visiometría, audiometría, osteomuscular, cardiovascular y fatiga.'},
- {key:'medEgr',nombre:'Examen médico ocupacional de egreso',cat:'Médico / SST',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'al retiro',baseLegal:'Res. 2346/2007 art. 18',notas:'Obligatorio al terminar la relación laboral.'},
- {key:'indSST',nombre:'Inducción / reinducción SG-SST',cat:'Médico / SST',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'ingreso + reinducción anual',baseLegal:'Dec 1072/2015; Res 0312/2019',notas:'Política SST, reglamento de higiene y seguridad.'},
- {key:'dot',nombre:'Registro de entrega de dotación',cat:'Dotación / SST',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'3/año: 30 abr, 31 ago, 20 dic',baseLegal:'CST arts. 230 y 232',notas:'Calzado y vestido; >3 meses de servicio y salario ≤2 SMLMV; no se paga en dinero.'},
- {key:'epp',nombre:'Entrega de EPP',cat:'Dotación / SST',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'según matriz / desgaste',baseLegal:'Dec 1072/2015; Res 0312/2019',notas:'Según matriz de riesgos del cargo (distinto de dotación de ley).'},
- {key:'banco',nombre:'Certificación bancaria',cat:'Nómina',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Operativo (CST art. 134)',notas:'Para dispersión de nómina; titular = trabajador.'},
- {key:'depend',nombre:'Declaración de dependientes (retención en la fuente)',cat:'Nómina',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'anual',baseLegal:'E.T. art. 387',notas:'Solo aplica si supera base de retención y desea deducir dependientes.'},
- {key:'certLab',nombre:'Certificados laborales / de experiencia',cat:'Educación/Experiencia',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Buena práctica',notas:'Verificación de referencias.'},
- {key:'certEst',nombre:'Certificados de estudios',cat:'Educación/Experiencia',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Según requisitos del cargo',notas:'Solo si el cargo lo exige.'},
- {key:'milit',nombre:'Definición de situación militar (hombres)',cat:'Identificación',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Ley 1861/2017',notas:'No condiciona la contratación; puede regularizarse después. Solo hombres.'},
- {key:'antPol',nombre:'Certificado de antecedentes (Policía Nacional)',cat:'Antecedentes',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'verificar al ingreso (vigente a la fecha)',baseLegal:'Debida diligencia',notas:'En sector privado debe justificarse por el cargo (habeas data).'},
- {key:'antProc',nombre:'Antecedentes Procuraduría (CDDP)',cat:'Antecedentes',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'vigencia ~3 meses',baseLegal:'Ley 1952/2019',notas:'Obligatorio solo para vinculación pública; en privado = debida diligencia / exigencia del cliente.'},
- {key:'antContr',nombre:'Antecedentes Contraloría (resp. fiscal)',cat:'Antecedentes',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'vigencia ~3 meses',baseLegal:'Ley 610/2000; Ley 1474/2011',notas:'Boletín de responsables fiscales.'},
- {key:'rnmc',nombre:'Medidas correctivas (RNMC)',cat:'Antecedentes',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'verificar al ingreso',baseLegal:'Ley 1801/2016',notas:'Consulta Policía Nacional.'},
- {key:'lic',nombre:'Licencia de conducción vigente (servicio público)',cat:'Licencias',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'3 años (1 año 60-80; 6 meses >80)',baseLegal:'Ley 769/2002; Ley 1383/2010; Res 0217/2014',notas:'C1 vehículos pequeños s.público; C2 buses/busetas/microbuses; C3 articulados/carga pesada. La categoría debe corresponder a la clase y capacidad del vehículo asignado. Condicionada al CRC.'},
- {key:'runt',nombre:'Consulta RUNT (estado de licencia)',cat:'Verificaciones',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'evidencia ~30 días; verificar antes de operar',baseLegal:'Ley 1005/2006',notas:'Confirma licencia activa, categoría, vigencia del CRC, suspensiones.'},
- {key:'simit',nombre:'Reporte SIMIT (comparendos / paz y salvo)',cat:'Verificaciones',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'verificación periódica',baseLegal:'Ley 769/2002; Ley 1843/2017',notas:'Comparendos, acuerdos de pago y estado de paz y salvo.'},
- {key:'crc',nombre:'Certificado psicosensométrico (CRC)',cat:'Verificaciones',aplicaA:'conductor',nivel:'re',vence:true,periodicidad:'ligada a la licencia',baseLegal:'Res 1555/2005',notas:'Insumo del CRC para expedir/renovar la licencia (se verifica vía RUNT); no es documento de archivo obligatorio. Distinto del examen ocupacional SST.'},
- {key:'defensivo',nombre:'Curso de manejo defensivo',cat:'Capacitación',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'inicial + refuerzo anual',baseLegal:'Ley 1503/2011; PESV',notas:'Competencia técnica del componente de comportamiento humano del PESV.'},
- {key:'pesv',nombre:'Reinducción PESV (seguridad vial)',cat:'Capacitación',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'anual o por cambios',baseLegal:'Dec 1079/2015; Res 40595/2022',notas:'Módulo vial dentro del SG-SST: conducción segura, horas de conducción/descanso, alcohol/drogas, protocolos.'},
- {key:'alcohol',nombre:'Pruebas de alcohol y sustancias (política + consentimiento)',cat:'SST conductor',aplicaA:'conductor',nivel:'ob',vence:false,periodicidad:'según política/PESV',baseLegal:'Ley 1503/2011; Ley 1696/2013',notas:'Requiere política escrita de cero alcohol/drogas y consentimiento informado; positivo se maneja con debido proceso.'},
- {key:'jornada',nombre:'Control de horas de conducción y descanso',cat:'SST conductor',aplicaA:'conductor',nivel:'re',vence:false,periodicidad:'registro continuo',baseLegal:'Ley 1503/2011; PESV',notas:'Soporte de fatiga del PESV.'},
- {key:'inhab',nombre:'Consulta inhabilidades delitos sexuales (si transporta menores)',cat:'Verificaciones',aplicaA:'conductor',nivel:'re',vence:true,periodicidad:'verificar al ingreso',baseLegal:'Ley 1918/2018; Dec 753/2019',notas:'OBLIGATORIO en transporte escolar / de menores.'}
+const EMP_CARGOS=['Conductor de servicio especial','Auxiliar Técnico de Mantenimiento (Mecánico)','Auxiliar de Mantenimiento Móvil','Lavador','Auxiliar administrativo','Coordinador / Jefe de Mantenimiento','Supervisor','Otro'];
+const EMP_CONTRATOS=['Término indefinido','Término fijo','Obra o labor','Prestación de servicios','Aprendiz'];
+// Empleador (datos públicos de Cámara de Comercio / RUT) y marco legal 2026 — editables. Sin PII de trabajadores en el código.
+const TEGW={razon:'TRANSPORTES GW S.A.S.',sigla:'TEGW',nit:'901.427.200-9',dir:'Cra 80 # 13A-261, Local C-34, Cali (Valle del Cauca)',ciiu:'4921 — Transporte especial de pasajeros',rl:'William Fernando Gasca Suárez · C.C. 16.781.994 de Cali',contacto:'contabilidadwg11@gmail.com · 312 257 8060'};
+const SMLMV_2026=1750905, AUX_TRANS_2026=249095;
+const MARCO_LEGAL_2026=[
+ ['Salario mínimo (SMLMV)','$1.750.905','Dec 1469/2025 (ratif. 0159/2026)'],
+ ['Auxilio de transporte','$249.095','Dec 1470/2025 · aplica a ≤2 SMLMV'],
+ ['Jornada laboral','42 h/sem desde 15-jul-2026','Ley 2101/2021'],
+ ['Recargo dominical/festivo','90% desde 1-jul-2026 (100% en 2027)','Ley 2466/2025 art. 14'],
+ ['Jornada nocturna','7:00 p.m. – 6:00 a.m. (recargo 35%)','Ley 2466/2025'],
+ ['Tipo de contrato','Indefinido = regla general; fijo máx. 4 años','Ley 2466/2025'],
+ ['Horas extra','máx. 2/día · 12/semana (sin permiso previo)','Ley 2466/2025'],
+ ['Periodo de prueba','máx. 2 meses','CST art. 78']
 ];
-let empSelId=null, empShowForm=false, empShowCat=false;
+// Catálogo por defecto alineado a la LISTA DE CHEQUEO de Gestión Humana TEGW + paquete de vinculación, ajustado a la legislación 2026 (verificado). nivel: 'ob'=obligatorio, 're'=recomendado/condicional. Editable.
+const EMP_DOC_DEFAULT=[
+ // ---- HOJA DE VIDA ----
+ {key:'foto',nombre:'Foto tamaño 4x4',cat:'Hoja de vida',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Formato GH TEGW',notas:'Para hoja de vida / carné.'},
+ {key:'ced',nombre:'Fotocopia de la cédula al 150% (x3)',cat:'Hoja de vida',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Decreto-Ley 1260/1970',notas:'Documento de identidad del trabajador.'},
+ {key:'hv',nombre:'Hoja de vida con soportes',cat:'Hoja de vida',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Buena práctica de selección',notas:'Datos, formación y experiencia.'},
+ {key:'lic',nombre:'Fotocopia de la licencia de conducción al 150%',cat:'Hoja de vida',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'según vigencia de la licencia',baseLegal:'Ley 769/2002; Ley 1383/2010',notas:'Categoría de servicio público acorde al vehículo (C1/C2/C3).'},
+ {key:'diploma',nombre:'Diplomas o acta de grado (primaria/bachiller)',cat:'Hoja de vida',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Según requisitos del cargo',notas:'Acredita nivel educativo del cargo.'},
+ {key:'certAFP',nombre:'Certificado de AFP (fondo de pensiones)',cat:'Hoja de vida',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 100/1993; Ley 2381/2024',notas:'Reforma pensional 2024 (sistema de pilares).'},
+ {key:'certEPS',nombre:'Certificado de EPS',cat:'Hoja de vida',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 100/1993',notas:'Afiliación a salud.'},
+ {key:'certCes',nombre:'Certificado de cesantías',cat:'Hoja de vida',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 50/1990',notas:'Fondo de cesantías (FNA o privado).'},
+ {key:'antDisc',nombre:'Antecedentes disciplinarios (Procuraduría)',cat:'Hoja de vida',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'vigencia ~3 meses',baseLegal:'Ley 1952/2019',notas:'Debida diligencia en sector privado.'},
+ {key:'antJud',nombre:'Antecedentes judiciales (Policía)',cat:'Hoja de vida',aplicaA:'todos',nivel:'re',vence:true,periodicidad:'consulta vigente a la fecha',baseLegal:'Debida diligencia',notas:'Justificar por el cargo (habeas data).'},
+ {key:'certLab',nombre:'Certificaciones laborales (mín. 2 años de experiencia)',cat:'Hoja de vida',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Buena práctica',notas:'Verificación de experiencia.'},
+ {key:'pazMultas',nombre:'Paz y salvo de multas y licencia (SIMIT)',cat:'Hoja de vida',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'verificación periódica',baseLegal:'Ley 769/2002; Ley 1843/2017',notas:'Comparendos y estado de paz y salvo.'},
+ {key:'psico',nombre:'Examen psicotécnico (psicosensométrico / CRC)',cat:'Hoja de vida',aplicaA:'conductor',nivel:'ob',vence:true,periodicidad:'ligado a la licencia',baseLegal:'Res 1555/2005',notas:'Aptitud para conducir (CRC); se verifica vía RUNT.'},
+ // ---- GRUPO FAMILIAR ----
+ {key:'matrimonio',nombre:'Partida de matrimonio o declaración extrajuicio',cat:'Grupo familiar',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Formato GH TEGW',notas:'Para subsidio/beneficiarios.'},
+ {key:'cedConyuge',nombre:'Cédula del cónyuge al 150%',cat:'Grupo familiar',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Formato GH TEGW',notas:'Si aplica.'},
+ {key:'regHijos',nombre:'Registro civil de los hijos',cat:'Grupo familiar',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Formato GH TEGW',notas:'Para subsidio familiar (Caja).'},
+ {key:'tiHijos',nombre:'Tarjeta de identidad de hijos (≥7 años)',cat:'Grupo familiar',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Formato GH TEGW',notas:'Si aplica.'},
+ {key:'escolarHijos',nombre:'Certificados de escolaridad (hijos >12 años)',cat:'Grupo familiar',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Formato GH TEGW',notas:'Para subsidio.'},
+ {key:'hijosMayores',nombre:'Hijos 18-25: registro, cédula 150% y escolaridad',cat:'Grupo familiar',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Formato GH TEGW',notas:'Si aplica (subsidio condicionado a estudio).'},
+ // ---- PROCESO DE INGRESO ----
+ {key:'medOcup',nombre:'Concepto de exámenes médicos ocupacionales',cat:'Proceso de ingreso',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'ingreso + periódicos según profesiograma',baseLegal:'Res. 2346/2007',notas:'Conductores: con visiometría, audiometría y osteomuscular.'},
+ {key:'sustancias',nombre:'Pruebas de verificación de sustancias psicoactivas',cat:'Proceso de ingreso',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'según política/PESV',baseLegal:'Ley 1503/2011',notas:'Requiere consentimiento informado y política escrita.'},
+ {key:'visita',nombre:'Visita domiciliaria',cat:'Proceso de ingreso',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Formato GH TEGW',notas:'Verificación socioeconómica.'},
+ {key:'contrato',nombre:'Contrato de trabajo',cat:'Proceso de ingreso',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'CST arts. 37-47',notas:'Indefinido = regla general (Ley 2466/2025).'},
+ {key:'ctaNomina',nombre:'Certificación de cuenta de nómina',cat:'Proceso de ingreso',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'CST art. 134',notas:'Titular = trabajador.'},
+ {key:'habitos',nombre:'Observación de hábitos de conducción (si aplica)',cat:'Proceso de ingreso',aplicaA:'conductor',nivel:'re',vence:false,periodicidad:'',baseLegal:'PESV',notas:'Prueba de manejo / perfil del conductor.'},
+ {key:'inventario',nombre:'Inventario de vehículo (si aplica)',cat:'Proceso de ingreso',aplicaA:'conductor',nivel:'re',vence:false,periodicidad:'',baseLegal:'Formato GH TEGW',notas:'Estado del vehículo entregado.'},
+ {key:'dotacion',nombre:'Formato control de dotación de personal',cat:'Proceso de ingreso',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'3/año: 30 abr, 31 ago, 20 dic',baseLegal:'CST art. 232',notas:'Salario ≤2 SMLMV y >3 meses; no se paga en dinero.'},
+ // ---- AFILIACIONES ----
+ {key:'arl',nombre:'Afiliación a ARL (riesgos laborales)',cat:'Afiliaciones',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 1562/2012; Dec 1072/2015',notas:'Antes de iniciar; 100% a cargo del empleador.'},
+ {key:'eps',nombre:'Afiliación a EPS (salud)',cat:'Afiliaciones',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 100/1993',notas:'Antes del inicio de labores.'},
+ {key:'afp',nombre:'Afiliación a AFP (pensiones)',cat:'Afiliaciones',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 100/1993; Ley 2381/2024',notas:'Fondo privado o Colpensiones.'},
+ {key:'caja',nombre:'Afiliación a Caja de Compensación Familiar',cat:'Afiliaciones',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 21/1982',notas:'Parafiscal 4% a cargo del empleador.'},
+ {key:'cesAfil',nombre:'Afiliación a Fondo de Cesantías',cat:'Afiliaciones',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 50/1990',notas:'FNA o privado.'},
+ // ---- VINCULACIÓN / FIRMA (paquete generado) ----
+ {key:'habeas',nombre:'Autorización tratamiento de datos (Habeas Data)',cat:'Vinculación / firma',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 1581/2012; Dec 1377/2013',notas:'Consentimiento de datos personales y sensibles.'},
+ {key:'descuentos',nombre:'Autorización de descuentos de nómina',cat:'Vinculación / firma',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'CST art. 149',notas:'Autorización escrita previa del trabajador.'},
+ {key:'consentSust',nombre:'Consentimiento de prueba de sustancias',cat:'Vinculación / firma',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'Ley 1581/2012; Ley 1503/2011',notas:'Consentimiento informado para las pruebas.'},
+ {key:'rit',nombre:'Constancia de entrega del Reglamento Interno de Trabajo',cat:'Vinculación / firma',aplicaA:'todos',nivel:'ob',vence:false,periodicidad:'',baseLegal:'CST arts. 104-125',notas:'Divulgación al trabajador.'},
+ {key:'indSST',nombre:'Inducción / reinducción SG-SST',cat:'Vinculación / firma',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'ingreso + reinducción anual',baseLegal:'Dec 1072/2015; Res 0312/2019',notas:'Política SST y reglamento de higiene y seguridad.'},
+ {key:'epp',nombre:'Entrega de EPP',cat:'Vinculación / firma',aplicaA:'todos',nivel:'ob',vence:true,periodicidad:'según matriz / desgaste',baseLegal:'Dec 1072/2015',notas:'Según matriz de riesgos del cargo.'},
+ {key:'perfil',nombre:'Perfil de cargo (firmado)',cat:'Vinculación / firma',aplicaA:'todos',nivel:'re',vence:false,periodicidad:'',baseLegal:'Buena práctica',notas:'Funciones, competencias y requisitos del cargo.'}
+];
+let empSelId=null, empShowForm=false, empShowCat=false, empShowInfo=false;
 function empDocLoad(){ try{const a=JSON.parse(localStorage.getItem(LS_EMPDOC)); if(Array.isArray(a)&&a.length)return a;}catch(e){} return EMP_DOC_DEFAULT.map(d=>({...d})); }
 function empDocSave(a){ localStorage.setItem(LS_EMPDOC, JSON.stringify(a)); }
 function empLoad(){ try{return JSON.parse(localStorage.getItem(LS_EMP))||[];}catch(e){return [];} }
@@ -1431,8 +1454,10 @@ function renderEmpleados(){
       <button class="btn primary" onclick="empToggleForm()">${empShowForm?'✕ Cerrar':'＋ Crear empleado'}</button>
       <button class="chip-btn" onclick="empImportConductores()">Importar conductores de aseos</button>
       <button class="chip-btn" onclick="empToggleCat()">${empShowCat?'✕ Cerrar catálogo':'⚙︎ Gestionar documentos exigidos'}</button>
+      <button class="chip-btn" onclick="empToggleInfo()">${empShowInfo?'✕ Cerrar':'ⓘ Empleador y marco legal 2026'}</button>
       <span class="empbar-hint">${cat.length} documentos en el catálogo · ${cat.filter(d=>d.nivel==='ob').length} obligatorios</span>
     </div>`);
+  if(empShowInfo) H.push(empInfoHTML());
   if(empShowForm) H.push(empFormHTML());
   if(empShowCat) H.push(empCatHTML(cat));
   if(alertas.length) H.push(`<div class="card pad" style="margin-bottom:14px"><div class="section-hero" style="margin-bottom:8px">⚠️ Documentos por vencer / vencidos</div>`+
@@ -1461,7 +1486,8 @@ function empCardHTML(e,cat){
 }
 function empChecklistHTML(e,cat){
   const ds=empDocsFor(e);
-  const rows=ds.map(d=>{ const st=(e.docs&&e.docs[d.key])||{estado:'pendiente',vence:'',notas:''};
+  const secciones=[]; ds.forEach(d=>{ if(secciones.indexOf(d.cat)<0)secciones.push(d.cat); });
+  const docRow=d=>{ const st=(e.docs&&e.docs[d.key])||{estado:'pendiente',vence:'',notas:''};
     const dias=d.vence&&st.vence?vehDias(st.vence):null;
     const vcol=dias==null?'':dias<0?'color:#b3271d;font-weight:800':dias<=30?'color:#9c6100;font-weight:700':'color:#067a3c';
     return `<tr>
@@ -1472,7 +1498,11 @@ function empChecklistHTML(e,cat){
         <option value="na"${st.estado==='na'?' selected':''}>No aplica</option></select></td>
       <td>${d.vence?`<input type="date" class="ios" value="${st.vence||''}" onchange="empSetDoc('${e.id}','${d.key}','vence',this.value)"><div style="font-size:11px;${vcol}">${dias==null?'':dias<0?('vencido '+(-dias)+'d'):(dias+'d')}</div>`:'<span style="color:var(--ios-label3)">—</span>'}</td>
       <td><input class="ios" placeholder="notas" value="${esc(st.notas||'').replace(/"/g,'&quot;')}" onchange="empSetDoc('${e.id}','${d.key}','notas',this.value)"></td>
-    </tr>`; }).join('');
+    </tr>`; };
+  const rows=secciones.map(sec=>{
+    const sd=ds.filter(d=>d.cat===sec); const ok=sd.filter(d=>{const s=(e.docs&&e.docs[d.key])||{};return s.estado==='tiene';}).length;
+    return `<tr><td colspan="4" style="background:var(--ios-bg);font-weight:800;font-size:12.5px;letter-spacing:.02em">${esc(sec)} · ${ok}/${sd.length}</td></tr>`+sd.map(docRow).join('');
+  }).join('');
   return `<div style="margin-top:12px;border-top:1px solid var(--ios-sep);padding-top:10px" onclick="event.stopPropagation()">
     <div class="vtable-wrap" style="max-height:none"><table class="vtable"><thead><tr><th>Documento</th><th>Estado</th><th>Vence</th><th>Notas</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
@@ -1483,19 +1513,41 @@ function empChecklistHTML(e,cat){
 }
 function empFormHTML(){
   const empresaOpts=['',...CLIENTES_LISTA].map(c=>`<option value="${c}"${EMP&&EMP!=='(sin cliente)'&&c===EMP?' selected':''}>${c||'(sin asignar)'}</option>`).join('');
-  return `<div class="card pad" style="margin-bottom:14px"><div class="section-hero" style="margin-bottom:10px">Nuevo empleado</div>
+  return `<div class="card pad" style="margin-bottom:14px"><div class="section-hero" style="margin-bottom:10px">Nuevo empleado · vinculación TEGW</div>
     <div class="emp-form">
       <label class="full">Nombre completo<input class="ios" id="empfNombre" placeholder="Nombre y apellidos"></label>
       <label>Cédula<input class="ios" id="empfCedula" placeholder="N° de documento"></label>
-      <label>Cargo<select class="ios" id="empfCargo" onchange="if($('#empfCond'))$('#empfCond').checked=(this.value==='Conductor')">${EMP_CARGOS.map(c=>`<option ${c==='Conductor'?'selected':''}>${c}</option>`).join('')}</select></label>
-      <label>Empresa / cliente<select class="ios" id="empfEmpresa">${empresaOpts}</select></label>
+      <label>Lugar de expedición<input class="ios" id="empfLugarExp" placeholder="ciudad"></label>
+      <label>Fecha de nacimiento<input type="date" class="ios" id="empfNac"></label>
+      <label>Cargo<select class="ios" id="empfCargo" onchange="if($('#empfCond'))$('#empfCond').checked=/conductor/i.test(this.value)">${EMP_CARGOS.map((c,i)=>`<option${i===0?' selected':''}>${c}</option>`).join('')}</select></label>
+      <label>Empresa / cliente (si atiende uno)<select class="ios" id="empfEmpresa">${empresaOpts}</select></label>
       <label>Vehículo asignado (N° interno)<input class="ios" id="empfVeh" placeholder="ej. 212"></label>
       <label>Fecha de ingreso<input type="date" class="ios" id="empfIngreso"></label>
       <label>Tipo de contrato<select class="ios" id="empfContrato">${EMP_CONTRATOS.map(c=>`<option>${c}</option>`).join('')}</select></label>
       <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="empfCond" checked> Es conductor (exige documentos de conducción)</label>
     </div>
+    <div class="section-hero" style="font-size:14px;margin:14px 0 8px">Nómina y seguridad social</div>
+    <div class="emp-form">
+      <label>Salario mensual<input type="number" class="ios" id="empfSalario" value="${SMLMV_2026}"></label>
+      <label>Periodicidad de pago<select class="ios" id="empfPago"><option>Quincenal</option><option>Mensual</option></select></label>
+      <label>Periodo de prueba<input class="ios" id="empfPrueba" value="2 meses"></label>
+      <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="empfAux" checked> Tiene derecho a auxilio de transporte ($${AUX_TRANS_2026.toLocaleString('es-CO')})</label>
+      <label>EPS<input class="ios" id="empfEPS"></label>
+      <label>AFP (pensión)<input class="ios" id="empfAFP"></label>
+      <label>ARL<input class="ios" id="empfARL"></label>
+      <label>Caja de compensación<input class="ios" id="empfCaja"></label>
+      <label>Cuenta de nómina (banco / N°)<input class="ios" id="empfBanco"></label>
+      <label>Tallas de dotación<input class="ios" id="empfTallas" placeholder="camisa / pantalón / calzado"></label>
+    </div>
+    <div class="section-hero" style="font-size:14px;margin:14px 0 8px">Contacto</div>
+    <div class="emp-form">
+      <label>Teléfono<input class="ios" id="empfTel"></label>
+      <label>Email<input class="ios" id="empfEmail"></label>
+      <label>Familiar de contacto<input class="ios" id="empfFam"></label>
+      <label>Teléfono del familiar<input class="ios" id="empfTelFam"></label>
+    </div>
     <div style="margin-top:12px"><button class="btn primary" onclick="empCrear()">Crear empleado con sus documentos</button></div>
-    <div class="note" style="margin-top:8px">Se exige el mismo catálogo de documentos a todos. Los datos se guardan solo en este navegador (no se publican).</div></div>`;
+    <div class="note" style="margin-top:8px">Empleador: <b>${esc(TEGW.razon)} (${esc(TEGW.sigla)})</b> · NIT ${esc(TEGW.nit)}. Se exige el mismo catálogo de documentos a todos. <b>Los datos (incl. cédula) se guardan solo en este navegador — no se publican en el repositorio.</b></div></div>`;
 }
 function empCatHTML(cat){
   const rows=cat.map((d,i)=>`<tr>
@@ -1512,17 +1564,37 @@ function empCatHTML(cat){
       <button class="chip-btn" onclick="empCatAdd()">＋ Agregar documento</button>
       <button class="chip-btn" style="color:var(--red)" onclick="empCatReset()">Restaurar set legal por defecto</button></div></div>`;
 }
-function empToggleForm(){ empShowForm=!empShowForm; if(empShowForm)empShowCat=false; renderEmpleados(); }
-function empToggleCat(){ empShowCat=!empShowCat; if(empShowCat)empShowForm=false; renderEmpleados(); }
+function empToggleForm(){ empShowForm=!empShowForm; if(empShowForm){empShowCat=false;empShowInfo=false;} renderEmpleados(); }
+function empToggleCat(){ empShowCat=!empShowCat; if(empShowCat){empShowForm=false;empShowInfo=false;} renderEmpleados(); }
+function empToggleInfo(){ empShowInfo=!empShowInfo; if(empShowInfo){empShowForm=false;empShowCat=false;} renderEmpleados(); }
+function empInfoHTML(){
+  return `<div class="card pad" style="margin-bottom:14px"><div class="section-hero" style="margin-bottom:8px">Empleador y marco legal 2026</div>
+    <div class="emp-form" style="margin-bottom:10px">
+      <label class="full">Razón social<input class="ios" value="${esc(TEGW.razon)} (${esc(TEGW.sigla)})" readonly></label>
+      <label>NIT<input class="ios" value="${esc(TEGW.nit)}" readonly></label>
+      <label>CIIU<input class="ios" value="${esc(TEGW.ciiu)}" readonly></label>
+      <label class="full">Domicilio<input class="ios" value="${esc(TEGW.dir)}" readonly></label>
+      <label class="full">Representante legal<input class="ios" value="${esc(TEGW.rl)}" readonly></label>
+      <label class="full">Contacto<input class="ios" value="${esc(TEGW.contacto)}" readonly></label>
+    </div>
+    <div class="vtable-wrap"><table class="vtable"><thead><tr><th>Concepto</th><th>Valor 2026</th><th>Norma</th></tr></thead><tbody>`+
+    MARCO_LEGAL_2026.map(r=>`<tr><td>${esc(r[0])}</td><td style="font-weight:700">${esc(r[1])}</td><td style="font-size:12px;color:var(--ios-label2)">${esc(r[2])}</td></tr>`).join('')+
+    `</tbody></table></div>
+    <div class="note" style="margin-top:8px">⚠️ Estas cifras cambian por decreto cada año. Verifícalas antes de redactar nuevos documentos. No es asesoría legal: las plantillas deben revisarse por jurídica/SST antes de firmar.</div></div>`;
+}
 function empSelect(id){ empSelId=(empSelId===id?null:id); renderEmpleados(); }
 function empCrear(){
   const g=id=>{const el=$('#'+id);return el?el.value.trim():'';};
   const nombre=g('empfNombre'); if(!nombre){toast('El nombre es obligatorio');return;}
   const ced=g('empfCedula'); const emps=empLoad();
   if(ced && emps.some(e=>e.cedula===ced)){ toast('Ya existe un empleado con esa cédula'); return; }
-  emps.push({id:'e'+Date.now().toString(36),nombre,cedula:ced,cargo:g('empfCargo')||'Otro',
-    esConductor:$('#empfCond')?$('#empfCond').checked:false,empresa:g('empfEmpresa'),vehiculo:g('empfVeh'),
-    fechaIngreso:g('empfIngreso'),tipoContrato:g('empfContrato')||'Indefinido',estado:'activo',docs:{}});
+  emps.push({id:'e'+Date.now().toString(36),nombre,cedula:ced,lugarExp:g('empfLugarExp'),fechaNac:g('empfNac'),
+    cargo:g('empfCargo')||'Otro',esConductor:$('#empfCond')?$('#empfCond').checked:false,empresa:g('empfEmpresa'),vehiculo:g('empfVeh'),
+    fechaIngreso:g('empfIngreso'),tipoContrato:g('empfContrato')||'Término indefinido',
+    salario:(+g('empfSalario')||SMLMV_2026),auxilio:$('#empfAux')?$('#empfAux').checked:true,periodicidadPago:g('empfPago')||'Quincenal',periodoPrueba:g('empfPrueba')||'2 meses',
+    eps:g('empfEPS'),afp:g('empfAFP'),arl:g('empfARL'),caja:g('empfCaja'),banco:g('empfBanco'),tallas:g('empfTallas'),
+    telefono:g('empfTel'),email:g('empfEmail'),contactoFam:g('empfFam'),telFam:g('empfTelFam'),
+    estado:'activo',docs:{}});
   empSave(emps); empShowForm=false; empSelId=emps[emps.length-1].id; toast('Empleado creado'); renderEmpleados();
 }
 function empSetDoc(id,key,field,val){ const emps=empLoad(); const e=emps.find(x=>x.id===id); if(!e)return; e.docs=e.docs||{}; e.docs[key]=e.docs[key]||{estado:'pendiente',vence:'',notas:''}; e.docs[key][field]=val; if(e.estado==='incompleto'&&e.cedula)e.estado='activo'; empSave(emps); renderEmpleados(); }
@@ -1547,7 +1619,7 @@ function empCatAdd(){ const c=empDocLoad(); c.push({key:'c'+Date.now().toString(
 function empCatReset(){ if(!confirm('¿Restaurar el catálogo legal por defecto? Se perderán tus cambios al catálogo (los empleados se conservan).'))return; localStorage.removeItem(LS_EMPDOC); renderEmpleados(); }
 function empExportSheets(){
   const emps=empFiltered(), cat=empDocLoad();
-  const rows=emps.map(e=>({Nombre:e.nombre,Cédula:e.cedula||'',Cargo:e.cargo||'',Conductor:e.esConductor?'Sí':'No',Empresa:e.empresa||'(sin cliente)',Vehículo:e.vehiculo||'',Contrato:e.tipoContrato||'',Ingreso:e.fechaIngreso||'',Estado:e.estado||'activo','Documentación %':empCompletion(e)}));
+  const rows=emps.map(e=>({Nombre:e.nombre,Cédula:e.cedula||'','Lugar exp.':e.lugarExp||'','Nacimiento':e.fechaNac||'',Cargo:e.cargo||'',Conductor:e.esConductor?'Sí':'No','Empresa/cliente':e.empresa||'(sin cliente)',Vehículo:e.vehiculo||'',Contrato:e.tipoContrato||'',Ingreso:e.fechaIngreso||'',Salario:e.salario||'',Auxilio:e.auxilio?'Sí':'No',Pago:e.periodicidadPago||'','Periodo prueba':e.periodoPrueba||'',EPS:e.eps||'',AFP:e.afp||'',ARL:e.arl||'',Caja:e.caja||'','Cuenta nómina':e.banco||'',Teléfono:e.telefono||'',Email:e.email||'','Contacto familiar':e.contactoFam||'','Tel. familiar':e.telFam||'',Tallas:e.tallas||'',Estado:e.estado||'activo','Documentación %':empCompletion(e)}));
   const matrix=emps.map(e=>{ const r={Empleado:e.nombre,Cédula:e.cedula||''}; cat.forEach(d=>{ if(d.aplicaA==='conductor'&&!e.esConductor){r[d.nombre]='N/A';return;} const st=(e.docs&&e.docs[d.key])||{}; r[d.nombre]= st.estado==='tiene'?(st.vence?('Sí (vence '+st.vence+')'):'Sí'): st.estado==='na'?'N/A':'PENDIENTE'; }); return r; });
   return [{name:'Empleados',rows},{name:'Matriz documentos',rows:matrix}];
 }
