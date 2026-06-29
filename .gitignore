@@ -14,3 +14,9 @@ data_vehiculos/
 
 # Secretos / llaves (NUNCA se suben). La app NO usa llaves; esto es solo para build.py opcional.
 .env
+
+# Datos personales de empleados (NO publicar)
+brayan_tegw.json
+*_empleados*.json
+TECC_Empleados_backup.json
+CLAUDE.md

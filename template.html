@@ -1456,6 +1456,9 @@ function renderEmpleados(){
       <button class="chip-btn" onclick="empImportConductores()">Importar conductores de aseos</button>
       <button class="chip-btn" onclick="empToggleCat()">${empShowCat?'✕ Cerrar catálogo':'⚙︎ Gestionar documentos exigidos'}</button>
       <button class="chip-btn" onclick="empToggleInfo()">${empShowInfo?'✕ Cerrar':'ⓘ Empleador y marco legal 2026'}</button>
+      <button class="chip-btn" onclick="empExportJSON()">⬇︎ Respaldo (JSON)</button>
+      <button class="chip-btn" onclick="(document.getElementById('empJsonFile')||{}).click&&document.getElementById('empJsonFile').click()">⬆︎ Importar (JSON)</button>
+      <input type="file" id="empJsonFile" accept=".json,application/json" hidden onchange="empImportJSON(this.files[0]); this.value='';">
       <span class="empbar-hint">${cat.length} documentos en el catálogo · ${cat.filter(d=>d.nivel==='ob').length} obligatorios</span>
     </div>`);
   if(empShowInfo) H.push(empInfoHTML());
@@ -1625,6 +1628,22 @@ function empExportSheets(){
   const rows=emps.map(e=>({Nombre:e.nombre,Cédula:e.cedula||'','Lugar exp.':e.lugarExp||'','Nacimiento':e.fechaNac||'',Cargo:e.cargo||'',Conductor:e.esConductor?'Sí':'No','Empresa/cliente':e.empresa||'(sin cliente)',Vehículo:e.vehiculo||'',Contrato:e.tipoContrato||'',Ingreso:e.fechaIngreso||'',Salario:e.salario||'',Auxilio:e.auxilio?'Sí':'No',Pago:e.periodicidadPago||'','Periodo prueba':e.periodoPrueba||'',EPS:e.eps||'',AFP:e.afp||'',ARL:e.arl||'',Caja:e.caja||'','Cuenta nómina':e.banco||'',Teléfono:e.telefono||'',Email:e.email||'','Contacto familiar':e.contactoFam||'','Tel. familiar':e.telFam||'',Tallas:e.tallas||'',Estado:e.estado||'activo','Documentación %':empCompletion(e)}));
   const matrix=emps.map(e=>{ const r={Empleado:e.nombre,Cédula:e.cedula||''}; cat.forEach(d=>{ if(d.aplicaA==='conductor'&&!e.esConductor){r[d.nombre]='N/A';return;} const st=(e.docs&&e.docs[d.key])||{}; r[d.nombre]= st.estado==='tiene'?(st.vence?('Sí (vence '+st.vence+')'):'Sí'): st.estado==='na'?'N/A':'PENDIENTE'; }); return r; });
   return [{name:'Empleados',rows},{name:'Matriz documentos',rows:matrix}];
+}
+function empExportJSON(){
+  const data=empLoad(); if(!data.length){ toast('No hay empleados para exportar'); return; }
+  const blob=new Blob([JSON.stringify({tipo:'tecc_empleados',fecha:new Date().toISOString(),empleados:data},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='TECC_Empleados_backup.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{a.remove();URL.revokeObjectURL(a.href);},120);
+  toast(data.length+' empleados exportados (JSON)');
+}
+function empImportJSON(file){
+  if(!file)return; const rd=new FileReader();
+  rd.onload=ev=>{ try{ const j=JSON.parse(ev.target.result); const arr=Array.isArray(j)?j:(j.empleados||[]); if(!arr.length){ toast('El JSON no trae empleados'); return; }
+    const cur=empLoad(); const key=x=>String(x.cedula||x.id||x.nombre||''); const byKey={}; cur.forEach(x=>byKey[key(x)]=x);
+    let add=0,upd=0; arr.forEach(x=>{ if(!x||!x.nombre)return; if(!x.id)x.id='e'+Date.now().toString(36)+Math.floor(Math.random()*99999); x.docs=x.docs||{};
+      const k=key(x); if(byKey[k]){ Object.assign(byKey[k],x); upd++; } else { cur.push(x); byKey[k]=x; add++; } });
+    empSave(cur); toast(add+' empleado(s) importado(s) · '+upd+' actualizado(s)'); renderEmpleados();
+  }catch(err){ console.error('importJSON',err); toast('JSON inválido'); } };
+  rd.readAsText(file);
 }
 /* ===== Generador del paquete de vinculación en Word (docx) — plantilla verificada legalmente ===== */
 const EMP_PLANTILLA=JSON.parse(`[
