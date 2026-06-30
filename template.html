@@ -490,6 +490,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cd-row.ext{border-left-color:#BB6BD9;}
 .cd-row:last-child{margin-bottom:0;}
 .cd-hd{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:8px;}
+.cd-time{font-size:12px;font-weight:800;color:var(--tint);background:rgba(0,161,75,.12);padding:2px 8px;border-radius:999px;font-variant-numeric:tabular-nums;}
 .cd-line{display:flex;gap:10px;margin:7px 0;font-size:13px;align-items:baseline;}
 .cd-line.col{flex-direction:column;gap:5px;align-items:stretch;}
 .cd-k{flex:0 0 62px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3);padding-top:2px;}
@@ -803,10 +804,10 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
     <button data-tab="aseos" class="active">Aseos</button>
     <button data-tab="taller">Taller</button>
     <button data-tab="llantas">Llantas</button>
-    <button data-tab="vehiculos">Vehículos</button>
-    <button data-tab="inspecciones">Inspecciones</button>
-    <button data-tab="empleados">Empleados</button>
-    <button data-tab="peajes">Peajes</button>
+    <button data-tab="vehiculos" style="display:none">Vehículos</button>
+    <button data-tab="inspecciones" style="display:none">Inspecciones</button>
+    <button data-tab="empleados" style="display:none">Empleados</button>
+    <button data-tab="peajes" style="display:none">Peajes</button>
     <button data-tab="ajustes">Ajustes</button>
   </div>
 
@@ -2000,22 +2001,37 @@ function showCalDetail(veh,ymd){
   const fnote=anyFoto?`<div class="cd-fnote">Toca una foto para abrirla en Drive. Las miniaturas cargan si tienes sesión en la cuenta de Google con acceso; para verlas siempre, comparte la carpeta como <b>“cualquiera con el enlace puede ver”</b>.</div>`:'';
   box.innerHTML=`<div class="cd-top"><b>${vehTitulo(veh)}</b>${recs.length>1?` · ${recs.length} aseos`:''}</div>${rows}${fnote}`;
 }
+function aseoFinCalc(r){ // hora fin: usa horaFin; si no, horaIni + durMin
+  if(r.horaFin) return r.horaFin;
+  if(r.horaIni && r.durMin){ const p=r.horaIni.split(':'); const t=(+p[0])*60+(+p[1])+(+r.durMin); if(t>0&&t<24*60) return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'); }
+  return '';
+}
+function aseoHorario(r){ if(!r.horaIni) return ''; const fin=aseoFinCalc(r); return fin&&fin!==r.horaIni ? (r.horaIni+' – '+fin) : r.horaIni; }
 function showDayDetail(ymd){
   const box=$('#calDetail'); if(!box) return;
-  const recs=DATA.aseos.records.filter(r=>r.fecha===ymd);
+  const recs=DATA.aseos.records.filter(r=>r.fecha===ymd && matchEmp(r.vehiculo));
   if(!recs.length){ box.textContent='Sin aseos registrados ese día.'; return; }
+  // orden PRIMARIO por hora de inicio (los que tienen hora primero, ascendente); luego categoría y vehículo
   const ord=r=>esProveedor(r)?2:esConductor(r)?1:0;
-  recs.sort((a,b)=>ord(a)-ord(b) || String(a.vehiculo||'').localeCompare(String(b.vehiculo||''),'es',{numeric:true}));
-  let nInt=0,nCond=0,nProv=0,valProv=0;
+  recs.sort((a,b)=>{
+    const ha=a.horaIni||'', hb=b.horaIni||'';
+    if(ha&&hb&&ha!==hb) return ha<hb?-1:1;
+    if(ha&&!hb) return -1; if(!ha&&hb) return 1;
+    return ord(a)-ord(b) || String(a.vehiculo||'').localeCompare(String(b.vehiculo||''),'es',{numeric:true});
+  });
+  let nInt=0,nCond=0,nProv=0,valProv=0,conHora=0;
   const rows=recs.map(r=>{
     const prov=esProveedor(r), condR=esConductor(r);
     if(prov){nProv++;valProv+=valorAseo(r);} else if(condR){nCond++;} else {nInt++;}
+    const hor=aseoHorario(r); if(r.horaIni)conHora++;
     const tipos=tiposDe(r);
     const chips=tipos.length? tipos.map(t=>`<span class="cd-t">${pretty(t)}</span>`).join('') : '<span class="cd-t cd-t0">sin detalle de tipo</span>';
     const badge=prov?`<span class="cd-bad pe">● Proveedor externo</span>`:condR?`<span class="cd-bad cn">● Conductor propio</span>`:`<span class="cd-bad ci">● Lavador TECC</span>`;
     const val=(prov||condR)?`<span class="cd-val ${prov?'pe':'cn'}">${COP(valorAseo(r))}</span>`:'';
+    const timeChip=hor?`<span class="cd-time">🕒 ${hor}</span>`:'';
     return `<div class="cd-row${prov?' ext':condR?' cond':' int'}">`+
-      `<div class="cd-hd"><b>${vehTitulo(r.vehiculo||'—')}</b>${val}</div>`+
+      `<div class="cd-hd"><b>${vehTitulo(r.vehiculo||'—')}</b>${timeChip}${val}</div>`+
+      (hor?`<div class="cd-line"><span class="cd-k">Horario</span><span class="cd-v"><b>${hor}</b>${r.durMin?` · ${r.durMin} min`:''}</span></div>`:'')+
       `<div class="cd-line"><span class="cd-k">Origen</span><span class="cd-v">${badge}</span></div>`+
       (prov?`<div class="cd-line"><span class="cd-k">Proveedor</span><span class="cd-v cd-prov">${capNombre(proveedor(r))||'—'}</span></div>`:'')+
       (condR?`<div class="cd-line"><span class="cd-k">Conductor</span><span class="cd-v">${capNombre((r.conductor||'').trim())||'—'}</span></div>`:'')+
@@ -2023,7 +2039,8 @@ function showDayDetail(ymd){
     `</div>`;
   }).join('');
   const resumen=`<b>${recs.length}</b> aseo${recs.length!==1?'s':''} · ${nInt} lavador · ${nCond} conductor${nCond!==1?'es':''} · ${nProv} proveedor${nProv!==1?'es':''}${valProv?` (${COP(valProv)})`:''}`;
-  box.innerHTML=`<div class="cd-top">📅 ${fmtDLong(ymd)} — ${resumen}</div>${rows}`;
+  const ordenInfo=conHora? ` · <span style="color:var(--tint)">ordenado por hora</span>` : '';
+  box.innerHTML=`<div class="cd-top">📅 ${fmtDLong(ymd)} — ${resumen}${ordenInfo}</div>${rows}`;
 }
 /* ----- Flota completa (orden fijo). Cada entrada: [placa, número/etiqueta interna] -----
    El calendario SIEMPRE muestra estos vehículos en este orden, tengan o no aseo. */

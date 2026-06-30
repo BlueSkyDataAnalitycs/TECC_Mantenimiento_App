@@ -191,6 +191,18 @@ def dur_min(ini, fin):
     return None
 
 
+def hhmm(x):
+    """Normaliza una hora ('1:05:00 p. m.', '13:05', etc.) a 'HH:MM' 24h; '' si no se reconoce."""
+    x = (x or "").strip().lower().replace("a. m.", "am").replace("p. m.", "pm")
+    x = x.replace("a.m.", "am").replace("p.m.", "pm").replace(" ", "")
+    for fmt in ("%I:%M:%S%p", "%I:%M%p", "%H:%M:%S", "%H:%M"):
+        try:
+            return datetime.datetime.strptime(x, fmt).strftime("%H:%M")
+        except ValueError:
+            continue
+    return ""
+
+
 def aseo_parte_b(ts):
     """22-jun-2026 12:00 → parte B (formulario corregido). Antes → parte A (cruzado)."""
     d = parse_date(ts)
@@ -279,6 +291,8 @@ def process_aseos(rows):
             "tipo": tipo,
             "durMin": dur_min(row[iIni] if 0 <= iIni < len(row) else "",
                               row[iFin] if 0 <= iFin < len(row) else ""),
+            "horaIni": hhmm(row[iIni] if 0 <= iIni < len(row) else ""),
+            "horaFin": hhmm(row[iFin] if 0 <= iFin < len(row) else ""),
             "lugar": (row[iOrigen2].strip() if 0 <= iOrigen2 < len(row) else ""),
             "lugarAseo": origen,   # origen resuelto (clasificación lavador/conductor/proveedor)
             "valExt": int("".join(c for c in (row[iValExt] if 0 <= iValExt < len(row) else "") if c.isdigit()) or 0),
