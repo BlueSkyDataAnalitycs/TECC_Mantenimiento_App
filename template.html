@@ -206,19 +206,21 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cc-verdict.bad{background:rgba(255,59,48,.12);color:var(--red);}
 @media (prefers-color-scheme:dark) and (min-width:100000px){.cc-verdict.ok{color:#5fd07e;}}
 /* calendario de intervenciones (días × horas) */
-.tcal-scroll{overflow:auto;max-height:560px;-webkit-overflow-scrolling:touch;}
+.tcal-scroll{overflow:auto;-webkit-overflow-scrolling:touch;--tz:1;--tcw:calc(96px*var(--tz));--tct:calc(112px*var(--tz));--tch:calc(34px*var(--tz));max-height:calc((var(--tch) + 7px) * 9);}  /* ~7 días + encabezado + total visibles */
+.tcal-zoombar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 4px 9px;font-size:12px;color:var(--ios-label2);}
+.tcal-zoombar #tcalZlbl{font-weight:800;color:var(--tint);font-variant-numeric:tabular-nums;}
 .tcal-row{display:flex;gap:3px;align-items:stretch;width:max-content;}
 .tcal-headrow{position:sticky;top:0;z-index:3;background:var(--ios-bg2);padding-bottom:3px;}
-.tcal-day{flex:0 0 96px;width:96px;position:sticky;left:0;z-index:1;background:var(--ios-bg2);font-size:12px;padding:7px 7px 7px 2px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--ios-sep);}
+.tcal-day{flex:0 0 var(--tcw);width:var(--tcw);position:sticky;left:0;z-index:1;background:var(--ios-bg2);font-size:calc(12px*var(--tz));padding:7px 7px 7px 2px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--ios-sep);}
 .tcal-day b{font-variant-numeric:tabular-nums;font-weight:800;}
 .tcal-day small{color:var(--ios-label3);font-size:10px;}
 .tcal-headrow .tcal-day{z-index:4;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--ios-label3);justify-content:flex-end;}
-.tcal-ch{flex:0 0 96px;width:96px;text-align:center;font-size:10.5px;font-weight:800;color:var(--ios-label3);padding:7px 2px;font-variant-numeric:tabular-nums;align-self:flex-end;}
-.tcal-cell{flex:0 0 96px;width:96px;min-height:34px;margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;padding:4px 4px;}
+.tcal-ch{flex:0 0 var(--tcw);width:var(--tcw);text-align:center;font-size:calc(10.5px*var(--tz));font-weight:800;color:var(--ios-label3);padding:7px 2px;font-variant-numeric:tabular-nums;align-self:flex-end;}
+.tcal-cell{flex:0 0 var(--tcw);width:var(--tcw);min-height:var(--tch);margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;padding:4px 4px;}
 .tcal-cell.on{background:rgba(10,35,66,.07);cursor:pointer;}
 .tcal-cell.on:hover{background:rgba(10,35,66,.13);}
 .tcal-cell.sel{outline:2px solid var(--tecc-amarillo);outline-offset:1px;}
-.tcal-pl{background:var(--tecc-amarillo);color:#0A2342;font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:6px;font-variant-numeric:tabular-nums;line-height:1.5;}
+.tcal-pl{background:var(--tecc-amarillo);color:#0A2342;font-size:calc(10.5px*var(--tz));font-weight:800;padding:1px 6px;border-radius:6px;font-variant-numeric:tabular-nums;line-height:1.5;}
 .tcal-pl.more{background:var(--tecc-azul);color:#fff;}
 /* domingos / festivos (azul claro) y sábado tarde (no laborable) */
 .tcal-cell.nw{background:#DCEBFF;}
@@ -226,14 +228,14 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .tcal-day.dom,.tcal-day.fest{background:#DCEBFF;}
 .tcal-tag{display:block;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#2E6FB8;margin-top:1px;}
 /* columna "Total día" + fila de totales al pie */
-.tcal-toth{flex:0 0 112px!important;width:112px!important;}
-.tcal-tot{flex:0 0 112px;width:112px;min-height:34px;margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.tcal-toth{flex:0 0 var(--tct)!important;width:var(--tct)!important;}
+.tcal-tot{flex:0 0 var(--tct);width:var(--tct);min-height:var(--tch);margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .tcal-tot b{font-size:14px;font-weight:800;color:var(--ios-label);font-variant-numeric:tabular-nums;line-height:1.05;}
 .tcal-tot span{font-size:10.5px;font-weight:700;color:var(--tint);font-variant-numeric:tabular-nums;}
 .tcal-tot.empty{color:var(--ios-label3);}
 /* columnas Costo día + Productividad */
-.tcal-costh,.tcal-prodh{flex:0 0 112px!important;width:112px!important;}
-.tcal-cost,.tcal-prod{flex:0 0 112px;width:112px;min-height:34px;margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+.tcal-costh,.tcal-prodh{flex:0 0 var(--tct)!important;width:var(--tct)!important;}
+.tcal-cost,.tcal-prod{flex:0 0 var(--tct);width:var(--tct);min-height:var(--tch);margin:2px 0;border-radius:8px;background:var(--ios-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
 .tcal-cost b{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ios-label2);line-height:1.05;}
 .tcal-cost small,.tcal-prod small{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ios-label3);}
 .tcal-prod b{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.05;}
@@ -241,7 +243,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .tcal-prod.ok small,.tcal-prod.bad small{color:inherit;opacity:.85;}
 .tcal-footrow{position:sticky;bottom:0;z-index:2;background:var(--ios-bg2);box-shadow:0 -1px 0 var(--ios-sep);}
 .tcal-footrow .tcal-day{background:var(--ios-bg2);font-weight:800;color:var(--ios-label);}
-.tcal-fcell{flex:0 0 96px;width:96px;text-align:center;font-size:12.5px;font-weight:800;color:var(--ios-label2);font-variant-numeric:tabular-nums;align-self:center;}
+.tcal-fcell{flex:0 0 var(--tcw);width:var(--tcw);text-align:center;font-size:12.5px;font-weight:800;color:var(--ios-label2);font-variant-numeric:tabular-nums;align-self:center;}
 .tcal-tot.tcal-grand{background:var(--tecc-azul);}
 .tcal-tot.tcal-grand b{color:#fff;}
 .tcal-tot.tcal-grand span{color:var(--tecc-amarillo);}
@@ -2589,6 +2591,13 @@ function renderTaller(){
   H.push(`<div class="section span2">
     <div class="section-hero">Calendario de intervenciones</div>
     <div class="note" style="margin:-4px 4px 9px">Aparecen <b>todos los días</b> del periodo (incluidos fines de semana y festivos), uno por fila; a lo largo, <b>franjas fijas de 2 horas</b> (06–08 … 18–20). Cada celda muestra la <b>placa</b> del vehículo; las del formulario caen según su <b>hora de inicio</b> y las históricas sin hora van en <b>"Sin hora"</b>. <b style="color:#2E6FB8">Azul claro</b> = no laborable: <b>domingos y festivos</b> (todo el día) y <b>sábados después de las 12 m.</b> Toca una celda para ver la <b>descripción</b> y el vehículo. Al final: <b>Total día</b> (valor de las intervenciones), <b>Costo día</b> (el costo fijo mensual repartido entre los días trabajados del mes — sábado ½, domingo/festivo 0) y <b>Productividad</b> = valor ÷ costo (<b style="color:var(--tecc-verde)">verde</b> si el día rentó, <b style="color:var(--red)">rojo</b> si no).</div>
+    <div class="tcal-zoombar">
+      <span>📏 Ventana fija de <b>7 días</b> visibles · desplázate para ver el resto</span>
+      <button class="chip-btn" onclick="tcalZoom(-1)" title="Alejar">– Zoom</button>
+      <button class="chip-btn" onclick="tcalZoom(0)" title="Restablecer">⤢ 100%</button>
+      <button class="chip-btn" onclick="tcalZoom(1)" title="Acercar">+ Zoom</button>
+      <span id="tcalZlbl"></span>
+    </div>
     <div class="card" style="padding:10px 10px 12px">${buildTallerCal(recs,R)}</div>
     <div class="tcal-detail" id="tCalDetail">Toca una celda con número para ver las intervenciones de ese día.</div>
   </div>`);
@@ -2626,6 +2635,7 @@ function renderTaller(){
   </div></div>`);
 
   body.innerHTML=H.join('');
+  tcalApplyZoom();
 
   // tap en celda del calendario de intervenciones → detalle (vehículo + intervención)
   body.querySelectorAll('.tcal-cell.on[data-key]').forEach(el=>el.onclick=()=>{
@@ -2660,6 +2670,10 @@ function tTimeBuckets(R,dayAgg){
   return {labels,data};
 }
 
+/* ---- zoom del calendario de intervenciones ---- */
+let tcalZ=(function(){const v=parseFloat(localStorage.getItem('tecc_tcalz'));return (v&&v>=0.6&&v<=2)?v:1;})();
+function tcalApplyZoom(){ const el=document.querySelector('#tab-taller .tcal-scroll'); if(el) el.style.setProperty('--tz',tcalZ); const l=$('#tcalZlbl'); if(l)l.textContent=Math.round(tcalZ*100)+'%'; }
+function tcalZoom(dir){ tcalZ = dir===0 ? 1 : Math.min(1.8, Math.max(0.6, +(tcalZ+dir*0.15).toFixed(2))); localStorage.setItem('tecc_tcalz',tcalZ); tcalApplyZoom(); }
 /* ---- calendario de intervenciones (filas=días, columnas=horas; sin hora primero) ---- */
 let tCalIndex={};
 const TDIAS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
