@@ -452,7 +452,8 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cal-cell.int-ext{background:linear-gradient(135deg,var(--green) 0 50%,#BB6BD9 50% 100%);}
 .cal-cell.cond-ext{background:linear-gradient(135deg,#FF9500 0 50%,#BB6BD9 50% 100%);}
 .cal-cell.both{background:linear-gradient(135deg,var(--green) 0 33%,#FF9500 33% 66%,#BB6BD9 66% 100%);}
-.cal-cell.int,.cal-cell.cond,.cal-cell.ext,.cal-cell.int-cond,.cal-cell.int-ext,.cal-cell.cond-ext,.cal-cell.both{cursor:pointer;}
+.cal-cell.otros{background:#C4C9D2;}
+.cal-cell.int,.cal-cell.cond,.cal-cell.ext,.cal-cell.int-cond,.cal-cell.int-ext,.cal-cell.cond-ext,.cal-cell.both,.cal-cell.otros{cursor:pointer;}
 .cal-cell.sel{outline:2px solid var(--tint);outline-offset:1px;z-index:1;}
 /* al señalar una celda se resalta toda la fila hasta el vehículo (más fácil de identificar) */
 .cal-row.rowsel .cal-cell:not([data-ymd]){background:rgba(242,201,76,.20);}
@@ -484,7 +485,7 @@ input[type=date].ios{min-width:128px;color-scheme:light dark;flex:1;}
 .cal-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:11px;font-size:12px;color:var(--ios-label2);}
 .cal-legend span{display:inline-flex;align-items:center;gap:6px;}
 .cal-legend .sw{width:13px;height:13px;border-radius:3px;display:inline-block;}
-.cal-legend .sw.int{background:var(--green);} .cal-legend .sw.cond{background:#FF9500;} .cal-legend .sw.ext{background:#BB6BD9;} .cal-legend .sw.none{background:var(--ios-bg);border:1px solid var(--ios-sep);}
+.cal-legend .sw.int{background:var(--green);} .cal-legend .sw.cond{background:#FF9500;} .cal-legend .sw.ext{background:#BB6BD9;} .cal-legend .sw.otros{background:#C4C9D2;} .cal-legend .sw.none{background:var(--ios-bg);border:1px solid var(--ios-sep);}
 .cal-detail{margin-top:12px;background:var(--ios-bg2);border-radius:13px;padding:11px 13px;font-size:12.5px;color:var(--ios-label);line-height:1.45;box-shadow:0 1px 3px rgba(0,0,0,.06);min-height:20px;}
 .cal-detail b{color:var(--tint);font-variant-numeric:tabular-nums;}
 .cal-detail .pe{color:#BB6BD9;font-weight:700;}
@@ -1027,6 +1028,7 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
           <span><i class="sw int"></i>Lavador TECC</span>
           <span><i class="sw cond"></i>Conductor propio</span>
           <span><i class="sw ext"></i>Proveedor externo</span>
+          <span><i class="sw otros"></i>Sin clasificar</span>
           <span><i class="sw none"></i>Sin aseo</span>
         </div>
         <div class="cal-detail" id="calDetail">Toca una celda con color para ver el detalle del aseo.</div>
@@ -1227,7 +1229,8 @@ function applyAllCC404(target){const m=getCC404Map();DATA.aseos.records.forEach(
    FINCA / TALLER PISCUISO → Lavador TECC (interno, sin costo externo)
    CASA CONDUCTOR          → Conductor propio (lavó en su casa)
    cualquier otro texto    → Proveedor externo (col R tiene el valor pagado) */
-function esLavador(r){const q=norm(r.lugarAseo||'').trim();return q===''||q.includes('finca')||q.includes('piscu');}
+function esLavador(r){const q=norm(r.lugarAseo||'').trim();return q.includes('finca')||q.includes('piscu');}   // SOLO Finca o Taller Piscuiso (parte A col Q / parte B col C ya resueltas en build.py). Lugar vacío u otro NO es del lavador.
+function esOtro(r){return !esLavador(r)&&!esConductor(r)&&!esProveedor(r);}   // lugar vacío / no reconocido → sin clasificar (no es del lavador)
 function esConductor(r){return norm(r.lugarAseo||'').includes('conductor');}
 function esProveedor(r){const q=norm(r.lugarAseo||'').trim();return q!==''&&!q.includes('finca')&&!q.includes('piscu')&&!q.includes('conductor');}
 function esInterno(r){return esLavador(r);}
@@ -2055,17 +2058,17 @@ function showDayDetail(ymd){
     if(ha&&!hb) return -1; if(!ha&&hb) return 1;
     return ord(a)-ord(b) || String(a.vehiculo||'').localeCompare(String(b.vehiculo||''),'es',{numeric:true});
   });
-  let nInt=0,nCond=0,nProv=0,valProv=0,conHora=0;
+  let nInt=0,nCond=0,nProv=0,nOtros=0,valProv=0,conHora=0;
   const rows=recs.map(r=>{
-    const prov=esProveedor(r), condR=esConductor(r);
-    if(prov){nProv++;valProv+=valorAseo(r);} else if(condR){nCond++;} else {nInt++;}
+    const prov=esProveedor(r), condR=esConductor(r), lav=esLavador(r);
+    if(prov){nProv++;valProv+=valorAseo(r);} else if(condR){nCond++;} else if(lav){nInt++;} else {nOtros++;}
     const hor=aseoHorario(r); if(r.horaIni)conHora++;
     const tipos=tiposDe(r);
     const chips=tipos.length? tipos.map(t=>`<span class="cd-t">${pretty(t)}</span>`).join('') : '<span class="cd-t cd-t0">sin detalle de tipo</span>';
-    const badge=prov?`<span class="cd-bad pe">● Proveedor externo</span>`:condR?`<span class="cd-bad cn">● Conductor propio</span>`:`<span class="cd-bad ci">● Lavador TECC</span>`;
+    const badge=prov?`<span class="cd-bad pe">● Proveedor externo</span>`:condR?`<span class="cd-bad cn">● Conductor propio</span>`:lav?`<span class="cd-bad ci">● Lavador TECC</span>`:`<span class="cd-bad" style="color:#7a8290">● Sin clasificar</span>`;
     const val=(prov||condR)?`<span class="cd-val ${prov?'pe':'cn'}">${COP(valorAseo(r))}</span>`:'';
     const timeChip=hor?`<span class="cd-time">🕒 ${hor}</span>`:'';
-    return `<div class="cd-row${prov?' ext':condR?' cond':' int'}">`+
+    return `<div class="cd-row${prov?' ext':condR?' cond':lav?' int':''}">`+
       `<div class="cd-hd"><b>${vehTitulo(r.vehiculo||'—')}</b>${timeChip}${val}</div>`+
       (hor?`<div class="cd-line"><span class="cd-k">Horario</span><span class="cd-v"><b>${hor}</b>${r.durMin?` · ${r.durMin} min`:''}</span></div>`:'')+
       `<div class="cd-line"><span class="cd-k">Origen</span><span class="cd-v">${badge}</span></div>`+
@@ -2074,7 +2077,7 @@ function showDayDetail(ymd){
       `<div class="cd-line"><span class="cd-k">Se hizo</span><span class="cd-v cd-chips">${chips}</span></div>`+
     `</div>`;
   }).join('');
-  const resumen=`<b>${recs.length}</b> aseo${recs.length!==1?'s':''} · ${nInt} lavador · ${nCond} conductor${nCond!==1?'es':''} · ${nProv} proveedor${nProv!==1?'es':''}${valProv?` (${COP(valProv)})`:''}`;
+  const resumen=`<b>${recs.length}</b> aseo${recs.length!==1?'s':''} · ${nInt} lavador · ${nCond} conductor${nCond!==1?'es':''} · ${nProv} proveedor${nProv!==1?'es':''}${valProv?` (${COP(valProv)})`:''}${nOtros?` · ${nOtros} sin clasificar`:''}`;
   const ordenInfo=conHora? ` · <span style="color:var(--tint)">ordenado por hora</span>` : '';
   box.innerHTML=`<div class="cd-top">📅 ${fmtDLong(ymd)} — ${resumen}${ordenInfo}</div>${rows}`;
 }
@@ -2129,11 +2132,12 @@ function renderCalendar(){
   const byKey={};
   inWin.forEach(r=>{
     const key=r.vehiculo||'—';
-    const g=byKey[key]||(byKey[key]={key,days:{},nInt:0,nCond:0,nProv:0,valProv:0});
-    const c=g.days[r.fecha]||(g.days[r.fecha]={int:false,cond:false,ext:false});
+    const g=byKey[key]||(byKey[key]={key,days:{},nInt:0,nCond:0,nProv:0,nOtros:0,valProv:0});
+    const c=g.days[r.fecha]||(g.days[r.fecha]={int:false,cond:false,ext:false,otros:false});
     if(esProveedor(r)){c.ext=true;g.nProv++;g.valProv+=valorAseo(r);}
     else if(esConductor(r)){c.cond=true;g.nCond++;}
-    else{c.int=true;g.nInt++;}
+    else if(esLavador(r)){c.int=true;g.nInt++;}
+    else{c.otros=true;g.nOtros++;}
   });
   // filas en ORDEN FIJO de la flota; luego cualquier vehículo con datos fuera de la lista
   const rows=[]; const usados=new Set();
@@ -2141,10 +2145,10 @@ function renderCalendar(){
   Object.keys(byKey).forEach(key=>{ if(!usados.has(key)) rows.push({key,label:key,placa:'fuera de lista',g:byKey[key],extra:true}); });
   // resumen
   const all=Object.values(byKey);
-  const totInt=all.reduce((s,g)=>s+g.nInt,0), totCond=all.reduce((s,g)=>s+g.nCond,0), totProv=all.reduce((s,g)=>s+g.nProv,0), valProv=all.reduce((s,g)=>s+g.valProv,0);
+  const totInt=all.reduce((s,g)=>s+g.nInt,0), totCond=all.reduce((s,g)=>s+g.nCond,0), totProv=all.reduce((s,g)=>s+g.nProv,0), totOtros=all.reduce((s,g)=>s+(g.nOtros||0),0), valProv=all.reduce((s,g)=>s+g.valProv,0);
   const activos=rows.filter(r=>r.g).length;
   const sumEl=$('#calSum');
-  if(sumEl) sumEl.innerHTML=`${filtOn?'<b class="fon">Filtrado</b> · ':''}<b>${activos}</b> de <b>${rows.length}</b> vehículos con aseo · <b>${totInt}</b> lavador · <b class="cn">${totCond}</b> conductor${totCond!==1?'es':''} · <b class="p">${totProv}</b> proveedor${totProv!==1?'es':''}${valProv?` (<b class="p">${COP(valProv)}</b>)`:''} · ${nDays} día${nDays!==1?'s':''} (${fmtDShort(sYmd)} – ${fmtDShort(eYmd)})`;
+  if(sumEl) sumEl.innerHTML=`${filtOn?'<b class="fon">Filtrado</b> · ':''}<b>${activos}</b> de <b>${rows.length}</b> vehículos con aseo · <b>${totInt}</b> lavador · <b class="cn">${totCond}</b> conductor${totCond!==1?'es':''} · <b class="p">${totProv}</b> proveedor${totProv!==1?'es':''}${valProv?` (<b class="p">${COP(valProv)}</b>)`:''}${totOtros?` · <b style="color:#7a8290">${totOtros}</b> sin clasificar`:''} · ${nDays} día${nDays!==1?'s':''} (${fmtDShort(sYmd)} – ${fmtDShort(eYmd)})`;
   const monthN=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   // cabecera (esquina + días)
   let head='<div class="cal-veh">Vehículo</div>';
@@ -2162,7 +2166,10 @@ function renderCalendar(){
       const c=g?g.days[day.ymd]:null; let cls='cal-cell';
       if(day.d.getDate()===1) cls+=' mstart';
       let tap='';
-      if(c){const t=(c.int?1:0)+(c.cond?2:0)+(c.ext?4:0);cls+=t===1?' int':t===2?' cond':t===4?' ext':t===3?' int-cond':t===5?' int-ext':t===6?' cond-ext':' both';tap=` data-veh="${encodeURIComponent(rw.key)}" data-ymd="${day.ymd}"`;}
+      if(c){const t=(c.int?1:0)+(c.cond?2:0)+(c.ext?4:0);
+        if(t>0)cls+=t===1?' int':t===2?' cond':t===4?' ext':t===3?' int-cond':t===5?' int-ext':t===6?' cond-ext':' both';
+        else if(c.otros)cls+=' otros';
+        tap=` data-veh="${encodeURIComponent(rw.key)}" data-ymd="${day.ymd}"`;}
       const sel=(calSel&&calSel.veh===rw.key&&calSel.ymd===day.ymd)?' sel':'';
       row+=`<div class="${cls}${sel}" data-d="${di}"${tap}></div>`;
     });
