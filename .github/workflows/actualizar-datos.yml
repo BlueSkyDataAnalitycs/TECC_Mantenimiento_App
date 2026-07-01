@@ -1,0 +1,54 @@
+name: Actualizar datos (LAVADAS / Taller)
+
+# Extracción AUTOMÁTICA: re-ejecuta build.py (baja los Google Sheets sin llave
+# vía GVIZ) y, si index.html cambió, lo commitea. GitHub Pages redepliega solo.
+on:
+  schedule:
+    - cron: '0 10,13,16,19,22 * * *'   # ~5,8,11,14,17 hora Cali (UTC-5), lun-dom
+  workflow_dispatch: {}                  # botón "Run workflow" para forzar a mano
+  push:
+    paths:                               # si cambia el código, reconstruye (NO index.html → evita bucle)
+      - 'build.py'
+      - 'template.html'
+      - 'taller_seed.json'
+      - '.github/workflows/actualizar-datos.yml'
+
+permissions:
+  contents: write                        # el GITHUB_TOKEN necesita escribir para commitear
+
+concurrency:
+  group: actualizar-datos                # nunca dos corridas a la vez
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Regenerar index.html desde los Google Sheets
+        run: python build.py
+
+      - name: Commitear y publicar si hubo datos nuevos
+        run: |
+          git config user.name "tecc-datos-bot"
+          git config user.email "tecc-datos-bot@users.noreply.github.com"
+          if [ -z "$(git status --porcelain index.html)" ]; then
+            echo "Sin cambios: los Sheets no traen datos nuevos."; exit 0
+          fi
+          git add index.html
+          git commit -m "data: actualización automática de LAVADAS/Taller [skip ci]"
+          # reintentar con rebase por si alguien pusheó a mano durante la corrida
+          for i in 1 2 3; do
+            if git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              echo "index.html publicado."; exit 0
+            fi
+            echo "push rechazado, reintento $i…"; sleep 5
+          done
+          echo "No se pudo publicar tras 3 intentos."; exit 1

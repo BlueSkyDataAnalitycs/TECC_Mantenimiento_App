@@ -375,6 +375,12 @@ def main():
     recs, months = process_aseos(aseos_rows)
     taller = process_taller(taller_rows)
 
+    # Salvaguarda: si aseos quedó vacío, casi siempre es que GVIZ devolvió el HTML
+    # de login (el Sheet dejó de ser público) con HTTP 200. Abortar SIN publicar
+    # para no dejar el sitio con datos vacíos (crítico en la extracción automática).
+    if not recs:
+        sys.exit("❌ Aseos vacío: GVIZ probablemente devolvió login/HTML (¿el Sheet dejó de ser público?). Abortando sin regenerar index.html.")
+
     # Base de datos histórica del taller (informes ene–jun 2026). SIEMPRE presente.
     # Las intervenciones nuevas llegan por el Google Sheet y se unen a estas.
     taller_seed = []
@@ -407,7 +413,9 @@ def main():
 
     with open(os.path.join(here, "template.html"), encoding="utf-8") as f:
         tpl = f.read()
-    html = tpl.replace("__DATA_JSON__", json.dumps(data, ensure_ascii=False))
+    # ensure_ascii=False para acentos; escapar </ para que ningún dato con
+    # "</script>" pueda romper el bloque <script> del index.html (anti-XSS).
+    html = tpl.replace("__DATA_JSON__", json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))
     with open(os.path.join(here, "index.html"), "w", encoding="utf-8") as f:
         f.write(html)
 
