@@ -4,7 +4,7 @@ name: Actualizar datos (LAVADAS / Taller)
 # vía GVIZ) y, si index.html cambió, lo commitea. GitHub Pages redepliega solo.
 on:
   schedule:
-    - cron: '0 10,13,16,19,22 * * *'   # ~5,8,11,14,17 hora Cali (UTC-5), lun-dom
+    - cron: '0 12,14,16,18,20 * * *'   # 7, 9, 11 a.m. y 1, 3 p.m. hora Cali (UTC-5) — cada 2 h, todos los días
   workflow_dispatch: {}                  # botón "Run workflow" para forzar a mano
   push:
     paths:                               # si cambia el código, reconstruye (NO index.html → evita bucle)
