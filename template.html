@@ -1049,6 +1049,11 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 
   <!-- ============ TALLER ============ -->
   <div id="tab-taller" class="hidden">
+    <div class="subseg" id="tGrupoSeg">
+      <button data-tg="ALL" class="active">Taller general</button>
+      <button data-tg="TNC">TECC · Nidia · Carlos</button>
+      <button data-tg="WG">WG</button>
+    </div>
     <div class="section" id="tPeriodWrap">
       <div class="chips" id="tPresets"></div>
       <div class="customrange" id="tCustomRange">
@@ -1351,9 +1356,9 @@ function consolRows(){
     'Por lavador':list.filter(esLavador).length,'Por proveedor':list.filter(esProveedor).length,'Por conductor':list.filter(esConductor).length})).sort((a,b)=>b['Aseos en periodo']-a['Aseos en periodo']);
 }
 function tallerExportSheets(){
-  const all=(DATA.taller.records||[]).filter(r=>matchEmp(r.placa)); const R=tRange();
+  const all=(DATA.taller.records||[]).filter(r=>matchEmp(r.placa)&&tMatchGrupo(r)); const R=tRange();
   const recs=(tPeriod==='ALL'||!R)?all.slice():all.filter(r=>r.fecha&&r.fecha>=R.start&&r.fecha<=R.end);
-  const inter=recs.map(r=>({Fecha:r.fecha||'','N° interno':r.placa||'',Empresa:empresaDeVeh(r.placa)||'(sin cliente)',Sistema:tallerSistema(r)||'',Categoría:tallerCat(r)||'(sin categoría)',Detalle:r.especifique||'','Estado previo':estVal(r)!=null?estVal(r):'','Costo tercerizado':tCostOf(r)||0,'Centro/Cédula':r.cc||'',KM:r.km||''}));
+  const inter=recs.map(r=>({Fecha:r.fecha||'','N° interno':r.placa||'',Empresa:empresaDeVeh(r.placa)||'(sin cliente)','Técnico':tecnicoDe(r),Sistema:tallerSistema(r)||'',Categoría:tallerCat(r)||'(sin categoría)',Detalle:r.especifique||'','Estado previo':estVal(r)!=null?estVal(r):'','Costo tercerizado':tCostOf(r)||0,'Centro/Cédula':r.cc||'',KM:r.km||''}));
   const dayMap={}; recs.forEach(r=>{ if(!r.fecha)return; const d=dayMap[r.fecha]||(dayMap[r.fecha]={Fecha:r.fecha,Intervenciones:0,'Valor intervenido':0}); d.Intervenciones++; d['Valor intervenido']+=(tCostOf(r)||0); });
   return [{name:'Intervenciones',rows:inter},{name:'Por día (calendario)',rows:Object.values(dayMap).sort((a,b)=>a.Fecha<b.Fecha?-1:1)}];
 }
@@ -1373,7 +1378,7 @@ function exportActive(){
     else sheets=[{name:'Aseos (general)',rows:recs.map(aseoRow)}];
     xlsxExport('TECC_Aseos_'+sub+sfx,sheets);
   }
-  else if(tab==='taller'){ xlsxExport('TECC_Taller'+sfx,tallerExportSheets()); }
+  else if(tab==='taller'){ xlsxExport('TECC_Taller'+(tGrupo!=='ALL'?('_'+(tGrupo==='WG'?'WG':'TECC_Nidia_Carlos')):'')+sfx,tallerExportSheets()); }
   else if(tab==='llantas'){ xlsxExport('TECC_Llantas'+sfx,llExportSheets()); }
   else if(tab==='inspecciones'){ inspExport(); }
   else if(tab==='vehiculos'){ xlsxExport('TECC_Vehiculos'+sfx,[{name:'Parque automotor',rows:vehFiltrados().map(r=>Object.fromEntries(VCOLS.map(c=>[c.h,vget(r,c.k)])))}]); }
@@ -2449,10 +2454,28 @@ function tBar(id,labels,data,setter,prev,opt){
   setter(ch);
 }
 
+/* ===== División del taller por grupos de centro de costo (desde 2-jul-2026) =====
+   TNC = TECC + NIDIA GASCA + CARLOS GASCA → técnico Euclides Parra (también TODO lo histórico).
+   WG  = centro WG → técnico Brayan Caicedo desde el 2-jul-2026 a las 12 m. (SMLMV 2026).
+   El costo fijo del taller se reparte por % de VEHÍCULOS entre los dos grupos; al grupo WG
+   se le suma además el costo empleador de Brayan (mismo esquema salarial del lavador). */
+let tGrupo='ALL';
+const TNC_SET=new Set(['TECC','NIDIA GASCA','CARLOS GASCA']);
+const BRAYAN_INICIO='2026-07-02';
+function brayanMensual(){const f=fin();return f.sal+f.aux+f.pres;}   // costo empleador mensual (salario + aux + prestaciones)
+let _vehCentroCache=null;
+function vehCentroMap(){ if(_vehCentroCache) return _vehCentroCache; const cnt={};(DATA.aseos.records||[]).forEach(a=>{const v=(a.vehiculo||'').trim();if(!v)return;const c=a.centro||'(sin CC)';(cnt[v]=cnt[v]||{});cnt[v][c]=(cnt[v][c]||0)+1;});const m={};Object.keys(cnt).forEach(v=>{m[v]=Object.entries(cnt[v]).sort((x,y)=>y[1]-x[1])[0][0];});return _vehCentroCache=m; }
+function tGrupoDeVeh(placa){ const p=(placa||'').trim().toUpperCase(); const num=p?(placaANumero(p)||normVeh(p)):''; const c=((num&&vehCentroMap()[num])||'').toUpperCase(); if(c==='WG')return 'WG'; if(TNC_SET.has(c))return 'TNC'; return 'otro'; }
+function tMatchGrupo(r){ return tGrupo==='ALL' || tGrupoDeVeh(r.placa)===tGrupo; }
+function tShare(){ let wg=0,tnc=0; Object.values(vehCentroMap()).forEach(c=>{const u=(c||'').toUpperCase(); if(u==='WG')wg++; else if(TNC_SET.has(u))tnc++;}); const tot=(wg+tnc)||1; return {wg,tnc,tot,pctWG:wg/tot}; }
+function tCostoSemGrupo(){ const s=tShare(); if(tGrupo==='TNC')return COSTO_SEM*(1-s.pctWG); if(tGrupo==='WG')return COSTO_SEM*s.pctWG; return COSTO_SEM; }
+function tecnicoDe(r){ if(tGrupoDeVeh(r.placa)==='WG'){ const f=r.fecha||''; if(f>BRAYAN_INICIO||(f===BRAYAN_INICIO&&(+r.hora||0)>=12)) return 'Brayan Caicedo'; } return 'Euclides Parra'; }
+function brayanDiasActivos(R){ if(!R||!R.start||!R.end)return 0; const s=parseDate(R.start),e=parseDate(R.end); if(!s||!e)return 0; let n=0; for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1)){ if(ymdOf(d)>=BRAYAN_INICIO)n++; } return n; }
+function wireTallerGrupo(){ document.querySelectorAll('#tGrupoSeg button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#tGrupoSeg button').forEach(x=>x.classList.toggle('active',x===b)); tGrupo=b.dataset.tg; renderTaller(); }); }
 function renderTaller(){
   const body=$('#tallerBody'); if(!body) return;
   tBuildPeriodUI();
-  const all=(DATA.taller.records||[]).filter(r=>matchEmp(r.placa));   // placa = N° interno en taller
+  const all=(DATA.taller.records||[]).filter(r=>matchEmp(r.placa)&&tMatchGrupo(r));   // placa = N° interno en taller; tGrupo = vista activa
   const info=$('#tRangeInfo');
   if(!all.length){
     if(info) info.innerHTML='Sin registros del formulario del taller todavía.';
@@ -2472,7 +2495,7 @@ function renderTaller(){
   }
 
   // mapa vehículo → centro de costo (modal) tomado de los aseos
-  const vehCentro=(function(){const cnt={};(DATA.aseos.records||[]).forEach(a=>{const v=(a.vehiculo||'').trim();if(!v)return;const c=a.centro||'(sin CC)';(cnt[v]=cnt[v]||{});cnt[v][c]=(cnt[v][c]||0)+1;});const m={};Object.keys(cnt).forEach(v=>{m[v]=Object.entries(cnt[v]).sort((x,y)=>y[1]-x[1])[0][0];});return m;})();
+  const vehCentro=vehCentroMap();
 
   // --- agregaciones ---
   let externo=0, sinValor=0, estSum=0, estN=0, sinPlaca=0, sinSistema=0, sinFecha=0;
@@ -2495,11 +2518,25 @@ function renderTaller(){
   });
   const dupes=Object.values(dupKey).reduce((s,c)=>s+(c>1?c-1:0),0);
   const estAvg=estN?estSum/estN:0;
-  const interno=COSTO_SEM*weeks, ahorro=externo-interno;
+  // costo del periodo según la vista: General = taller completo; TNC/WG = su % por vehículos (+ Brayan en WG desde el 2-jul)
+  const share=tShare();
+  const brayanCostoPeriodo = tGrupo==='WG' ? (brayanMensual()/4)*(brayanDiasActivos(R)/7) : 0;
+  const interno=tCostoSemGrupo()*weeks + brayanCostoPeriodo, ahorro=externo-interno;
   const pct=externo>0?ahorro/externo*100:0, viable=ahorro>=0, hasV=externo>0;
   const barMax=Math.max(externo,interno)||1;
 
   const H=[];
+  // 0) BANNER de la vista por grupo (técnico + reparto del costo)
+  if(tGrupo!=='ALL'){
+    const esWG=tGrupo==='WG';
+    const pctG=esWG?share.pctWG:(1-share.pctWG);
+    H.push(`<div class="section span2"><div class="card pad" style="display:flex;gap:22px;flex-wrap:wrap;align-items:center">
+      <div><div class="cap" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3)">Vista</div><b style="font-size:16px">${esWG?'WG':'TECC · Nidia Gasca · Carlos Gasca'}</b></div>
+      <div><div class="cap" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3)">Técnico</div><b>👤 ${esWG?'Brayan Caicedo':'Euclides Parra'}</b>${esWG?'<small style="color:var(--ios-label3)"> · desde el 2 jul 2026, 12 m.</small>':''}</div>
+      <div><div class="cap" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3)">Parte del costo del taller</div><b>${(pctG*100).toFixed(1)}%</b><small style="color:var(--ios-label3)"> · ${esWG?share.wg:share.tnc} de ${share.tot} vehículos = ${COP(tCostoSemGrupo())}/sem</small></div>
+      ${esWG?`<div><div class="cap" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3)">+ Costo Brayan (SMLMV 2026)</div><b>${COP(brayanMensual())}/mes</b><small style="color:var(--ios-label3)"> · en este periodo: ${COP(brayanCostoPeriodo)}</small></div>`:''}
+    </div></div>`);
+  }
   // 1) HERO + KPIs
   H.push(`<div class="section span2">
     <div class="hero">
@@ -2530,7 +2567,10 @@ function renderTaller(){
         <div class="tvs-row"><div class="tvs-h"><span>Costo si se terceriza (externo)</span><b>${COP(externo)}</b></div><div class="tvs-bar ext"><i style="width:${externo/barMax*100}%"></i></div></div>
         <div class="tvs-row"><div class="tvs-h"><span>Costo del taller interno (fijo)</span><b>${COP(interno)}</b></div><div class="tvs-bar int"><i style="width:${interno/barMax*100}%"></i></div></div>
       </div>
-      <div class="tvs-note">Taller interno <b>${COP(COSTO_SEM)}</b>/semana × <b>${weeks.toFixed(2)}</b> semana${weeks===1?'':'s'} (${days} día${days===1?'':'s'}). Fórmula de ahorro: (externo − interno) / externo × 100 = <b>${hasV?pct.toFixed(1)+'%':'—'}</b>.</div>
+      <div class="tvs-note">${tGrupo==='ALL'
+        ?`Taller interno <b>${COP(COSTO_SEM)}</b>/semana × <b>${weeks.toFixed(2)}</b> semana${weeks===1?'':'s'} (${days} día${days===1?'':'s'}).`
+        :`Costo asignado al grupo: <b>${COP(tCostoSemGrupo())}</b>/semana (${((tGrupo==='WG'?share.pctWG:1-share.pctWG)*100).toFixed(1)}% del taller por n° de vehículos) × <b>${weeks.toFixed(2)}</b> semana${weeks===1?'':'s'}${tGrupo==='WG'?` <b>+ ${COP(brayanCostoPeriodo)}</b> de Brayan Caicedo (${COP(brayanMensual())}/mes desde el 2 jul 2026)`:''}.`}
+        Fórmula de ahorro: (externo − interno) / externo × 100 = <b>${hasV?pct.toFixed(1)+'%':'—'}</b>.</div>
     </div>
   </div>`);
 
@@ -2540,8 +2580,9 @@ function renderTaller(){
   // generaron en el taller los carros de ese CC.
   const ccFleet={};                                  // flota por CC (todos los vehículos con CC conocido)
   Object.values(vehCentro).forEach(c=>{ccFleet[c]=(ccFleet[c]||0)+1;});
-  const ccGroups=Object.keys(ccFleet).map(cc=>({cc, nVeh:ccFleet[cc], ext:(ccAgg[cc]?ccAgg[cc].ext:0), n:(ccAgg[cc]?ccAgg[cc].n:0)}));
-  if(ccAgg['(sin centro)']) ccGroups.push({cc:'(sin centro)', nVeh:ccAgg['(sin centro)'].veh.size, ext:ccAgg['(sin centro)'].ext, n:ccAgg['(sin centro)'].n});
+  let ccGroups=Object.keys(ccFleet).map(cc=>({cc, nVeh:ccFleet[cc], ext:(ccAgg[cc]?ccAgg[cc].ext:0), n:(ccAgg[cc]?ccAgg[cc].n:0)}));
+  if(tGrupo!=='ALL') ccGroups=ccGroups.filter(g=>{const u=(g.cc||'').toUpperCase(); return tGrupo==='WG' ? u==='WG' : TNC_SET.has(u);});
+  else if(ccAgg['(sin centro)']) ccGroups.push({cc:'(sin centro)', nVeh:ccAgg['(sin centro)'].veh.size, ext:ccAgg['(sin centro)'].ext, n:ccAgg['(sin centro)'].n});
   const totVeh=ccGroups.reduce((s,g)=>s+g.nVeh,0)||1;
   ccGroups.sort((a,b)=>b.ext-a.ext);
   if(ccGroups.length){
@@ -2747,11 +2788,12 @@ function buildTallerCal(recs,R){
   const cols=['sh',...TCAL_SLOTS.map(String)];             // columnas FIJAS: "Sin hora" + todas las franjas
   // ----- costo del día: costo fijo MENSUAL repartido entre los días-equivalentes trabajados del mes -----
   // (lun-vie = 1 día, sábado = ½ día, domingo/festivo = 0). Variable según festivos y sábados del mes.
-  const MONTHLY=COSTO_SEM*4;                                // ≈ $1.875M/sem × 4 = $7.5M/mes
+  const MONTHLY=tCostoSemGrupo()*4;                         // costo mensual de la vista activa (General = taller completo; TNC/WG = su % por vehículos)
+  const BRAY_MEN=(tGrupo==='WG')?brayanMensual():0;         // WG suma a Brayan Caicedo (SMLMV 2026) desde el 2-jul-2026
   const dayEquivOf=ymd=>{const dt=parseDate(ymd),dow=dt.getDay(); if(dow===0||FESTIVOS_CO.has(ymd))return 0; return dow===6?0.5:1;};
   const _meCache={};
   const monthEquiv=(y,m)=>{const k=y+'-'+m; if(_meCache[k]!=null)return _meCache[k]; const dim=new Date(y,m,0).getDate(); let s=0; for(let d=1;d<=dim;d++){const ymd=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'); s+=dayEquivOf(ymd);} return _meCache[k]=s;};
-  const dayCostOf=ymd=>{const eq=dayEquivOf(ymd); if(eq<=0)return 0; const p=ymd.split('-').map(Number); const me=monthEquiv(p[0],p[1]); return me>0?MONTHLY*eq/me:0;};
+  const dayCostOf=ymd=>{const eq=dayEquivOf(ymd); if(eq<=0)return 0; const p=ymd.split('-').map(Number); const me=monthEquiv(p[0],p[1]); if(me<=0)return 0; let c=MONTHLY*eq/me; if(BRAY_MEN&&ymd>=BRAYAN_INICIO)c+=BRAY_MEN*eq/me; return c;};
   const head=`<div class="tcal-row tcal-headrow"><div class="tcal-day">Día</div>`+
     cols.map(c=>`<div class="tcal-ch">${slotLabel(c)}</div>`).join('')+`<div class="tcal-ch tcal-toth">Total día</div><div class="tcal-ch tcal-costh">Costo día</div><div class="tcal-ch tcal-prodh">Productividad</div></div>`;
   const rows=dayList.map(d=>{
@@ -2861,6 +2903,7 @@ function showTCalDetail(key){
         (cat?`<span class="cd-val">${COP(val)}</span>`:`<span class="cd-val" style="color:var(--orange)">sin valorar</span>`)+`</div>`+
       `<div class="cd-line"><span class="cd-k">Se hizo</span><span class="cd-v">${r.especifique||'—'}</span></div>`+
       `<div class="cd-line"><span class="cd-k">Sistema</span><span class="cd-v">${sis||'—'}${cat?` · ${cat}`:''}</span></div>`+
+      `<div class="cd-line"><span class="cd-k">Técnico</span><span class="cd-v">👤 ${tecnicoDe(r)}</span></div>`+
       `</div>`;
   }).join('');
   const dl=tCalDayLabel(d).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
@@ -3810,7 +3853,7 @@ function wireMagnetic(){
   window.addEventListener('mouseout', function(e){ if(!e.relatedTarget && cur){ reset(cur); cur=null; } });
 }
 /* ---------- init ---------- */
-buildPeriodUI(); wireEmp(); render(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireInspDrop(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
+buildPeriodUI(); wireEmp(); render(); wireTallerGrupo(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireInspDrop(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
 </script>
 </body>
 </html>
