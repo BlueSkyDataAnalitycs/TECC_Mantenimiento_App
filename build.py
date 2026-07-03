@@ -259,6 +259,9 @@ def process_aseos(rows):
         tipo = (row[iTipo] or "").strip()
         if not tipo:
             continue
+        # fila de PRUEBA del administrador (19-jun-2026): no es un aseo real
+        if any(0 <= i < len(row) and (row[i] or "").strip().upper() == "PRUEBA" for i in (iVeh, iOrigen)):
+            continue
         # fecha operativa: día de lavado; si falta, marca temporal (col 0)
         fecha = parse_date(row[iDia]) if (0 <= iDia < len(row) and row[iDia].strip()) else parse_date(row[0] if row else "")
         if not fecha:

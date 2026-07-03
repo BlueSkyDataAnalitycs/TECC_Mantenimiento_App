@@ -1024,7 +1024,6 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
           <span><i class="sw int"></i>Lavador TECC</span>
           <span><i class="sw cond"></i>Conductor propio</span>
           <span><i class="sw ext"></i>Proveedor externo</span>
-          <span><i class="sw otros"></i>Sin clasificar</span>
           <span><i class="sw none"></i>Sin aseo</span>
         </div>
         <div class="cal-detail" id="calDetail">Toca una celda con color para ver el detalle del aseo.</div>
@@ -1230,8 +1229,8 @@ function applyAllCC404(target){const m=getCC404Map();DATA.aseos.records.forEach(
    FINCA / TALLER PISCUISO → Lavador TECC (interno, sin costo externo)
    CASA CONDUCTOR          → Conductor propio (lavó en su casa)
    cualquier otro texto    → Proveedor externo (col R tiene el valor pagado) */
-function esLavador(r){const q=norm(r.lugarAseo||'').trim();return q.includes('finca')||q.includes('piscu');}   // SOLO Finca o Taller Piscuiso (parte A col Q / parte B col C ya resueltas en build.py). Lugar vacío u otro NO es del lavador.
-function esOtro(r){return !esLavador(r)&&!esConductor(r)&&!esProveedor(r);}   // lugar vacío / no reconocido → sin clasificar (no es del lavador)
+function esLavador(r){const q=norm(r.lugarAseo||'').trim();return q===''||q.includes('finca')||q.includes('piscu');}   // Finca / Taller Piscuiso → lavador; VACÍO también (en el form nuevo el campo de lugar es opcional y el lavador es el valor por defecto)
+function esOtro(r){return false;}   // regla cerrada: vacío/finca/piscu=lavador · casa conductor=conductor · cualquier otro nombre=proveedor
 function esConductor(r){return norm(r.lugarAseo||'').includes('conductor');}
 function esProveedor(r){const q=norm(r.lugarAseo||'').trim();return q!==''&&!q.includes('finca')&&!q.includes('piscu')&&!q.includes('conductor');}
 function esInterno(r){return esLavador(r);}
