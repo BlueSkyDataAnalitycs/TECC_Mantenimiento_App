@@ -2885,7 +2885,7 @@ function showLavCalDetail(key){
     const chips=tipos.length?tipos.map(t=>`<span class="cd-t">${pretty(t)}</span>`).join(''):'<span class="cd-t cd-t0">sin detalle</span>';
     return `<div class="cd-row int">`+
       `<div class="cd-hd"><b>${vehTitulo(r.vehiculo||r.placa||'—')}</b>${hor?`<span class="cd-time">🕒 ${hor}</span>`:''}</div>`+
-      `<div class="cd-line"><span class="cd-k">Lugar</span><span class="cd-v"><b class="lavloc ${L.c}">${L.t}</b>${(r.lugarAseo||r.lugar)?` · ${esc(r.lugarAseo||r.lugar)}`:''}</span></div>`+
+      `<div class="cd-line"><span class="cd-k">Lugar</span><span class="cd-v"><b class="lavloc ${L.c}">${L.t}</b>${(r.lugarAseo||r.lugar)?` · ${esc(r.lugarAseo||r.lugar)}`:''}${r.lugarInf?' <small style="color:var(--ios-label3)">(ubicado por día de trabajo)</small>':''}</span></div>`+
       `<div class="cd-line"><span class="cd-k">Se hizo</span><span class="cd-v cd-chips">${chips}</span></div>`+
     `</div>`;
   }).join('');
