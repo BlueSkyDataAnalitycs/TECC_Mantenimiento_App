@@ -1357,7 +1357,7 @@ function consolRows(){
 function tallerExportSheets(){
   const all=(DATA.taller.records||[]).filter(r=>matchEmp(r.placa)&&tMatchGrupo(r)); const R=tRange();
   const recs=(tPeriod==='ALL'||!R)?all.slice():all.filter(r=>r.fecha&&r.fecha>=R.start&&r.fecha<=R.end);
-  const inter=recs.map(r=>({Fecha:r.fecha||'','N° interno':r.placa||'',Empresa:empresaDeVeh(r.placa)||'(sin cliente)','Técnico':tecnicoDe(r),Sistema:tallerSistema(r)||'',Categoría:tallerCat(r)||'(sin categoría)',Detalle:r.especifique||'','Estado previo':estVal(r)!=null?estVal(r):'','Costo tercerizado':tCostOf(r)||0,'Centro/Cédula':r.cc||'',KM:r.km||''}));
+  const inter=recs.map(r=>({Fecha:r.fecha||'','N° interno':r.placa||'',Empresa:empresaDeVeh(r.placa)||'(sin cliente)','Técnico':r.tecnico||tecnicoDe(r),'Tipo':r.tipo||'','Conductor':r.conductor||'',Sistema:tallerSistema(r)||'',Categoría:tallerCat(r)||'(sin categoría)',Detalle:r.especifique||'','Estado previo':estVal(r)!=null?estVal(r):'','Hora inicio':r.horaIni||'','Hora fin':r.horaFin||'','Duración (min)':r.durMin!=null?r.durMin:'','Repuestos (condición)':r.repuestosCondicion||'','Detalle repuestos':r.detalleRepuestos||'','Novedades':r.novedades||'','Costo tercerizado':tCostOf(r)||0,'Centro/Cédula':r.cc||'',KM:r.km||''}));
   const dayMap={}; recs.forEach(r=>{ if(!r.fecha)return; const d=dayMap[r.fecha]||(dayMap[r.fecha]={Fecha:r.fecha,Intervenciones:0,'Valor intervenido':0}); d.Intervenciones++; d['Valor intervenido']+=(tCostOf(r)||0); });
   return [{name:'Intervenciones',rows:inter},{name:'Por día (calendario)',rows:Object.values(dayMap).sort((a,b)=>a.Fecha<b.Fecha?-1:1)}];
 }
@@ -2683,11 +2683,92 @@ function renderTaller(){
     <div class="tcal-detail" id="tCalDetail">Toca una celda con número para ver las intervenciones de ese día.</div>
   </div>`);
 
+  // ============ MÉTRICAS v2 (formulario "Intervenciones Vehiculares TECC") ============
+  const formRecs=recs.filter(r=>!String(r.id||'').startsWith('seed|'));           // registros del formulario nuevo
+  const conDur=recs.filter(r=>r.durMin!=null&&r.durMin>0);
+  const durAtip=conDur.filter(r=>r.durMin>720), durOk=conDur.filter(r=>r.durMin<=720);
+  const durProm=durOk.length?durOk.reduce((s,r)=>s+r.durMin,0)/durOk.length:0;
+  const horasTot=durOk.reduce((s,r)=>s+r.durMin,0)/60;
+  const costoHora=horasTot>0?interno/horasTot:0;                                  // costo fijo del periodo (de la vista activa) ÷ horas efectivas
+  const fmtMin=m=>Math.round(m)+' min'+(m>=60?` (≈${(m/60).toFixed(1).replace('.',',')} h)`:'');
+  const tecAgg={};
+  recs.forEach(r=>{const t=(r.tecnico||'').trim(); if(!t)return; const a=tecAgg[t]||(tecAgg[t]={n:0,min:0,val:0,est:0,estN:0}); a.n++; if(r.durMin&&r.durMin<=720)a.min+=r.durMin; a.val+=tCostOf(r)||0; const e=estVal(r); if(e!=null){a.est+=e;a.estN++;}});
+  const tipoAgg={}; recs.forEach(r=>{const t=(r.tipo||'').trim(); if(t)tipoAgg[t]=(tipoAgg[t]||0)+1;});
+  const conTipo=Object.values(tipoAgg).reduce((a,b)=>a+b,0);
+  const sysDur={}; durOk.forEach(r=>{const s=tallerSistema(r)||'Otros'; const a=sysDur[s]||(sysDur[s]={n:0,min:0}); a.n++; a.min+=r.durMin;});
+  const conRep=recs.filter(r=>(r.repuestosCondicion||'').trim());
+  const repUsados=conRep.filter(r=>/usad|reencauch|mixto/i.test(r.repuestosCondicion||''));
+  const alertaSeg=repUsados.filter(r=>/fren|suspen|direc/i.test(tallerSistema(r)||''));
+  const conVideo=formRecs.filter(r=>r.videoPrevia&&r.videoDespues);
+  const novs=recs.filter(r=>(r.novedades||'').trim());
+  const conCond=recs.filter(r=>(r.conductor||'').trim());
+  let reinc30=0; const _vs={};
+  recs.forEach(r=>{ if(!r.fecha||!r.placa)return; const k=normVeh(r.placa)+'|'+(tallerSistema(r)||''); (_vs[k]=_vs[k]||[]).push(r.fecha); });
+  Object.values(_vs).forEach(ds=>{ ds.sort(); for(let i=1;i<ds.length;i++){ const d=(parseDate(ds[i])-parseDate(ds[i-1]))/86400000; if(d>=0&&d<=30)reinc30++; } });
+
+  // 5.6) OPERACIÓN — horarios, duraciones y costo por hora efectiva
+  H.push(`<div class="section span2">
+    <div class="section-hero">Operación del taller · horarios y tiempos</div>
+    <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+      <div class="kpi"><div class="k">Duración media</div><div class="v small">${durOk.length?fmtMin(durProm):'—'}</div></div>
+      <div class="kpi"><div class="k">Horas registradas</div><div class="v small">${horasTot?horasTot.toFixed(1).replace('.',',')+' h':'—'}</div></div>
+      <div class="kpi"><div class="k">Costo por hora efectiva</div><div class="v small">${horasTot?COP(costoHora):'—'}</div></div>
+      <div class="kpi"><div class="k">Reincidencia ≤30 días</div><div class="v ${reinc30?'vwarn':''}">${reinc30}</div></div>
+    </div>
+    <div class="note" style="margin:8px 4px 0">Duración = hora fin − hora inicio del formulario (${conDur.length} de ${recs.length} con horas válidas${durAtip.length?`; ${durAtip.length} atípica${durAtip.length>1?'s':''} >12 h excluida${durAtip.length>1?'s':''} del promedio`:''}). Costo/hora = costo fijo del periodo (${COP(interno)}) ÷ horas efectivas — indicativo mientras crece el registro. Reincidencia = mismo vehículo y sistema en ≤30 días (posible retrabajo).</div>
+    ${Object.keys(sysDur).length?`<div class="section-h" style="margin-top:14px">Duración media por sistema</div><div class="card">${Object.entries(sysDur).sort((a,b)=>(b[1].min/b[1].n)-(a[1].min/a[1].n)).map(([s,a])=>`<div class="estrow"><span class="el">${esc(s)} <span class="muted" style="font-size:11.5px">· ${a.n} interv.</span></span><span class="ev">${fmtMin(a.min/a.n)}</span></div>`).join('')}</div>`:''}
+  </div>`);
+
+  // 5.7) TÉCNICOS — productividad real (del campo "Mecánico / técnico encargado")
+  const tecs=Object.entries(tecAgg).sort((a,b)=>b[1].val-a[1].val);
+  if(tecs.length){
+    const maxV=Math.max(1,...tecs.map(([,a])=>a.val));
+    H.push(`<div class="section span2">
+      <div class="section-hero">Productividad por técnico</div>
+      <div class="note" style="margin:-4px 4px 9px">Según el campo <b>Mecánico / técnico encargado</b> del formulario (${formRecs.length} registro${formRecs.length===1?'':'s'}; el histórico no lo trae). Valor = tarifa de tercerización de sus intervenciones.</div>
+      <div class="card">${tecs.map(([t,a])=>`<div class="bd-row">
+        <div class="bd-top"><div style="flex:1"><div class="bd-name">👤 ${esc(t)}</div>
+        <div class="bd-meta">${a.n} intervenci${a.n===1?'ón':'ones'}${a.min?` · ${(a.min/60).toFixed(1).replace('.',',')} h`:''}${a.estN?` · estado prom. ${(a.est/a.estN).toFixed(1)}/10`:''}</div></div>
+        <div class="bd-amt">${COP(a.val)}</div></div>
+        <div class="bar"><i style="width:${Math.max(4,a.val/maxV*100)}%"></i></div></div>`).join('')}</div>
+    </div>`);
+  }
+
+  // 5.8) MIX + REPUESTOS + EVIDENCIA + CONDUCTOR
+  const mixHtml=conTipo?Object.entries(tipoAgg).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<div class="estrow"><span class="el">${esc(t)}</span><span class="ev">${n} · ${Math.round(n/conTipo*100)}%</span></div>`).join('')
+    :'<div class="empty" style="padding:10px 6px">Sin dato de tipo aún.</div>';
+  const repHtml=conRep.length
+    ? Object.entries(conRep.reduce((m,r)=>{m[r.repuestosCondicion]=(m[r.repuestosCondicion]||0)+1;return m;},{})).sort((a,b)=>b[1]-a[1]).map(([c,n])=>`<div class="estrow"><span class="el">${esc(c)}</span><span class="ev">${n}</span></div>`).join('')
+      +(alertaSeg.length?`<div class="talert bad" style="margin-top:8px"><div class="ti">⚠</div><div class="tl">Repuesto usado/reencauchado en FRENOS-SUSPENSIÓN-DIRECCIÓN</div><div class="tv">${alertaSeg.length}</div></div>${alertaSeg.map(r=>`<div class="estrow"><span class="tdot r"></span><span class="el">${esc((r.placa||'—'))} · ${r.fecha||''}</span><span class="ev" style="font-size:11px">${esc((r.detalleRepuestos||r.componentes||'').slice(0,40))}</span></div>`).join('')}`:'')
+    : `<div class="empty" style="padding:10px 6px">El formulario ya pregunta <b>repuestos y condición</b>, pero <b>0 de ${formRecs.length}</b> registros lo traen diligenciado. Cuando el taller empiece a marcarlo, aquí saldrán cobertura, % usados/reencauchados y la alerta de seguridad en frenos-suspensión-dirección.</div>`;
+  const pctVid=formRecs.length?Math.round(conVideo.length/formRecs.length*100):0;
+  H.push(`<div class="section">
+    <div class="section-h">Mix de mantenimiento</div><div class="card">${mixHtml}${conTipo?`<div class="note" style="margin-top:6px">${conTipo} de ${recs.length} con tipo diligenciado. Meta: subir el <b>preventivo</b>.</div>`:''}</div>
+    <div class="section-h" style="margin-top:15px">Evidencia en video</div><div class="card">
+      <div class="estrow"><span class="el">Con video previa <b>y</b> después</span><span class="ev ${pctVid>=90?'':'vwarn'}">${conVideo.length}/${formRecs.length} · ${pctVid}%</span></div>
+      <div class="note" style="margin-top:4px">Meta ≥90% del formulario nuevo (el histórico no trae video).</div></div>
+    ${conCond.length===0?`<div class="section-h" style="margin-top:15px">Conductores (ICE)</div><div class="card"><div class="empty" style="padding:10px 6px">El formulario pregunta el <b>conductor que entrega</b>, pero <b>0 de ${formRecs.length}</b> registros lo traen. Con ese dato saldrá aquí el ranking de estado de entrega por conductor (n≥3).</div></div>`:''}
+  </div>`);
+  H.push(`<div class="section">
+    <div class="section-h">Repuestos instalados</div><div class="card">${repHtml}</div>
+    ${novs.length?`<div class="section-h" style="margin-top:15px">Novedades reportadas por el taller</div><div class="card">${novs.slice(0,8).map(r=>`<div class="estrow"><span class="tdot a"></span><span class="el"><b>${esc((r.placa||'—'))}</b> · ${r.fecha||''}<div class="muted" style="font-size:12px;line-height:1.35">${esc(r.novedades)}</div></span></div>`).join('')}</div>`:''}
+  </div>`);
+
   // 6) ESTADO previo (1-10) + críticos
   if(estN){
     const crit=recs.filter(r=>{const e=estVal(r);return e!=null&&e<=4;}).map(r=>({pl:(r.placa||'—').toUpperCase(),e:estVal(r),sis:r.sistema||''})).sort((a,b)=>a.e-b.e).slice(0,10);
     let critHtml=crit.map(c=>`<div class="estrow"><span class="tdot ${c.e<=2?'r':'a'}"></span><span class="el">${c.pl}${c.sis?` · <span class="muted" style="font-size:12px">${c.sis}</span>`:''}</span><span class="ev estscore ${estCls(c.e)}">${c.e.toFixed(0)}/10</span></div>`).join('');
-    H.push(`<div class="section"><div class="section-h">Estado previo del sistema (1–10)</div>
+    const sum4=(a,b)=>estCounts.slice(a,b+1).reduce((x,y)=>x+y,0);
+    const franjas=[['🔴 Crítico (1–4)',sum4(1,4)],['🟡 Alerta (5–6)',sum4(5,6)],['🟢 Aceptable (7–8)',sum4(7,8)],['⭐ Óptimo (9–10)',sum4(9,10)]];
+    const ieiCls=estAvg>=7?'':'vwarn';
+    H.push(`<div class="section"><div class="section-h">Estado de ingreso de la flota (IEI · 1–10)</div>
+      <div class="kpis" style="grid-template-columns:1fr 1fr">
+        <div class="kpi"><div class="k">IEI del periodo</div><div class="v small ${ieiCls} estscore ${estCls(estAvg)}">${estAvg.toFixed(1)}/10</div></div>
+        <div class="kpi"><div class="k">% flota crítica (≤4)</div><div class="v small ${sum4(1,4)?'vbad':''}">${estN?Math.round(sum4(1,4)/estN*100):0}%</div></div>
+      </div>
+      <div class="card" style="margin-top:10px">${franjas.map(([lab,n])=>`<div class="estrow"><span class="el">${lab}</span><span class="ev">${n} · ${estN?Math.round(n/estN*100):0}%</span></div>`).join('')}
+      <div class="note" style="margin-top:4px">Sobre ${estN} intervenci${estN===1?'ón':'ones'} con estado diligenciado (el histórico no lo trae). Meta IEI ≥ 7 · flota crítica &lt; 10%.</div></div>
+      <div class="section-h" style="margin-top:15px">Distribución del estado</div>
       <div class="card chartbox"><div style="position:relative;height:170px"><canvas id="tEstadoChart"></canvas></div></div>
       ${crit.length?`<div class="section-h" style="margin-top:15px">Vehículos en estado crítico (≤ 4)</div><div class="card">${critHtml}</div>`:''}</div>`);
   }
@@ -2707,6 +2788,10 @@ function renderTaller(){
     ${alert(sinFecha?'warn':'ok',sinFecha?'!':'✓','Sin fecha',sinFecha)}
     ${alert(sinValor?'warn':'ok',sinValor?'!':'✓','Sin valorar (no clasificadas)',sinValor)}
     ${alert(dupes?'bad':'ok',dupes?'⚠':'✓','Duplicados probables',dupes)}
+    ${alert(formRecs.length-conDur.length>0?'warn':'ok',formRecs.length-conDur.length>0?'!':'✓','Del formulario sin horas válidas',Math.max(0,formRecs.length-conDur.length))}
+    ${durAtip.length?alert('warn','!','Duraciones atípicas (>12 h, fuera de promedios)',durAtip.length):''}
+    ${alert(conCond.length<formRecs.length?'warn':'ok',conCond.length<formRecs.length?'!':'✓','Sin conductor diligenciado (form)',formRecs.length-conCond.length)}
+    ${alert(conRep.length<formRecs.length?'warn':'ok',conRep.length<formRecs.length?'!':'✓','Sin repuestos diligenciados (form)',formRecs.length-conRep.length)}
   </div></div>`);
 
   // 9) Continuidad + nota GPS
@@ -2902,7 +2987,9 @@ function showTCalDetail(key){
         (cat?`<span class="cd-val">${COP(val)}</span>`:`<span class="cd-val" style="color:var(--orange)">sin valorar</span>`)+`</div>`+
       `<div class="cd-line"><span class="cd-k">Se hizo</span><span class="cd-v">${r.especifique||'—'}</span></div>`+
       `<div class="cd-line"><span class="cd-k">Sistema</span><span class="cd-v">${sis||'—'}${cat?` · ${cat}`:''}</span></div>`+
-      `<div class="cd-line"><span class="cd-k">Técnico</span><span class="cd-v">👤 ${tecnicoDe(r)}</span></div>`+
+      `<div class="cd-line"><span class="cd-k">Técnico</span><span class="cd-v">👤 ${esc((r.tecnico||'').trim())||tecnicoDe(r)}</span></div>`+
+      (r.novedades?`<div class="cd-line"><span class="cd-k">Novedades</span><span class="cd-v">${esc(r.novedades)}</span></div>`:'')+
+      ((r.videoPrevia||r.videoDespues)?`<div class="cd-line"><span class="cd-k">Videos</span><span class="cd-v">${r.videoPrevia?`<a href="${esc(r.videoPrevia)}" target="_blank" rel="noopener">▶ previa</a>`:''}${r.videoPrevia&&r.videoDespues?' · ':''}${r.videoDespues?`<a href="${esc(r.videoDespues)}" target="_blank" rel="noopener">▶ después</a>`:''}</span></div>`:'')+
       `</div>`;
   }).join('');
   const dl=tCalDayLabel(d).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
