@@ -311,45 +311,12 @@ def process_aseos(rows):
             rec["fot"] = fot
         recs.append(rec)
         months.add(fecha.strftime("%Y-%m"))
-    inferir_lugares(recs)
+    # NOTA (2026-07-05): se ELIMINÓ la inferencia de lugar por día. El aseo se ubica
+    # únicamente por el lugar registrado en el formulario (4 opciones): Finca /
+    # Taller Piscuiso → lavador · Casa Conductor → conductor · otro nombre → proveedor.
+    # Lo que llegue sin lugar se muestra como "Sin lugar registrado" hasta que se
+    # diligencie en la fuente.
     return recs, sorted(months)
-
-
-def inferir_lugares(recs):
-    """El campo de lugar es OPCIONAL en el form nuevo y muchas filas llegan vacías,
-    pero todo aseo del lavador ocurre en Finca o Taller Piscuiso. Regla: (1) lugar
-    modal de ese MISMO día; (2) día conocido más cercano a ±2 días; (3) Finca (base
-    principal). Se marca lugarInf=1 para que la UI muestre que fue ubicado."""
-    def es_lugar_lav(s):
-        q = (s or "").lower()
-        return ("finca" in q) or ("piscu" in q)
-    por_dia = {}
-    for r in recs:
-        if es_lugar_lav(r.get("lugarAseo")):
-            por_dia.setdefault(r["fecha"], {}).setdefault(r["lugarAseo"], 0)
-            por_dia[r["fecha"]][r["lugarAseo"]] += 1
-    dia_lugar = {f: max(c.items(), key=lambda kv: kv[1])[0] for f, c in por_dia.items()}
-    fechas = sorted(dia_lugar)
-    def cercano(f):
-        try:
-            fd = datetime.date.fromisoformat(f)
-        except ValueError:
-            return None
-        best, bestd = None, 99
-        for k in fechas:
-            d = abs((datetime.date.fromisoformat(k) - fd).days)
-            if d <= 2 and d < bestd:
-                best, bestd = k, d
-        return dia_lugar.get(best) if best else None
-    n = 0
-    for r in recs:
-        if (r.get("lugarAseo") or "").strip():
-            continue
-        r["lugarAseo"] = dia_lugar.get(r["fecha"]) or cercano(r["fecha"]) or "Finca - Zona franca"
-        r["lugarInf"] = 1
-        n += 1
-    if n:
-        print(f"   Lugares inferidos para {n} aseos sin lugar (mismo día / día vecino / Finca)")
 
 
 def _col(h, *needles):
