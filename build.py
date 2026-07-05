@@ -354,7 +354,14 @@ def process_taller(rows):
     iEsp = col_index(h, "especifique")
     iEst = col_index(h, "estado")
     iPlaca = col_index(h, "placa")
-    iHIni = col_index(h, "hora", "inicio")   # hora de inicio (formulario nuevo)
+    if iPlaca < 0:
+        iPlaca = col_index(h, "numero interno") or col_index(h, "número interno")  # form: "Numero interno de vehículo intervenido"
+    iHIni = col_index(h, "inicio de mantenim")
+    if iHIni < 0:
+        iHIni = col_index(h, "hora", "inicio")
+    iHFin = col_index(h, "fin de mantenim")
+    iTec = col_index(h, "tecnico") or col_index(h, "técnico")   # "Tecnico encargado del mantenimiento"
+    iTipo = col_index(h, "tipo de mantenim")                    # Preventivo / Correctivo / Ambos
     recs = []
     for row in rows[1:]:
         if not any((c or "").strip() for c in row):
@@ -368,6 +375,22 @@ def process_taller(rows):
             "placa": (row[iPlaca].strip() if 0 <= iPlaca < len(row) else ""),
             "fecha": fecha.strftime("%Y-%m-%d") if fecha else "",
         }
+        tec = (row[iTec].strip() if 0 <= iTec < len(row) else "")
+        if tec:
+            rec["tecnico"] = tec
+        tip = (row[iTipo].strip() if 0 <= iTipo < len(row) else "")
+        if tip:
+            rec["tipo"] = tip
+        hi = hhmm(row[iHIni] if 0 <= iHIni < len(row) else "")
+        hf = hhmm(row[iHFin] if 0 <= iHFin < len(row) else "")
+        if hi:
+            rec["horaIni"] = hi
+        if hf:
+            rec["horaFin"] = hf
+        dm = dur_min(row[iHIni] if 0 <= iHIni < len(row) else "",
+                     row[iHFin] if 0 <= iHFin < len(row) else "")
+        if dm is not None:
+            rec["durMin"] = dm
         hh = None
         ti = row[iHIni] if 0 <= iHIni < len(row) else ""
         mt = re.search(r"(\d{1,2}):(\d{2})", str(ti or ""))
