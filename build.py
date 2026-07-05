@@ -8,11 +8,11 @@ procesa los aseos, asigna valor por combinación y genera un index.html autónom
 Uso:   python3 build.py
 Salida: index.html  (doble clic para abrir)  +  datos.json
 """
-import csv, io, json, sys, re, urllib.request, datetime, os
+import csv, io, json, sys, re, urllib.request, datetime, os, unicodedata
 
 # ---- IDs de los Google Sheets (link-sharing: lector) ----
 SHEET_ASEOS  = "1cTsB7riRbd7u0h3DsTdlItYnUPg_b-s2YcCXIhtx9HY"
-SHEET_TALLER = "1jaxw_YLSa9KNh0F7LZWyTpaixUIGYQpvJloV_yOwvZ0"
+SHEET_TALLER = "1e_Xp0gfKe_BaUBBNCcefSyDK_xRV6b2zk1Tumg67qaY"  # "Intervenciones Vehiculares TECC" (Prompt Maestro v2.0, 2026-07-05)
 GVIZ = "https://docs.google.com/spreadsheets/d/{id}/gviz/tq?tqx=out:csv"
 
 # ---- Tabla de precios por combinación exacta de "Tipo de aseo" (COP) ----
@@ -125,20 +125,27 @@ def fetch_csv(sheet_id):
         return data.get("values", [])
 
 
+def _sin_tildes(s):
+    """Quita tildes/diacríticos para comparar encabezados sin depender de que coincidan
+    exactamente los acentos (los formularios de Google no siempre son consistentes)."""
+    return "".join(c for c in unicodedata.normalize("NFKD", s or "") if not unicodedata.combining(c))
+
+
 def col_index(header, *needles):
-    """Devuelve el índice de la primera columna cuyo encabezado contiene TODOS los needles."""
+    """Devuelve el índice de la primera columna cuyo encabezado contiene TODOS los needles
+    (comparación insensible a mayúsculas/minúsculas Y a tildes)."""
     for i, h in enumerate(header):
-        hl = (h or "").lower()
-        if all(n.lower() in hl for n in needles):
+        hl = _sin_tildes((h or "").lower())
+        if all(_sin_tildes(n.lower()) in hl for n in needles):
             return i
     return -1
 
 
 def col_exact(header, name):
     """Índice de la columna cuyo encabezado es EXACTAMENTE name (evita coincidencias parciales)."""
-    name = name.strip().lower()
+    name = _sin_tildes(name.strip().lower())
     for i, h in enumerate(header):
-        if (h or "").strip().lower() == name:
+        if _sin_tildes((h or "").strip().lower()) == name:
             return i
     return -1
 
@@ -345,23 +352,197 @@ def inferir_lugares(recs):
         print(f"   Lugares inferidos para {n} aseos sin lugar (mismo día / día vecino / Finca)")
 
 
+def _col(h, *needles):
+    """col_index con fallback real (col_index puede devolver -1, que es 'truthy' en Python,
+    así que un `or` entre dos llamadas nunca probaría la segunda; esta envoltura sí lo hace)."""
+    i = col_index(h, *needles)
+    return i
+
+
+def _es_url(v):
+    v = (v or "").strip().lower()
+    return v.startswith("http://") or v.startswith("https://")
+
+
+def _detectar_video_novedades(header, rows):
+    """Las 3 últimas columnas (Novedades / Video previa / Video después) pueden traer el
+    RÓTULO cambiado de posición si el formulario se reordenó tras crear las preguntas
+    (Google Forms no reubica la columna al reordenar). Se decide por CONTENIDO: la columna
+    que nunca trae una URL es 'novedades'; las que sí son video (izq.=previa, der.=después)."""
+    candidatas = [i for i, c in enumerate(header) if any(k in (c or "").lower() for k in ("video", "novedad", "foto"))]
+    video_cols, texto_cols = [], []
+    for i in candidatas:
+        vals = [row[i] for row in rows[1:] if i < len(row) and (row[i] or "").strip()]
+        if vals and all(_es_url(v) for v in vals):
+            video_cols.append(i)
+        elif vals:
+            texto_cols.append(i)
+        else:
+            video_cols.append(i)
+    video_cols.sort()
+    iPrevia = video_cols[0] if len(video_cols) >= 1 else -1
+    iDespues = video_cols[1] if len(video_cols) >= 2 else -1
+    iNov = texto_cols[0] if texto_cols else -1
+    return iPrevia, iDespues, iNov
+
+
+def _parse_vehiculo_intervenido(principal, otro):
+    """'EQL712 / 516' -> '516' (preferimos el N° interno explícito); si no hay barra,
+    devolvemos el valor tal cual (el front-end resuelve placa<->N° interno)."""
+    s = (principal or "").strip()
+    if not s or s.lower() == "otro":
+        s = (otro or "").strip()
+    if not s:
+        return ""
+    if "/" in s:
+        partes = [p.strip() for p in s.split("/")]
+        numero = norm_veh(partes[1]) if len(partes) > 1 and partes[1] else ""
+        placa = re.sub(r"[^A-Z0-9]", "", partes[0].upper())
+        return numero or placa
+    return s
+
+
+# Los 5 sistemas del formulario "Intervenciones Vehiculares TECC" (Prompt Maestro v2.0),
+# en el orden en que ramifican sus 4 columnas (componentes/descripción/repuestos/detalle).
+SISTEMAS_BLOQUES = [
+    "Motor y alimentación",
+    "Sistema eléctrico e iluminación",
+    "Frenos, suspensión y dirección",
+    "Transmisión y tren motriz",
+    "Carrocería, climatización y confort",
+]
+
+
 def process_taller(rows):
     if not rows:
         return {"headers": [], "records": []}
     h = rows[0]
-    iId = col_index(h, "id del mantenimiento")
-    iSis = col_index(h, "sistema")
-    iEsp = col_index(h, "especifique")
-    iEst = col_index(h, "estado")
-    iPlaca = col_index(h, "placa")
+    n_cols = len(h)
+
+    # ---- esquema NUEVO: "Intervenciones Vehiculares TECC" (conductor + repuestos) ----
+    iCond = _col(h, "conductor")
+    iTec = _col(h, "tecnico")
+    if iTec < 0:
+        iTec = _col(h, "técnico")
+    iVehPrinc = _col(h, "vehiculo intervenido")
+    iVehOtro = _col(h, "elegiste", "otro")
+    iEsNuevo = iVehPrinc >= 0 and iCond >= 0
+
+    if iEsNuevo:
+        iFecha = _col(h, "fecha del mantenim")
+        iHIni = _col(h, "hora de inicio")
+        iHFin = _col(h, "hora de finaliz")
+        iId = _col(h, "id del mantenim")
+        iTipo = _col(h, "tipo de mantenim")
+        iEst = _col(h, "estado general")
+        iSisMacro = _col(h, "sistema se intervino")
+        if iSisMacro < 0:
+            iSisMacro = _col(h, "que sistema")
+        # bloques ramificados: 4 columnas contiguas por cada uno de los 5 sistemas,
+        # empezando justo después de iSisMacro (componentes, descripción, repuestos+cond., detalle)
+        bloques = []
+        if iSisMacro >= 0:
+            for k in range(5):
+                base = iSisMacro + 1 + k * 4
+                if base + 3 < n_cols:
+                    bloques.append((base, base + 1, base + 2, base + 3))
+        iVideoPrevia, iVideoDespues, iNoved = _detectar_video_novedades(h, rows)
+
+        recs = []
+        for row in rows[1:]:
+            if not any((c or "").strip() for c in row):
+                continue
+            fch = row[iFecha] if 0 <= iFecha < len(row) else (row[0] if row else "")
+            fecha = parse_date(fch)
+            placa = _parse_vehiculo_intervenido(
+                row[iVehPrinc] if 0 <= iVehPrinc < len(row) else "",
+                row[iVehOtro] if 0 <= iVehOtro < len(row) else "",
+            )
+            sistema_macro = (row[iSisMacro].strip() if 0 <= iSisMacro < len(row) else "")
+            # consolidar el bloque de 4 columnas que sí tenga datos (el resto vienen vacíos por el ramaje del Form)
+            componentes = descripcion = repuestos_cond = detalle_rep = ""
+            for bi, (c1, c2, c3, c4) in enumerate(bloques):
+                v1 = row[c1].strip() if c1 < len(row) else ""
+                v2 = row[c2].strip() if c2 < len(row) else ""
+                v3 = row[c3].strip() if c3 < len(row) else ""
+                v4 = row[c4].strip() if c4 < len(row) else ""
+                if v1 or v2 or v3 or v4:
+                    componentes, descripcion, repuestos_cond, detalle_rep = v1, v2, v3, v4
+                    if not sistema_macro and bi < len(SISTEMAS_BLOQUES):
+                        sistema_macro = SISTEMAS_BLOQUES[bi]
+                    break
+            especifique = " | ".join(x for x in (componentes, descripcion) if x)
+            rec = {
+                "id": (row[iId].strip() if 0 <= iId < len(row) else ""),
+                "sistema": sistema_macro,
+                "especifique": especifique,      # texto libre para la valorización por palabra clave (TALLER_RULES)
+                "estado": (row[iEst].strip() if 0 <= iEst < len(row) else ""),
+                "placa": placa,
+                "fecha": fecha.strftime("%Y-%m-%d") if fecha else "",
+                "conductor": (row[iCond].strip() if 0 <= iCond < len(row) else ""),
+            }
+            tec = (row[iTec].strip() if 0 <= iTec < len(row) else "")
+            if tec:
+                rec["tecnico"] = tec
+            tip = (row[iTipo].strip() if 0 <= iTipo < len(row) else "")
+            if tip:
+                rec["tipo"] = tip
+            if componentes:
+                rec["componentes"] = componentes
+            if descripcion:
+                rec["descripcionTrabajo"] = descripcion
+            if repuestos_cond:
+                rec["repuestosCondicion"] = repuestos_cond
+            if detalle_rep:
+                rec["detalleRepuestos"] = detalle_rep
+            nov = (row[iNoved].strip() if 0 <= iNoved < len(row) else "")
+            if nov:
+                rec["novedades"] = nov
+            vp = (row[iVideoPrevia].strip() if 0 <= iVideoPrevia < len(row) else "")
+            vd = (row[iVideoDespues].strip() if 0 <= iVideoDespues < len(row) else "")
+            if vp:
+                rec["videoPrevia"] = vp
+            if vd:
+                rec["videoDespues"] = vd
+            hi = hhmm(row[iHIni] if 0 <= iHIni < len(row) else "")
+            hf = hhmm(row[iHFin] if 0 <= iHFin < len(row) else "")
+            if hi:
+                rec["horaIni"] = hi
+            if hf:
+                rec["horaFin"] = hf
+            dm = dur_min(row[iHIni] if 0 <= iHIni < len(row) else "",
+                         row[iHFin] if 0 <= iHFin < len(row) else "")
+            if dm is not None:
+                rec["durMin"] = dm
+            hh = None
+            mt = re.search(r"(\d{1,2}):(\d{2})", str(hi or ""))
+            if mt:
+                hh = int(mt.group(1))
+            if hh is None:
+                hh = hora_de(row[0] if row else "")
+            if hh is not None and 0 <= hh < 24:
+                rec["hora"] = hh
+            recs.append(rec)
+        return {"headers": h, "records": recs}
+
+    # ---- esquema VIEJO (compatibilidad): id/sistema/especifique/estado/placa/hora inicio ----
+    iId = _col(h, "id del mantenimiento")
+    iSis = _col(h, "sistema")
+    iEsp = _col(h, "especifique")
+    iEst = _col(h, "estado")
+    iPlaca = _col(h, "placa")
     if iPlaca < 0:
-        iPlaca = col_index(h, "numero interno") or col_index(h, "número interno")  # form: "Numero interno de vehículo intervenido"
-    iHIni = col_index(h, "inicio de mantenim")
+        iPlaca = _col(h, "numero interno")
+    if iPlaca < 0:
+        iPlaca = _col(h, "número interno")
+    iHIni = _col(h, "inicio de mantenim")
     if iHIni < 0:
-        iHIni = col_index(h, "hora", "inicio")
-    iHFin = col_index(h, "fin de mantenim")
-    iTec = col_index(h, "tecnico") or col_index(h, "técnico")   # "Tecnico encargado del mantenimiento"
-    iTipo = col_index(h, "tipo de mantenim")                    # Preventivo / Correctivo / Ambos
+        iHIni = _col(h, "hora", "inicio")
+    iHFin = _col(h, "fin de mantenim")
+    iTec = _col(h, "tecnico")
+    if iTec < 0:
+        iTec = _col(h, "técnico")
+    iTipo = _col(h, "tipo de mantenim")
     recs = []
     for row in rows[1:]:
         if not any((c or "").strip() for c in row):
