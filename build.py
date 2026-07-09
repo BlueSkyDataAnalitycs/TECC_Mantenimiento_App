@@ -12,7 +12,12 @@ import csv, io, json, sys, re, urllib.request, datetime, os, unicodedata
 
 # ---- IDs de los Google Sheets (link-sharing: lector) ----
 SHEET_ASEOS  = "1cTsB7riRbd7u0h3DsTdlItYnUPg_b-s2YcCXIhtx9HY"
-SHEET_TALLER = "1e_Xp0gfKe_BaUBBNCcefSyDK_xRV6b2zk1Tumg67qaY"  # "Intervenciones Vehiculares TECC" (Prompt Maestro v2.0, 2026-07-05)
+# Respuestas del formulario "V2 Intervenciones Vehiculares TECC"
+# (form: docs.google.com/forms/d/13PlfG3j3Hr_XmE8WuIxTmTK8fmHXpuPghNeioLh45wU).
+# FUENTE OFICIAL del taller desde el 2026-07-06 08:00; aquí vivirá la base de un
+# largo período. El pasado se mantiene: taller_seed.json (informes ene–jun) +
+# las respuestas migradas del 22-jun→4-jul que ya están en esta misma hoja.
+SHEET_TALLER = "1e_Xp0gfKe_BaUBBNCcefSyDK_xRV6b2zk1Tumg67qaY"
 GVIZ = "https://docs.google.com/spreadsheets/d/{id}/gviz/tq?tqx=out:csv"
 
 # ---- Tabla de precios por combinación exacta de "Tipo de aseo" (COP) ----
@@ -355,9 +360,11 @@ def _detectar_video_novedades(header, rows):
 
 def _parse_vehiculo_intervenido(principal, otro):
     """'EQL712 / 516' -> '516' (preferimos el N° interno explícito); si no hay barra,
-    devolvemos el valor tal cual (el front-end resuelve placa<->N° interno)."""
+    devolvemos el valor tal cual (el front-end resuelve placa<->N° interno).
+    Si eligieron la opción 'Otro…' se usa el campo de respaldo; si el respaldo viene
+    vacío, el registro queda SIN placa (alerta de calidad, no un valor basura)."""
     s = (principal or "").strip()
-    if not s or s.lower() == "otro":
+    if not s or s.lower().startswith("otro"):
         s = (otro or "").strip()
     if not s:
         return ""
