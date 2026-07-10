@@ -856,7 +856,7 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
         <button class="chip-btn" onclick="lcalZoom(-1)" title="Alejar">– Zoom</button>
         <button class="chip-btn" onclick="lcalZoom(0)" title="Restablecer">⤢ 100%</button>
         <button class="chip-btn" onclick="lcalZoom(1)" title="Acercar">+ Zoom</button>
-        <span id="lcalZlbl"></span>
+        <span class="lcalZlbl"></span>
       </div>
       <div class="card" style="padding:10px 10px 12px" id="lavCalWrap"><div class="cal-empty">Sin lavadas en este periodo.</div></div>
       <div class="tcal-detail" id="lavCalDetail">Toca una celda con vehículo para ver la hora, el tipo y el lugar del lavado.</div>
@@ -926,65 +926,102 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
     </div><!-- /#sub-lavador -->
 
     <!-- ====== LAVADAS POR CONDUCTORES ====== -->
+    <!-- ====== CONDUCTORES: copia idéntica del submódulo Lavador, SOLO lavadas en CASA CONDUCTOR ====== -->
     <div id="sub-conductores" class="hidden dash">
-      <div class="section span2">
-        <div class="hero" style="background:linear-gradient(160deg,#7A4B00 0%,#4A2E00 100%);">
-          <div class="chip" id="condHeroChip" style="background:#FFD88A;color:#4A2E00">—</div>
-          <div class="cap">Lavadas por conductores propios · en casa</div>
-          <div class="num" id="condHeroTotal">$0</div>
-          <div class="sub" id="condHeroSub">—</div>
-        </div>
-        <div class="kpis">
-          <div class="kpi"><div class="k">Lavadas realizadas</div><div class="v" id="condCount">0</div></div>
-          <div class="kpi"><div class="k">Valor promedio</div><div class="v small" id="condAvg">$0</div></div>
-          <div class="kpi"><div class="k">Vehículos</div><div class="v" id="condVeh">0</div></div>
-          <div class="kpi"><div class="k">Conductores</div><div class="v" id="condNCond">0</div></div>
-        </div>
+    <div class="section span2">
+      <div class="section-hero">Calendario de lavadas · conductores</div>
+      <div class="note" style="margin:-4px 4px 9px">Solo lavadas cuyo <b>LUGAR DE TRABAJO</b> fue <b style="color:#B36B00">CASA CONDUCTOR</b> (regla del formulario: parte A = lugar en col. Q, parte B = lugar en col. C desde el 22-jun-2026 12:01). Un <b>día por fila</b>, <b>franjas de 2 h</b> por hora de inicio; <b>azul claro</b> = no laborable. Al final: <b>Total día</b> (nº y valor estimado por tipo).</div>
+      <div class="lugarsum" id="lavLugarSum_c"></div>
+      <div class="tcal-zoombar">
+        <span>🔍 Tamaño del calendario</span>
+        <button class="chip-btn" onclick="lcalZoom(-1)" title="Alejar">– Zoom</button>
+        <button class="chip-btn" onclick="lcalZoom(0)" title="Restablecer">⤢ 100%</button>
+        <button class="chip-btn" onclick="lcalZoom(1)" title="Acercar">+ Zoom</button>
+        <span class="lcalZlbl"></span>
       </div>
-      <div class="section span2">
-        <div class="section-hero">Lavadas por conductor</div>
-        <div id="condCards"></div>
-        <div class="card chartbox" style="margin-top:4px"><div class="cwrap"><canvas id="condChart"></canvas></div></div>
+      <div class="card" style="padding:10px 10px 12px" id="lavCalWrap_c"><div class="cal-empty">Sin lavadas en este periodo.</div></div>
+      <div class="tcal-detail" id="lavCalDetail_c">Toca una celda con vehículo para ver la hora, el tipo y el lugar del lavado.</div>
+    </div>
+    <div class="section span2">
+      <div class="hero" style="background:linear-gradient(160deg,#B36B00 0%,#4A2E00 100%);">
+        <div class="chip" id="heroChip_c" style="background:#FFD88A;color:#4A2E00">—</div>
+        <div class="cap">Lavadas por conductores propios · valor total</div>
+        <div class="num" id="heroTotal_c">$0</div>
+        <div class="sub" id="heroSub_c">—</div>
       </div>
-      <div class="section">
-        <div class="section-h">Desglose por tipo de lavado</div>
-        <div class="card" id="condTipo"></div>
+      <div class="kpis">
+        <div class="kpi"><div class="k">Lavadas realizadas</div><div class="v" id="kCount_c">0</div></div>
+        <div class="kpi"><div class="k">Valor promedio</div><div class="v small" id="kAvg_c">$0</div></div>
+        <div class="kpi"><div class="k">Vehículos</div><div class="v" id="kVeh_c">0</div></div>
+        <div class="kpi"><div class="k">Conductores</div><div class="v" id="kExtra_c">0</div></div>
       </div>
-      <div class="section">
-        <div class="section-h">Lavadas por mes (valor)</div>
-        <div class="card chartbox"><div class="cwrap"><canvas id="condMonthChart"></canvas></div></div>
-      </div>
+    </div>
+    <div class="section span2">
+      <div class="section-hero">Lavadas por conductor</div>
+      <div class="card" id="extraCards_c"></div>
+    </div>
+    <div class="section span2">
+      <div class="section-hero">Valor por centro de costo</div>
+      <div class="card" id="ccCards_c"></div>
+      <div class="card chartbox" style="margin-top:4px"><div class="cwrap"><canvas id="ccChart_c"></canvas></div></div>
+    </div>
+    <div class="section">
+      <div class="section-h">Desglose por tipo de aseo</div>
+      <div class="card" id="bdTipo_c"></div>
+    </div>
+    <div class="section">
+      <div class="section-h">Aseos por mes (valor)</div>
+      <div class="card chartbox"><div class="cwrap"><canvas id="monthChart_c"></canvas></div></div>
+    </div>
     </div><!-- /#sub-conductores -->
 
-    <!-- ====== PROVEEDORES (financiero · externos) ====== -->
+    <!-- ====== PROVEEDORES: copia idéntica del submódulo Lavador, SOLO lavadas con OTRO nombre de lugar ====== -->
     <div id="sub-proveedores" class="hidden dash">
-      <div class="section span2">
-        <div class="hero" style="background:linear-gradient(160deg,#5B2A7A 0%,#3A1A50 100%);">
-          <div class="chip" id="exHeroChip" style="background:#E7C8F5;color:#3A1A50">—</div>
-          <div class="cap">Gasto total en aseos por proveedores externos</div>
-          <div class="num" id="exHeroTotal">$0</div>
-          <div class="sub" id="exHeroSub">—</div>
-        </div>
-        <div class="kpis">
-          <div class="kpi"><div class="k">Aseos externos</div><div class="v" id="exCount">0</div></div>
-          <div class="kpi"><div class="k">Valor promedio</div><div class="v small" id="exAvg">$0</div></div>
-          <div class="kpi"><div class="k">Vehículos</div><div class="v" id="exVeh">0</div></div>
-          <div class="kpi"><div class="k">Proveedores</div><div class="v" id="exProv">0</div></div>
-        </div>
+    <div class="section span2">
+      <div class="section-hero">Calendario de lavadas · proveedores</div>
+      <div class="note" style="margin:-4px 4px 9px">Solo lavadas cuyo <b>LUGAR DE TRABAJO</b> tiene un nombre <b style="color:#8E44AD">distinto</b> de Finca/Piscuiso/Casa Conductor: Terminal, Lavadero Richard, Verde Bretaña, etc. (regla del formulario: parte A = lugar en col. Q, parte B = lugar en col. C desde el 22-jun-2026 12:01). <b>Total día</b> = nº y <b>gasto facturado</b>.</div>
+      <div class="lugarsum" id="lavLugarSum_p"></div>
+      <div class="tcal-zoombar">
+        <span>🔍 Tamaño del calendario</span>
+        <button class="chip-btn" onclick="lcalZoom(-1)" title="Alejar">– Zoom</button>
+        <button class="chip-btn" onclick="lcalZoom(0)" title="Restablecer">⤢ 100%</button>
+        <button class="chip-btn" onclick="lcalZoom(1)" title="Acercar">+ Zoom</button>
+        <span class="lcalZlbl"></span>
       </div>
-      <div class="section span2">
-        <div class="section-hero">Gasto por proveedor</div>
-        <div id="exProvCards"></div>
-        <div class="card chartbox" style="margin-top:4px"><div class="cwrap"><canvas id="exProvChart"></canvas></div></div>
+      <div class="card" style="padding:10px 10px 12px" id="lavCalWrap_p"><div class="cal-empty">Sin lavadas en este periodo.</div></div>
+      <div class="tcal-detail" id="lavCalDetail_p">Toca una celda con vehículo para ver la hora, el tipo y el lugar del lavado.</div>
+    </div>
+    <div class="section span2">
+      <div class="hero" style="background:linear-gradient(160deg,#5B2A7A 0%,#3A1A50 100%);">
+        <div class="chip" id="heroChip_p" style="background:#E7C8F5;color:#3A1A50">—</div>
+        <div class="cap">Aseos por proveedores externos · gasto facturado</div>
+        <div class="num" id="heroTotal_p">$0</div>
+        <div class="sub" id="heroSub_p">—</div>
       </div>
-      <div class="section">
-        <div class="section-h">Gasto por vehículo</div>
-        <div class="card" id="exByVeh"></div>
+      <div class="kpis">
+        <div class="kpi"><div class="k">Aseos externos</div><div class="v" id="kCount_p">0</div></div>
+        <div class="kpi"><div class="k">Valor promedio</div><div class="v small" id="kAvg_p">$0</div></div>
+        <div class="kpi"><div class="k">Vehículos</div><div class="v" id="kVeh_p">0</div></div>
+        <div class="kpi"><div class="k">Proveedores</div><div class="v" id="kExtra_p">0</div></div>
       </div>
-      <div class="section">
-        <div class="section-h">Aseos externos por mes (gasto)</div>
-        <div class="card chartbox"><div class="cwrap"><canvas id="exMonthChart"></canvas></div></div>
-      </div>
+    </div>
+    <div class="section span2">
+      <div class="section-hero">Gasto por proveedor</div>
+      <div class="card" id="extraCards_p"></div>
+    </div>
+    <div class="section span2">
+      <div class="section-hero">Valor por centro de costo</div>
+      <div class="card" id="ccCards_p"></div>
+      <div class="card chartbox" style="margin-top:4px"><div class="cwrap"><canvas id="ccChart_p"></canvas></div></div>
+    </div>
+    <div class="section">
+      <div class="section-h">Desglose por tipo de aseo</div>
+      <div class="card" id="bdTipo_p"></div>
+    </div>
+    <div class="section">
+      <div class="section-h">Aseos por mes (gasto)</div>
+      <div class="card chartbox"><div class="cwrap"><canvas id="monthChart_p"></canvas></div></div>
+    </div>
     </div>
 
     <!-- ====== FACTURAS (no disponible aún) ====== -->
@@ -1234,8 +1271,18 @@ function applyAllCC404(target){const m=getCC404Map();DATA.aseos.records.forEach(
    FINCA / TALLER PISCUISO → Lavador TECC (interno, sin costo externo)
    CASA CONDUCTOR          → Conductor propio (lavó en su casa)
    cualquier otro texto    → Proveedor externo (col R tiene el valor pagado) */
-function esLavador(r){const q=norm(r.lugarAseo||'').trim();return q===''||q.includes('finca')||q.includes('piscu');}   // Finca / Taller Piscuiso → lavador; VACÍO también (en el form nuevo el campo de lugar es opcional y el lavador es el valor por defecto)
-function esOtro(r){return false;}   // regla cerrada: vacío/finca/piscu=lavador · casa conductor=conductor · cualquier otro nombre=proveedor
+/* ===== REGLA MAESTRA DE CLASIFICACIÓN DE ASEOS (usuario, 2026-07-09, validada con el XLSX) =====
+   El LUGAR DE TRABAJO decide a qué módulo pertenece cada lavada (módulos EXCLUYENTES):
+     · Finca-Zona franca o Taller Piscuiso → LAVADOR (submódulo Lavador)
+     · CASA CONDUCTOR                      → CONDUCTORES (submódulo Conductores)
+     · Cualquier OTRO nombre (Terminal, Lavadero Richard, Verde Bretaña, …) → PROVEEDORES
+   El lugar es pregunta OBLIGATORIA del formulario desde el 6-jul-2026; los vacíos son
+   solo de la era vieja (parte A) y por regla histórica pertenecen al LAVADOR.
+   Dónde está el lugar en la tabla (el troque de columnas C↔Q lo resuelve build.py):
+     · Parte A (hasta 22-jun-2026 12:00): lugar en col. Q, vehículo en col. C
+     · Parte B (desde 22-jun-2026 12:01): lugar en col. C, vehículo en col. Q */
+function esLavador(r){const q=norm(r.lugarAseo||'').trim();return q===''||q.includes('finca')||q.includes('piscu');}
+function esOtro(r){return false;}   // no existe "sin clasificar": todo aseo cae en lavador/conductor/proveedor
 function esConductor(r){return norm(r.lugarAseo||'').includes('conductor');}
 function esProveedor(r){const q=norm(r.lugarAseo||'').trim();return q!==''&&!q.includes('finca')&&!q.includes('piscu')&&!q.includes('conductor');}
 function esInterno(r){return esLavador(r);}
@@ -1796,7 +1843,7 @@ function syncPeriodUI(){
 }
 
 /* ---------- render aseos ---------- */
-let ccChart, monthChart, exProvChart, exMonthChart, condChart, condMonthChart, tipoDonut;
+let ccChart, monthChart, tipoDonut;   // (los charts de Conductores/Proveedores viven en _adCharts)
 function render(){
   const R=resolveRange();
   const recs=recordsForPeriod().filter(esLavador);   // dashboard financiero = SOLO aseos del lavador TECC
@@ -1870,113 +1917,90 @@ function render(){
   const mAgg={}; DATA.aseos.records.forEach(r=>{if(!esInterno(r))return;const p=priceOf(r.tipo, r);mAgg[r.ym]=(mAgg[r.ym]||0)+p.v;});
   const mk=months.slice();
   drawBar('monthChart', mk.map(fmtMonth), mk.map(m=>mAgg[m]||0), c=>monthChart=c, monthChart, months.includes(period)?mk.indexOf(period):-1);
-  renderProveedores();
-  renderConductores();
+  fillAseoDash('_c', esConductor, {extra:'conductor'});   // copia del módulo lavador · SOLO casa conductor
+  fillAseoDash('_p', esProveedor, {extra:'proveedor'});   // copia del módulo lavador · SOLO proveedores externos
   renderCalendar();
   renderConsolidado();
 }
 
 /* ---------- render PROVEEDORES (financiero · por proveedor externo) ---------- */
-function renderProveedores(){
+/* ---------- Dashboard de aseos COMPARTIDO: Conductores ('_c') y Proveedores ('_p')
+   son COPIAS del submódulo Lavador, cada una SOLO con sus lavadas.
+   REGLA MAESTRA (usuario, 2026-07-09, validada contra el XLSX):
+   · Cada lavada pertenece a UN único módulo según su LUGAR DE TRABAJO:
+     Finca-Zona franca / Taller Piscuiso → LAVADOR · CASA CONDUCTOR → CONDUCTORES ·
+     cualquier otro nombre (Terminal, Lavadero Richard, Verde Bretaña, Lavadero
+     Yumbo, …) → PROVEEDORES.
+   · Parte A del formulario (hasta el 22-jun-2026 12:00): lugar en col. Q, vehículo
+     en col. C. Parte B (desde las 12:01): lugar en col. C, vehículo en col. Q.
+     build.py resuelve ese troque por la marca temporal (aseo_parte_b). ---------- */
+const _adCharts={};
+function fillAseoDash(sfx, filterFn, cfg){
+  cfg=cfg||{};
   const R=resolveRange();
-  const recs=recordsForPeriod().filter(esProveedor);   // solo aseos de proveedores (col Q ≠ finca/piscu/conductor)
-  let total=0; const vehs=new Set(), provs={}, byVeh={};
+  const recs=recordsForPeriod().filter(filterFn);
+  let total=0; const vehs=new Set(), byTipo={}, byCC={}, extras={};
   recs.forEach(r=>{
     const v=valorAseo(r); total+=v;
-    if(r.vehiculo) vehs.add(r.vehiculo);
-    const p=proveedor(r)||'(sin proveedor)';
-    (provs[p]=provs[p]||{n:0,sum:0}).n++; provs[p].sum+=v;
-    const vk=r.vehiculo||'—'; (byVeh[vk]=byVeh[vk]||{n:0,sum:0}).n++; byVeh[vk].sum+=v;
-  });
-  const shortLab=R?(period==='ALL'?'Todo':R.label.replace('Última ','').replace('Mes anterior','Mes ant.').split(' · ')[0]):'—';
-  const nProv=Object.keys(provs).length;
-  $('#exHeroTotal').textContent=COP(total);
-  $('#exHeroChip').textContent=shortLab;
-  $('#exHeroSub').textContent=recs.length+' aseos · '+vehs.size+' vehículos · '+nProv+' proveedor'+(nProv===1?'':'es');
-  $('#exCount').textContent=recs.length;
-  $('#exAvg').textContent=COP(recs.length?total/recs.length:0);
-  $('#exVeh').textContent=vehs.size;
-  $('#exProv').textContent=nProv;
-  // cards por proveedor (imponentes, morados)
-  const pe=Object.entries(provs).sort((a,b)=>b[1].sum-a[1].sum);
-  const pmax=Math.max(1,...pe.map(e=>e[1].sum));
-  $('#exProvCards').innerHTML=pe.map(([p,o])=>{
-    const pct=total?o.sum/total*100:0, unit=o.n?o.sum/o.n:0;
-    return `<div class="cc-card ext">
-      <div class="cc-top"><div class="cc-name">${p}</div><div class="cc-val">${COP(o.sum)}</div></div>
-      <div class="cc-bar ext"><i style="width:${Math.max(4,o.sum/pmax*100)}%"></i></div>
-      <div class="cc-meta">${o.n} aseo${o.n===1?'':'s'} · ${pct.toFixed(1)}% del gasto · ${COP(unit)} c/u</div>
-    </div>`;
-  }).join('')||'<div class="empty">Sin aseos externos en este periodo</div>';
-  drawBar('exProvChart', pe.map(e=>e[0]), pe.map(e=>e[1].sum), c=>exProvChart=c, exProvChart);
-  // gasto por vehículo
-  const ve=Object.entries(byVeh).sort((a,b)=>b[1].sum-a[1].sum);
-  const vmax=Math.max(1,...ve.map(e=>e[1].sum));
-  $('#exByVeh').innerHTML=ve.map(([v,o])=>{
-    const unit=o.n?o.sum/o.n:0;
-    return `<div class="bd-row">
-      <div class="bd-top"><div style="flex:1"><div class="bd-name">N° ${v}</div>
-      <div class="bd-meta">${o.n} aseo${o.n===1?'':'s'} × ${COP(unit)}</div></div>
-      <div class="bd-amt">${COP(o.sum)}</div></div>
-      <div class="bar ext"><i style="width:${Math.max(3,o.sum/vmax*100)}%"></i></div></div>`;
-  }).join('')||'<div class="empty">Sin aseos externos en este periodo</div>';
-  // gasto externo por mes (todo el periodo, resalta el mes activo)
-  const mAgg={}; DATA.aseos.records.forEach(r=>{if(!esProveedor(r))return; mAgg[r.ym]=(mAgg[r.ym]||0)+valorAseo(r);});
-  const mk=months.slice();
-  drawBar('exMonthChart', mk.map(fmtMonth), mk.map(m=>mAgg[m]||0), c=>exMonthChart=c, exMonthChart, months.includes(period)?mk.indexOf(period):-1);
-}
-
-/* ---------- render CONDUCTORES (lavadas propias · sin análisis de rentabilidad) ---------- */
-function renderConductores(){
-  const R=resolveRange();
-  const recs=recordsForPeriod().filter(esConductor);
-  let total=0,sinValor=0; const vehs=new Set(),conds={},byTipo={};
-  recs.forEach(r=>{
-    const p=priceOf(r.tipo, r);total+=p.v;if(!p.known)sinValor++;
     if(r.vehiculo)vehs.add(r.vehiculo);
-    const cn=capNombre((r.conductor||'').trim())||'(sin conductor)';
-    (conds[cn]=conds[cn]||{n:0,sum:0}).n++;conds[cn].sum+=p.v;
-    if(!byTipo[r.tipo])byTipo[r.tipo]={n:0,sum:0,known:p.known};
-    byTipo[r.tipo].n++;byTipo[r.tipo].sum+=p.v;
+    if(!byTipo[r.tipo])byTipo[r.tipo]={n:0,sum:0};
+    byTipo[r.tipo].n++; byTipo[r.tipo].sum+=v;
+    const cc=r.centro||'(sin CC)'; (byCC[cc]=byCC[cc]||{n:0,sum:0}).n++; byCC[cc].sum+=v;
+    const ek = cfg.extra==='proveedor' ? (capNombre(proveedor(r))||'(sin proveedor)') : (capNombre((r.conductor||'').trim())||'(sin conductor)');
+    (extras[ek]=extras[ek]||{n:0,sum:0}).n++; extras[ek].sum+=v;
   });
   const shortLab=R?(period==='ALL'?'Todo':R.label.replace('Última ','').replace('Mes anterior','Mes ant.').split(' · ')[0]):'—';
-  const nCond=Object.keys(conds).length;
-  if($('#condHeroTotal'))$('#condHeroTotal').textContent=COP(total);
-  if($('#condHeroChip'))$('#condHeroChip').textContent=shortLab;
-  if($('#condHeroSub'))$('#condHeroSub').textContent=recs.length+' lavada'+(recs.length===1?'':'s')+' · '+vehs.size+' vehículo'+(vehs.size===1?'':'s')+' · '+nCond+' conductor'+(nCond===1?'':'es');
-  if($('#condCount'))$('#condCount').textContent=recs.length;
-  if($('#condAvg'))$('#condAvg').textContent=COP(recs.length?total/recs.length:0);
-  if($('#condVeh'))$('#condVeh').textContent=vehs.size;
-  if($('#condNCond'))$('#condNCond').textContent=nCond;
-  const ce=Object.entries(conds).sort((a,b)=>b[1].sum-a[1].sum);
-  const cmax=Math.max(1,...ce.map(e=>e[1].sum));
-  if($('#condCards'))$('#condCards').innerHTML=ce.map(([c,o])=>{
-    const pct=total?o.sum/total*100:0,unit=o.n?o.sum/o.n:0;
-    return `<div class="cc-card cond">
-      <div class="cc-top"><div class="cc-name">${c}</div><div class="cc-val">${COP(o.sum)}</div></div>
-      <div class="cc-bar cond"><i style="width:${Math.max(4,o.sum/cmax*100)}%"></i></div>
-      <div class="cc-meta">${o.n} lavada${o.n===1?'':'s'} · ${pct.toFixed(1)}% del total · ${COP(unit)} c/u</div>
-    </div>`;
-  }).join('')||'<div class="empty">Sin lavadas de conductores en este periodo</div>';
-  drawBar('condChart',ce.map(e=>e[0]),ce.map(e=>e[1].sum),c=>condChart=c,condChart);
+  const nEx=Object.keys(extras).length;
+  const S=id=>$('#'+id+sfx);
+  if(S('heroTotal'))S('heroTotal').textContent=COP(total);
+  if(S('heroChip'))S('heroChip').textContent=shortLab;
+  if(S('heroSub'))S('heroSub').textContent=recs.length+' aseo'+(recs.length===1?'':'s')+' · '+vehs.size+' vehículo'+(vehs.size===1?'':'s');
+  if(S('kCount'))S('kCount').textContent=recs.length;
+  if(S('kAvg'))S('kAvg').textContent=COP(recs.length?total/recs.length:0);
+  if(S('kVeh'))S('kVeh').textContent=vehs.size;
+  if(S('kExtra'))S('kExtra').textContent=nEx;
+  // resumen por lugar + calendario de lavadas clonado (sin columnas de costo: el salario es solo del lavador)
+  const lsum=S('lavLugarSum');
+  if(lsum){
+    const lc={}; recs.forEach(r=>{const L=lavLugarTag(r); const k=cfg.extra==='proveedor'?L.t.replace(/^Proveedor · /,''):L.t.split(' · ')[0]; lc[k]=lc[k]||{n:0,c:L.c}; lc[k].n++;});
+    lsum.innerHTML=Object.entries(lc).sort((a,b)=>b[1].n-a[1].n).map(([t,o])=>`<span class="lavloc ${o.c}">● ${esc(t)}: <b>${o.n}</b></span>`).join('');
+  }
+  const lcw=S('lavCalWrap');
+  if(lcw){
+    lcw.innerHTML=buildLavadorCal(recs,R,{sfx:sfx,costos:false});
+    lcalApplyZoom();
+    lcw.querySelectorAll('.tcal-cell.on[data-key]').forEach(el=>el.onclick=()=>{
+      lcw.querySelectorAll('.tcal-cell.sel').forEach(x=>x.classList.remove('sel'));
+      el.classList.add('sel'); showLavCalDetail(el.dataset.key,sfx);
+    });
+  }
+  const barCls=cfg.extra==='proveedor'?' ext':' cond';
+  const bdRow=(nombre,meta,sum,frac)=>`<div class="bd-row"><div class="bd-top"><div style="flex:1"><div class="bd-name">${nombre}</div>
+    <div class="bd-meta">${meta}</div></div><div class="bd-amt">${COP(sum)}</div></div>
+    <div class="bar${barCls}"><i style="width:${Math.max(3,frac*100)}%"></i></div></div>`;
+  // extra: por conductor / por proveedor
+  const exE=Object.entries(extras).sort((a,b)=>b[1].sum-a[1].sum);
+  const exMax=Math.max(1,...exE.map(e=>e[1].sum));
+  if(S('extraCards'))S('extraCards').innerHTML=exE.map(([p,o])=>bdRow(esc(p),`${o.n} lavada${o.n===1?'':'s'} · ${(total?o.sum/total*100:0).toFixed(1)}% · ${COP(o.n?o.sum/o.n:0)} c/u`,o.sum,o.sum/exMax)).join('')||'<div class="empty">Sin lavadas en este periodo</div>';
+  // valor por centro de costo (desglose; la rentabilidad contra salario es exclusiva del lavador)
+  const ccE=Object.entries(byCC).sort((a,b)=>b[1].sum-a[1].sum);
+  const ccMax=Math.max(1,...ccE.map(e=>e[1].sum));
+  if(S('ccCards'))S('ccCards').innerHTML=ccE.map(([c,o])=>bdRow(esc(c),`${o.n} aseo${o.n===1?'':'s'}`,o.sum,o.sum/ccMax)).join('')||'<div class="empty">Sin aseos en este periodo</div>';
+  drawBar('ccChart'+sfx, ccE.map(e=>e[0]), ccE.map(e=>e[1].sum), c=>_adCharts['cc'+sfx]=c, _adCharts['cc'+sfx]);
+  // desglose por tipo
   const tipos=Object.entries(byTipo).sort((a,b)=>b[1].sum-a[1].sum);
   const maxS=Math.max(1,...tipos.map(t=>t[1].sum));
-  if($('#condTipo'))$('#condTipo').innerHTML=tipos.map(([t,o])=>{
-    const unit=o.n?o.sum/o.n:0,badge=o.known?'':'<span class="badge sinvalor">sin valor</span>';
-    return `<div class="bd-row"><div class="bd-top"><div style="flex:1"><div class="bd-name">${shorten(t)}${badge}</div>
-      <div class="bd-meta">${o.n} lavada${o.n===1?'':'s'} × ${COP(unit)}</div></div>
-      <div class="bd-amt">${COP(o.sum)}</div></div>
-      <div class="bar cond"><i style="width:${Math.max(3,o.sum/maxS*100)}%"></i></div></div>`;
-  }).join('')||'<div class="empty">Sin lavadas en este periodo</div>';
-  const mAgg={}; DATA.aseos.records.forEach(r=>{if(!esConductor(r))return;const p=priceOf(r.tipo, r);mAgg[r.ym]=(mAgg[r.ym]||0)+p.v;});
+  if(S('bdTipo'))S('bdTipo').innerHTML=tipos.map(([t,o])=>bdRow(shorten(t),`${o.n} aseo${o.n===1?'':'s'} × ${COP(o.n?o.sum/o.n:0)}`,o.sum,o.sum/maxS)).join('')||'<div class="empty">Sin aseos en este periodo</div>';
+  // por mes (histórico completo del submódulo, resalta el mes activo)
+  const mAgg={}; DATA.aseos.records.forEach(r=>{if(!filterFn(r))return; mAgg[r.ym]=(mAgg[r.ym]||0)+valorAseo(r);});
   const mk=months.slice();
-  drawBar('condMonthChart',mk.map(fmtMonth),mk.map(m=>mAgg[m]||0),c=>condMonthChart=c,condMonthChart,months.includes(period)?mk.indexOf(period):-1);
+  drawBar('monthChart'+sfx, mk.map(fmtMonth), mk.map(m=>mAgg[m]||0), c=>_adCharts['mes'+sfx]=c, _adCharts['mes'+sfx], months.includes(period)?mk.indexOf(period):-1);
 }
 
 /* ---------- calendario "aseos en general" (lavador verde / conductor naranja / proveedor morado) ---------- */
 function fmtDShort(ymd){const[y,mo,d]=ymd.split('-');const N=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return (+d)+' '+N[+mo-1];}
 function fmtDLong(ymd){if(!ymd)return '—';const[y,mo,d]=ymd.split('-').map(Number);const dt=new Date(y,mo-1,d);const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];const w=DIAS[dt.getDay()];return w.charAt(0).toUpperCase()+w.slice(1)+', '+d+' de '+MESES[mo-1]+' de '+y;}
-function capNombre(s){return (s||'').toLowerCase().replace(/\b[a-záéíóúñü]/g,c=>c.toUpperCase());}
+function capNombre(s){return (s||'').toLowerCase().replace(/(^|[\s.\/-])([a-záéíóúñü])/g,(m,p,c)=>p+c.toUpperCase());}   // Tipo Título respetando tildes/ñ (\b es ASCII y partía "Bretaña" en "BretaÑA")
 // El calendario usa el MISMO periodo que Internos/Externos (selector compartido #periodBlock).
 function calRange(){
   const R=resolveRange();
@@ -2921,10 +2945,12 @@ function buildTallerCal(recs,R){
   return `<div class="tcal-scroll">${head}${rows}${foot}</div>`;
 }
 
-/* ---- Calendario de LAVADAS (días × horas) para el submódulo Lavador ---- */
-let lavCalIndex={};
+/* ---- Calendario de LAVADAS (días × horas) — compartido por los submódulos
+   Lavador ('' ), Conductores ('_c') y Proveedores ('_p'): tres copias idénticas
+   del diseño, cada una SOLO con las lavadas de su responsable según el LUGAR. ---- */
+let lavCalIndex={'':{}, '_c':{}, '_p':{}};
 let lcalZ=(function(){const v=parseFloat(localStorage.getItem('tecc_lcalz'));return (v&&v>=0.6&&v<=2)?v:1;})();
-function lcalApplyZoom(){ const el=document.querySelector('#sub-lavador .tcal-scroll'); if(el) el.style.setProperty('--tz',lcalZ); const l=$('#lcalZlbl'); if(l)l.textContent=Math.round(lcalZ*100)+'%'; }
+function lcalApplyZoom(){ document.querySelectorAll('#sub-lavador .tcal-scroll,#sub-conductores .tcal-scroll,#sub-proveedores .tcal-scroll').forEach(el=>el.style.setProperty('--tz',lcalZ)); document.querySelectorAll('.lcalZlbl').forEach(l=>l.textContent=Math.round(lcalZ*100)+'%'); }
 function lcalZoom(dir){ lcalZ = dir===0 ? 1 : Math.min(1.8, Math.max(0.6, +(lcalZ+dir*0.15).toFixed(2))); localStorage.setItem('tecc_lcalz',lcalZ); lcalApplyZoom(); }
 /* Ubicación canónica del aseo por LUGAR DE TRABAJO (4 opciones, sin inferencias por día):
    Finca / Taller Piscuiso → lavador · Casa Conductor → conductor · cualquier otro nombre → proveedor. */
@@ -2934,15 +2960,16 @@ function lavLugarTag(r){ const q=norm((r.lugarAseo||'')+' '+(r.lugar||'')).trim(
   if(q.includes('conductor'))return {t:'Casa Conductor',c:'lav-cond'};
   if(q)return {t:'Proveedor · '+capNombre((r.lugarAseo||'').trim()),c:'lav-prov'};
   return {t:'Sin lugar registrado',c:'lav-otro'}; }
-function buildLavadorCal(recs,R){
-  lavCalIndex={};
+function buildLavadorCal(recs,R,opts){
+  opts=opts||{}; const SFX=opts.sfx||'', CON_COSTOS=opts.costos!==false;   // costos día/productividad SOLO aplican al lavador (su salario)
+  const idx=lavCalIndex[SFX]={};
   const dayCount={},dayValue={},slotCount={};
   recs.forEach(r=>{ if(!r.fecha)return;
     const h=(r.horaIni!=null&&r.horaIni!=='')?parseInt(String(r.horaIni).split(':')[0],10):null;
     const sk=slotOf(isNaN(h)?null:h);
-    (lavCalIndex[r.fecha+'|'+sk]=lavCalIndex[r.fecha+'|'+sk]||[]).push(r);
+    (idx[r.fecha+'|'+sk]=idx[r.fecha+'|'+sk]||[]).push(r);
     dayCount[r.fecha]=(dayCount[r.fecha]||0)+1;
-    dayValue[r.fecha]=(dayValue[r.fecha]||0)+priceOf(r.tipo,r).v;
+    dayValue[r.fecha]=(dayValue[r.fecha]||0)+valorAseo(r);   // proveedor = factura real; lavador/conductor = valoración por tipo
     slotCount[sk]=(slotCount[sk]||0)+1;
   });
   let dayList=null;
@@ -2954,35 +2981,42 @@ function buildLavadorCal(recs,R){
   const diaEq=ymd=>{const dt=parseDate(ymd),dow=dt.getDay(); if(dow===0||FESTIVOS_CO.has(ymd))return 0; return dow===6?0.5:1;};
   const dayCostOf=ymd=>DB*diaEq(ymd);
   const head=`<div class="tcal-row tcal-headrow"><div class="tcal-day">Día</div>`+
-    cols.map(c=>`<div class="tcal-ch">${slotLabel(c)}</div>`).join('')+`<div class="tcal-ch tcal-toth">Total día</div><div class="tcal-ch tcal-costh">Costo día</div><div class="tcal-ch tcal-prodh">Productividad</div></div>`;
+    cols.map(c=>`<div class="tcal-ch">${slotLabel(c)}</div>`).join('')+`<div class="tcal-ch tcal-toth">Total día</div>`+(CON_COSTOS?`<div class="tcal-ch tcal-costh">Costo día</div><div class="tcal-ch tcal-prodh">Productividad</div>`:'')+`</div>`;
   const rows=dayList.map(d=>{
     const dow=parseDate(d).getDay(),fest=FESTIVOS_CO.has(d),dom=(dow===0),sab=(dow===6);
     const dayCls=dom?' dom':(fest?' fest':''),tag=dom?'<span class="tcal-tag">Domingo</span>':(fest?'<span class="tcal-tag">Festivo</span>':(sab?'<span class="tcal-tag">Sáb ½</span>':''));
-    const cells=cols.map(c=>{ const list=lavCalIndex[d+'|'+c]||[]; const nw=c!=='sh'&&(dom||fest||(sab&&+c>=12));
+    const cells=cols.map(c=>{ const list=idx[d+'|'+c]||[]; const nw=c!=='sh'&&(dom||fest||(sab&&+c>=12));
       if(!list.length) return `<div class="tcal-cell${nw?' nw':''}"></div>`;
       const shown=list.slice(0,3).map(r=>{const L=lavLugarTag(r);return `<span class="tcal-pl ${L.c}">${r.vehiculo||r.placa||'—'}</span>`;}).join('');
       const more=list.length>3?`<span class="tcal-pl more">+${list.length-3}</span>`:'';
-      return `<div class="tcal-cell on${nw?' nw':''}" data-key="${d}|${c}">${shown}${more}</div>`;
+      return `<div class="tcal-cell on${nw?' nw':''}" data-key="${d}|${c}" data-sfx="${SFX}">${shown}${more}</div>`;
     }).join('');
     const dc=dayCount[d]||0, dv=dayValue[d]||0;
     const tot=`<div class="tcal-tot${dc?'':' empty'}">${dc?`<b>${dc}</b><span>${COP(dv)}</span>`:'·'}</div>`;
-    const cost=dayCostOf(d);
-    const costCell=`<div class="tcal-cost">${cost>0?`<b>${COP(cost)}</b><small>costo día</small>`:`<small>no laborable</small>`}</div>`;
-    let prodCell;
-    if(cost>0){ const pct=Math.round(dv/cost*100), ok=dv>=cost; prodCell=`<div class="tcal-prod ${ok?'ok':'bad'}"><b>${pct}%</b><small>${ok?'productivo':'no rentó'}</small></div>`; }
-    else prodCell = dv>0 ? `<div class="tcal-prod ok"><b>+${COP(dv)}</b><small>trabajo extra</small></div>` : `<div class="tcal-prod na"><b>—</b><small>no laboral</small></div>`;
+    let costCell='', prodCell='';
+    if(CON_COSTOS){
+      const cost=dayCostOf(d);
+      costCell=`<div class="tcal-cost">${cost>0?`<b>${COP(cost)}</b><small>costo día</small>`:`<small>no laborable</small>`}</div>`;
+      if(cost>0){ const pct=Math.round(dv/cost*100), ok=dv>=cost; prodCell=`<div class="tcal-prod ${ok?'ok':'bad'}"><b>${pct}%</b><small>${ok?'productivo':'no rentó'}</small></div>`; }
+      else prodCell = dv>0 ? `<div class="tcal-prod ok"><b>+${COP(dv)}</b><small>trabajo extra</small></div>` : `<div class="tcal-prod na"><b>—</b><small>no laboral</small></div>`;
+    }
     return `<div class="tcal-row"><div class="tcal-day${dayCls}">${tCalDayLabel(d)}${tag}</div>${cells}${tot}${costCell}${prodCell}</div>`;
   }).join('');
   const gC=Object.values(dayCount).reduce((a,b)=>a+b,0), gV=Object.values(dayValue).reduce((a,b)=>a+b,0);
-  const gCost=dayList.reduce((s,d)=>s+dayCostOf(d),0);
-  const gPct=gCost>0?Math.round(gV/gCost*100):0, gOk=gV>=gCost;
   const footCells=cols.map(c=>`<div class="tcal-fcell">${slotCount[c]||''}</div>`).join('');
-  const foot=`<div class="tcal-row tcal-footrow"><div class="tcal-day">Total</div>${footCells}<div class="tcal-tot tcal-grand"><b>${gC}</b><span>${COP(gV)}</span></div><div class="tcal-cost"><b>${COP(gCost)}</b><small>costo periodo</small></div><div class="tcal-prod ${gCost>0?(gOk?'ok':'bad'):'na'}"><b>${gCost>0?gPct+'%':'—'}</b><small>${gCost>0?(gOk?'productivo':'no rentó'):'—'}</small></div></div>`;
+  let footFin='';
+  if(CON_COSTOS){
+    const gCost=dayList.reduce((s,d)=>s+dayCostOf(d),0);
+    const gPct=gCost>0?Math.round(gV/gCost*100):0, gOk=gV>=gCost;
+    footFin=`<div class="tcal-cost"><b>${COP(gCost)}</b><small>costo periodo</small></div><div class="tcal-prod ${gCost>0?(gOk?'ok':'bad'):'na'}"><b>${gCost>0?gPct+'%':'—'}</b><small>${gCost>0?(gOk?'productivo':'no rentó'):'—'}</small></div>`;
+  }
+  const foot=`<div class="tcal-row tcal-footrow"><div class="tcal-day">Total</div>${footCells}<div class="tcal-tot tcal-grand"><b>${gC}</b><span>${COP(gV)}</span></div>${footFin}</div>`;
   return `<div class="tcal-scroll">${head}${rows}${foot}</div>`;
 }
-function showLavCalDetail(key){
-  const box=$('#lavCalDetail'); if(!box) return;
-  const list=(lavCalIndex[key]||[]).slice(); if(!list.length){ box.textContent='Sin lavadas en esta franja.'; return; }
+function showLavCalDetail(key,sfx){
+  sfx=sfx||'';
+  const box=$('#lavCalDetail'+sfx); if(!box) return;
+  const list=((lavCalIndex[sfx]||{})[key]||[]).slice(); if(!list.length){ box.textContent='Sin lavadas en esta franja.'; return; }
   const [d,c]=key.split('|');
   list.sort((a,b)=>String(a.horaIni||'').localeCompare(String(b.horaIni||'')));
   const rows=list.map(r=>{ const L=lavLugarTag(r), hor=aseoHorario(r), tipos=tiposDe(r);

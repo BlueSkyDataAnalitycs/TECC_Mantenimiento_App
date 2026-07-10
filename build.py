@@ -19,6 +19,12 @@ SHEET_ASEOS  = "1cTsB7riRbd7u0h3DsTdlItYnUPg_b-s2YcCXIhtx9HY"
 # las respuestas migradas del 22-jun→4-jul que ya están en esta misma hoja.
 SHEET_TALLER = "1e_Xp0gfKe_BaUBBNCcefSyDK_xRV6b2zk1Tumg67qaY"
 GVIZ = "https://docs.google.com/spreadsheets/d/{id}/gviz/tq?tqx=out:csv"
+# EXPORT directo (también público y sin llave). Se prefiere sobre GVIZ porque GVIZ
+# sirve caché vieja: el 10-jul-2026 devolvía la hoja de aseos SIN los lugares recién
+# rellenados en la columna C, mientras export ya los traía. gid = pestaña de respuestas.
+EXPORT = "https://docs.google.com/spreadsheets/d/{id}/export?format=csv&gid={gid}"
+GID_ASEOS  = "1276066256"   # pestaña "Respuestas de formulario 1" (FORMATO DE ASEO)
+GID_TALLER = "1904396377"   # pestaña de respuestas de "V2 Intervenciones Vehiculares TECC"
 
 # ---- Tabla de precios por combinación exacta de "Tipo de aseo" (COP) ----
 # Editable también dentro de la app (módulo Ajustes). Estos son los valores por defecto.
@@ -111,13 +117,21 @@ def _env(key):
                 return val.strip()
     return ""
 
-def fetch_csv(sheet_id):
-    """Primario: CSV público de Google (SIN llave). Respaldo opcional: Sheets API con GOOGLE_API_KEY del .env."""
-    url = GVIZ.format(id=sheet_id)
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+def fetch_csv(sheet_id, gid=None):
+    """Primario: EXPORT CSV público (SIN llave, datos frescos). Respaldo 1: GVIZ (puede
+    servir caché vieja). Respaldo 2 opcional: Sheets API con GOOGLE_API_KEY del .env."""
+    urls = ([EXPORT.format(id=sheet_id, gid=gid)] if gid else []) + [GVIZ.format(id=sheet_id)]
     try:
-        with urllib.request.urlopen(req, timeout=40) as r:
-            raw = r.read().decode("utf-8", errors="replace")
+        raw = None
+        for url in urls:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            try:
+                with urllib.request.urlopen(req, timeout=40) as r:
+                    raw = r.read().decode("utf-8", errors="replace")
+                break
+            except Exception:
+                if url == urls[-1]:
+                    raise
         return list(csv.reader(io.StringIO(raw)))
     except Exception as e:
         key = _env("GOOGLE_API_KEY")
@@ -216,7 +230,17 @@ def hhmm(x):
 
 
 def aseo_parte_b(ts):
-    """22-jun-2026 12:00 → parte B (formulario corregido). Antes → parte A (cruzado)."""
+    """REGLA MAESTRA DEL FORMULARIO DE ASEOS (confirmada por el usuario con el XLSX, 2026-07-09).
+    La MISMA tabla tiene dos eras y las columnas C y Q se TROCAN en el corte:
+      · PARTE A — desde el inicio hasta el 22-jun-2026 a las 12:00 del día (inclusive):
+          LUGAR DE ASEO  → columna Q ("Vehiculo")
+          VEHÍCULO       → columna C ("Lugar de Aseo…")
+      · PARTE B — desde el 22-jun-2026 a las 12:01 del día en adelante:
+          LUGAR DE ASEO  → columna C ("Lugar de Aseo…")
+          VEHÍCULO       → columna Q ("Vehiculo", formato "PLACA - N° interno")
+    El corte se decide por la MARCA TEMPORAL (col A). Clasificación por lugar:
+    Finca-Zona franca / Taller Piscuiso → LAVADOR · CASA CONDUCTOR → CONDUCTORES ·
+    cualquier otro nombre (Terminal, Lavadero Richard, Verde Bretaña, …) → PROVEEDORES."""
     d = parse_date(ts)
     if not d:
         return False
@@ -226,8 +250,16 @@ def aseo_parte_b(ts):
         return False
     if day > cut:
         return True
-    hh = hora_de(ts)
-    return hh is not None and hh >= 12
+    m = re.search(r"(\d{1,2}):(\d{2})(?::\d{2})?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?", str(ts or ""), re.I)
+    if not m:
+        return False
+    h, mi = int(m.group(1)), int(m.group(2))
+    ap = (m.group(3) or "").lower().replace(".", "").replace(" ", "")
+    if ap == "pm" and h < 12:
+        h += 12
+    if ap == "am" and h == 12:
+        h = 0
+    return (h, mi) >= (12, 1)   # parte B desde las 12:01 del día del corte
 
 
 def parse_veh_b(q):
@@ -582,12 +614,12 @@ def main():
     here = os.path.dirname(os.path.abspath(__file__))
     print("· Descargando Sheet de aseos…")
     try:
-        aseos_rows = fetch_csv(SHEET_ASEOS)
+        aseos_rows = fetch_csv(SHEET_ASEOS, GID_ASEOS)
     except Exception as e:
         print("  ⚠️  No se pudo descargar aseos:", e); aseos_rows = []
     print("· Descargando Sheet de taller…")
     try:
-        taller_rows = fetch_csv(SHEET_TALLER)
+        taller_rows = fetch_csv(SHEET_TALLER, GID_TALLER)
     except Exception as e:
         print("  ⚠️  No se pudo descargar taller:", e); taller_rows = []
 
