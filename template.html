@@ -1095,12 +1095,6 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
       <button data-tg="TNC">TECC · Nidia · Carlos</button>
       <button data-tg="WG">WG</button>
     </div>
-    <!-- Filtro de técnico: solo visible en la vista WG -->
-    <div class="subseg" id="tTecSeg" style="display:none">
-      <button data-tt="AMBOS" class="active">👥 Ambos técnicos</button>
-      <button data-tt="EUCARIN">👤 Eucarin Parra</button>
-      <button data-tt="BRAYAN">👤 Brayan Carabalí</button>
-    </div>
     <div class="section" id="tPeriodWrap">
       <div class="chips" id="tPresets"></div>
       <div class="customrange" id="tCustomRange">
@@ -1108,6 +1102,11 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
         <label class="daterow"><span>Hasta</span><input type="date" class="ios" id="cTEnd" aria-label="Taller fecha fin"></label>
       </div>
       <div class="rangeinfo" id="tRangeInfo">—</div>
+    </div>
+    <!-- Filtro de técnico (solo vista WG), DEBAJO del período: chips dinámicos con los
+         nombres reales que aparecen en los datos; se puede elegir uno o varios -->
+    <div class="section" id="tTecWrap" style="display:none">
+      <div class="chips" id="tTecChips"></div>
     </div>
     <div id="tallerBody" class="dash"></div>
   </div>
@@ -1435,7 +1434,7 @@ function exportActive(){
     else sheets=[{name:'Aseos (general)',rows:recs.map(aseoRow)}];
     xlsxExport('TECC_Aseos_'+sub+sfx,sheets);
   }
-  else if(tab==='taller'){ xlsxExport('TECC_Taller'+(tGrupo!=='ALL'?('_'+(tGrupo==='WG'?'WG':'TECC_Nidia_Carlos')):'')+(tGrupo==='WG'&&tTec!=='AMBOS'?('_'+(tTec==='BRAYAN'?'Brayan_Carabali':'Eucarin_Parra')):'')+sfx,tallerExportSheets()); }
+  else if(tab==='taller'){ xlsxExport('TECC_Taller'+(tGrupo!=='ALL'?('_'+(tGrupo==='WG'?'WG':'TECC_Nidia_Carlos')):'')+(tGrupo==='WG'&&tTecSel.size?('_'+tTecSlug()):'')+sfx,tallerExportSheets()); }
   else if(tab==='llantas'){ xlsxExport('TECC_Llantas'+sfx,llExportSheets()); }
   else if(tab==='inspecciones'){ inspExport(); }
   else if(tab==='vehiculos'){ xlsxExport('TECC_Vehiculos'+sfx,[{name:'Parque automotor',rows:vehFiltrados().map(r=>Object.fromEntries(VCOLS.map(c=>[c.h,vget(r,c.k)])))}]); }
@@ -2515,18 +2514,36 @@ function tecnicoDe(r){ if(tGrupoDeVeh(r.placa)==='WG'){ const f=r.fecha||''; if(
 /* Técnico EFECTIVO de una intervención: primero lo que diga el formulario (campo técnico,
    normalizado — tolera "Caicedo"/"Euclides" viejos), y si viene vacío, la regla por grupo/fecha. */
 function tecnicoEfectivo(r){ const t=(r.tecnico||'').toLowerCase(); if(t.indexOf('brayan')>=0) return 'Brayan Carabalí'; if(t.indexOf('eucarin')>=0||t.indexOf('euclides')>=0||t.indexOf('parra')>=0) return 'Eucarin Parra'; return tecnicoDe(r); }
-/* Filtro de técnico de la vista WG: AMBOS | EUCARIN | BRAYAN (solo aplica con tGrupo==='WG') */
-let tTec='AMBOS';
-function tMatchTec(r){ if(tGrupo!=='WG'||tTec==='AMBOS') return true; return tecnicoEfectivo(r)===(tTec==='BRAYAN'?'Brayan Carabalí':'Eucarin Parra'); }
-function wireTallerTec(){ document.querySelectorAll('#tTecSeg button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#tTecSeg button').forEach(x=>x.classList.toggle('active',x===b)); tTec=b.dataset.tt; renderTaller(); }); }
+/* Filtro de técnico de la vista WG (multi-selección; vacío = todos). Los chips se
+   construyen DINÁMICAMENTE con los nombres que de verdad aparecen en los datos del
+   grupo WG: si mañana interviene un técnico nuevo, su botón aparece solo. */
+let tTecSel=new Set();
+function tTecnicosWG(){ const s=new Set(); (DATA.taller.records||[]).forEach(r=>{ if(tGrupoDeVeh(r.placa)==='WG') s.add(tecnicoEfectivo(r)); }); return [...s].sort(); }
+function tMatchTec(r){ return tGrupo!=='WG' || tTecSel.size===0 || tTecSel.has(tecnicoEfectivo(r)); }
+function tBuildTecUI(){
+  const wrap=$('#tTecWrap'); if(!wrap) return;
+  wrap.style.display = (tGrupo==='WG') ? '' : 'none';
+  if(tGrupo!=='WG') return;
+  const cont=$('#tTecChips'); if(!cont) return; cont.innerHTML='';
+  const tecs=tTecnicosWG();
+  [...tTecSel].forEach(t=>{ if(tecs.indexOf(t)<0) tTecSel.delete(t); });
+  const mk=(label,active,fn)=>{ const b=document.createElement('button'); b.className='chip-btn'+(active?' active':''); b.textContent=label; b.onclick=fn; cont.appendChild(b); };
+  mk('👥 Todos los técnicos', tTecSel.size===0, ()=>{ tTecSel.clear(); renderTaller(); });
+  tecs.forEach(t=>mk('👤 '+t, tTecSel.has(t), ()=>{
+    tTecSel.has(t) ? tTecSel.delete(t) : tTecSel.add(t);
+    if(tTecSel.size===tecs.length) tTecSel.clear();     // todos marcados = "Todos"
+    renderTaller();
+  }));
+}
+function tTecLabel(){ const tecs=tTecSel.size?[...tTecSel]:tTecnicosWG(); return tecs.join(' + ')||'—'; }
+function tTecSlug(){ return [...tTecSel].map(t=>t.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'_')).join('-'); }
 function brayanDiasActivos(R){ if(!R||!R.start||!R.end)return 0; const s=parseDate(R.start),e=parseDate(R.end); if(!s||!e)return 0; let n=0; for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1)){ if(ymdOf(d)>=BRAYAN_INICIO)n++; } return n; }
 function wireTallerGrupo(){ document.querySelectorAll('#tGrupoSeg button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#tGrupoSeg button').forEach(x=>x.classList.toggle('active',x===b)); tGrupo=b.dataset.tg; renderTaller(); }); }
-function tTecSegSync(){ const s=$('#tTecSeg'); if(s) s.style.display = (tGrupo==='WG') ? '' : 'none'; }
 function renderTaller(){
   const body=$('#tallerBody'); if(!body) return;
   tBuildPeriodUI();
-  tTecSegSync();
-  const all=(DATA.taller.records||[]).filter(r=>matchEmp(r.placa)&&tMatchGrupo(r)&&tMatchTec(r));   // placa = N° interno en taller; tGrupo = vista activa; tTec = técnico (solo WG)
+  tBuildTecUI();
+  const all=(DATA.taller.records||[]).filter(r=>matchEmp(r.placa)&&tMatchGrupo(r)&&tMatchTec(r));   // placa = N° interno en taller; tGrupo = vista activa; tTecSel = técnicos (solo WG)
   const info=$('#tRangeInfo');
   if(!all.length){
     if(info) info.innerHTML='Sin registros del formulario del taller todavía.';
@@ -2583,7 +2600,7 @@ function renderTaller(){
     const pctG=esWG?share.pctWG:(1-share.pctWG);
     H.push(`<div class="section span2"><div class="card pad" style="display:flex;gap:22px;flex-wrap:wrap;align-items:center">
       <div><div class="cap" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3)">Vista</div><b style="font-size:16px">${esWG?'WG':'TECC · Nidia Gasca · Carlos Gasca'}</b></div>
-      <div><div class="cap" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3)">Técnico</div><b>👤 ${esWG?(tTec==='EUCARIN'?'Eucarin Parra':tTec==='BRAYAN'?'Brayan Carabalí':'Eucarin Parra + Brayan Carabalí'):'Eucarin Parra'}</b>${esWG&&tTec!=='EUCARIN'?'<small style="color:var(--ios-label3)"> · Brayan desde el 2 jul 2026, 12 m.</small>':''}</div>
+      <div><div class="cap" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3)">Técnico${esWG&&(tTecSel.size===0||tTecSel.size>1)?'s':''}</div><b>👤 ${esWG?tTecLabel():'Eucarin Parra'}</b>${esWG&&tTecLabel().indexOf('Brayan')>=0?'<small style="color:var(--ios-label3)"> · Brayan desde el 2 jul 2026, 12 m.</small>':''}</div>
       <div><div class="cap" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3)">Parte del costo del taller</div><b>${(pctG*100).toFixed(1)}%</b><small style="color:var(--ios-label3)"> · ${esWG?share.wg:share.tnc} de ${share.tot} vehículos = ${COP(tCostoSemGrupo())}/sem</small></div>
       ${esWG?`<div><div class="cap" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ios-label3)">+ Costo Brayan (SMLMV 2026)</div><b>${COP(brayanMensual())}/mes</b><small style="color:var(--ios-label3)"> · en este periodo: ${COP(brayanCostoPeriodo)}</small></div>`:''}
     </div></div>`);
@@ -4008,7 +4025,7 @@ function wireMagnetic(){
   window.addEventListener('mouseout', function(e){ if(!e.relatedTarget && cur){ reset(cur); cur=null; } });
 }
 /* ---------- init ---------- */
-buildPeriodUI(); wireEmp(); render(); wireTallerGrupo(); wireTallerTec(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireInspDrop(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
+buildPeriodUI(); wireEmp(); render(); wireTallerGrupo(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireInspDrop(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
 </script>
 </body>
 </html>
