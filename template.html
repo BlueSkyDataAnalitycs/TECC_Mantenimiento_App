@@ -2916,7 +2916,10 @@ function tCalDayLabel(ymd){const[y,mo,da]=ymd.split('-').map(Number);const dt=ne
 // franjas FIJAS de 2 horas (06–08 … 18–20). Siempre se muestran TODAS, aunque estén vacías.
 const TCAL_SLOTS=[6,8,10,12,14,16,18];
 // Festivos de Colombia (Ley Emiliani). Domingos y festivos = azul claro; sábado se trabaja hasta las 12.
-const FESTIVOS_CO=new Set(['2026-01-01','2026-01-12','2026-03-23','2026-04-02','2026-04-03','2026-05-01','2026-05-18','2026-06-08','2026-06-15','2026-06-29','2026-07-20','2026-08-07','2026-08-17','2026-10-12','2026-11-02','2026-11-16','2026-12-08','2026-12-25']);
+const FESTIVOS_CO=new Set([
+  /* 2025 */ '2025-01-01','2025-01-06','2025-03-24','2025-04-17','2025-04-18','2025-05-01','2025-06-02','2025-06-23','2025-06-30','2025-07-20','2025-08-07','2025-08-18','2025-10-13','2025-11-03','2025-11-17','2025-12-08','2025-12-25',
+  /* 2026 */ '2026-01-01','2026-01-12','2026-03-23','2026-04-02','2026-04-03','2026-05-01','2026-05-18','2026-06-08','2026-06-15','2026-06-29','2026-07-20','2026-08-07','2026-08-17','2026-10-12','2026-11-02','2026-11-16','2026-12-08','2026-12-25',
+  /* 2027 */ '2027-01-01','2027-01-11','2027-03-22','2027-03-25','2027-03-26','2027-05-01','2027-05-10','2027-05-31','2027-06-07','2027-07-05','2027-07-20','2027-08-07','2027-08-16','2027-10-18','2027-11-01','2027-11-15','2027-12-08','2027-12-25']);
 function slotOf(h){ if(h==null||h==='') return 'sh'; let s=Math.floor(h/2)*2; const lo=TCAL_SLOTS[0],hi=TCAL_SLOTS[TCAL_SLOTS.length-1]; if(s<lo)s=lo; if(s>hi)s=hi; return String(s); }
 function slotLabel(c){ if(c==='sh') return 'Sin hora'; const a=+c; return String(a).padStart(2,'0')+'–'+String(a+2).padStart(2,'0'); }
 function buildTallerCal(recs,R){
@@ -2934,9 +2937,11 @@ function buildTallerCal(recs,R){
   let dayList=null;
   if(R&&R.start&&R.end){
     const s=parseDate(R.start),e=parseDate(R.end),n=Math.round((e-s)/86400000)+1;
-    if(n>0&&n<=400){ dayList=[]; for(let i=n-1;i>=0;i--) dayList.push(ymdOf(addDays(s,i))); }
+    if(n>0&&n<=1500){ dayList=[]; for(let i=n-1;i>=0;i--) dayList.push(ymdOf(addDays(s,i))); }
   }
-  if(!dayList) dayList=[...new Set(recs.map(r=>r.fecha).filter(Boolean))].sort().reverse();
+  /* NUNCA saltar días (orden del usuario 2026-07-22): si no hay rango, se listan TODOS
+     los días entre la primera y la última fecha con registros, incluidos los vacíos. */
+  if(!dayList){ const fs=[...new Set(recs.map(r=>r.fecha).filter(Boolean))].sort(); dayList=[]; if(fs.length){ const s=parseDate(fs[0]),e=parseDate(fs[fs.length-1]); for(let d=new Date(e);d>=s;d.setDate(d.getDate()-1)) dayList.push(ymdOf(d)); } }
   if(!dayList.length) return '<div class="cal-empty">Sin intervenciones con fecha en este periodo.</div>';
   const cols=['sh',...TCAL_SLOTS.map(String)];             // columnas FIJAS: "Sin hora" + todas las franjas
   // ----- costo del día: costo fijo MENSUAL repartido entre los días-equivalentes trabajados del mes -----
@@ -3006,8 +3011,10 @@ function buildLavadorCal(recs,R,opts){
     slotCount[sk]=(slotCount[sk]||0)+1;
   });
   let dayList=null;
-  if(R&&R.start&&R.end){ const s=parseDate(R.start),e=parseDate(R.end),n=Math.round((e-s)/86400000)+1; if(n>0&&n<=400){dayList=[];for(let i=n-1;i>=0;i--)dayList.push(ymdOf(addDays(s,i)));} }
-  if(!dayList) dayList=[...new Set(recs.map(r=>r.fecha).filter(Boolean))].sort().reverse();
+  if(R&&R.start&&R.end){ const s=parseDate(R.start),e=parseDate(R.end),n=Math.round((e-s)/86400000)+1; if(n>0&&n<=1500){dayList=[];for(let i=n-1;i>=0;i--)dayList.push(ymdOf(addDays(s,i)));} }
+  /* NUNCA saltar días (orden del usuario 2026-07-22): todos los días del periodo aparecen,
+     con su día de semana, aunque no haya lavadas — dom/festivo azul claro, sábado ½ día. */
+  if(!dayList){ const fs=[...new Set(recs.map(r=>r.fecha).filter(Boolean))].sort(); dayList=[]; if(fs.length){ const s=parseDate(fs[0]),e=parseDate(fs[fs.length-1]); for(let d=new Date(e);d>=s;d.setDate(d.getDate()-1)) dayList.push(ymdOf(d)); } }
   if(!dayList.length) return '<div class="cal-empty">Sin lavadas con fecha en este periodo.</div>';
   const cols=['sh',...TCAL_SLOTS.map(String)];
   const DB=diaBase();   // costo del lavador por día trabajado (salario+aux+prestaciones)/24
