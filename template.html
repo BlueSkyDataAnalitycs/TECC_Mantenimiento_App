@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#00A14B">
-<title>Mantenimiento TECC</title>
+<title>Gerencia TECC</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
@@ -228,6 +228,14 @@ input[type=date].ios{min-width:128px;color-scheme:light;flex:1;}
 .lavloc.lav-cond{color:#B36B00;} .lavloc.lav-prov{color:#8E44AD;}
 .lugarsum{display:flex;gap:8px;flex-wrap:wrap;margin:0 4px 9px;font-size:12.5px;font-weight:700;}
 .lugarsum span{padding:4px 11px;border-radius:999px;background:var(--ios-bg2);box-shadow:0 1px 2px rgba(0,0,0,.05);}
+/* ===== Gerencial ===== */
+.gtabwrap{overflow:auto;max-height:460px;-webkit-overflow-scrolling:touch;border-radius:12px;}
+.gtab{width:100%;border-collapse:collapse;font-size:13px;min-width:640px;}
+.gtab th{position:sticky;top:0;background:var(--ios-bg2);z-index:2;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:var(--ios-label3);padding:8px 10px;border-bottom:1px solid var(--ios-sep);}
+.gtab th:first-child,.gtab td:first-child{text-align:left;}
+.gtab td{padding:7px 10px;border-bottom:1px solid var(--ios-sep);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.gtab tfoot td{font-weight:700;background:var(--ios-bg2);position:sticky;bottom:0;}
+.gtab .ok{color:var(--green);} .gtab .bad{color:var(--red);}
 /* domingos / festivos (azul claro) y sábado tarde (no laborable) */
 .tcal-cell.nw{background:#DCEBFF;}
 .tcal-cell.nw.on{background:#C2DBFF;}
@@ -604,7 +612,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,.f
 .section-hero{font-size:22px;} .seg{padding:3px;gap:3px;} .seg button{padding:10px 6px;}
 /* animación de entrada al mostrar pestaña/submódulo (no re-dispara en re-render interno) */
 @media (prefers-reduced-motion:no-preference){
-  #tab-aseos,#tab-taller,#tab-llantas,#tab-peajes,#tab-ajustes,
+  #tab-gerencial,#tab-aseos,#tab-taller,#tab-llantas,#tab-peajes,#tab-ajustes,
   #sub-lavador,#sub-conductores,#sub-proveedores,#sub-facturas,#sub-general{animation:viewIn .44s cubic-bezier(.2,.7,.3,1) both;}
 }
 @keyframes viewIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
@@ -800,13 +808,14 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
     <button class="refresh-btn" id="topRefresh" title="Recargar (última versión publicada)" aria-label="Recargar la última versión publicada">↻</button>
     <img class="brandlogo" src="logo.png" alt="TECC" onload="this.style.display='block'">
     <div class="eyebrow">Equipo de Mantenimiento</div>
-    <h1 class="big">Mantenimiento <span class="logotype">TECC</span></h1>
-    <div class="subtitle" id="subt">Aseos de vehículos · Taller interno</div>
+    <h1 class="big">Gerencia <span class="logotype">TECC</span></h1>
+    <div class="subtitle" id="subt">Asistente gerencial · Ingresos, mantenimiento y operación</div>
     <div class="brandbar"></div>
   </div>
 
   <div class="seg">
-    <button data-tab="aseos" class="active">Aseos</button>
+    <button data-tab="gerencial" class="active">Gerencial</button>
+    <button data-tab="aseos">Aseos</button>
     <button data-tab="taller">Taller</button>
     <button data-tab="llantas">Llantas</button>
     <button data-tab="vehiculos" style="display:none">Vehículos</button>
@@ -824,7 +833,44 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
   </div>
 
   <!-- ============ ASEOS (Internos · Externos · General) ============ -->
-  <div id="tab-aseos">
+  <!-- ============ GERENCIAL (asistente gerencial TECC) ============ -->
+  <div id="tab-gerencial">
+    <!-- 5 centros de costo, ya SEPARADOS (orden del usuario 2026-07-26): -->
+    <div class="subseg" id="gGrupoSeg">
+      <button data-gg="ALL" class="active">General</button>
+      <button data-gg="TECC">TECC</button>
+      <button data-gg="NIDIA GASCA">Nidia Gasca</button>
+      <button data-gg="CARLOS GASCA">Carlos Gasca</button>
+      <button data-gg="WG">WG</button>
+    </div>
+    <div class="subseg" id="gSubSeg">
+      <button data-gs="general" class="active">General</button>
+      <button data-gs="aseostaller">Aseos y taller</button>
+      <button data-gs="acobrar" style="display:none">A cobrar</button>
+    </div>
+    <!-- Carga de datos: reporte de servicios (ingresos) + órdenes de trabajo (mantenimientos) -->
+    <div class="section">
+      <div id="gerDrop" class="lldrop">
+        <div class="ic">📈</div>
+        <h3>Arrastra aquí los Excel de la operación</h3>
+        <p>Acepta los dos formatos: <b>reporte_servicios_…xlsx</b> (ingresos: servicios con cliente, conductor, vehículo, ruta y precio) y <b>Ordenes_Trabajo_…xlsx</b> (mantenimientos con tipo, proveedor y costo). Puedes soltar varios a la vez; los periodos se acumulan sin duplicarse.</p>
+        <span class="llbtn">Elegir archivos…</span>
+        <input type="file" id="gerFile" accept=".xlsx,.xls" multiple style="display:none">
+      </div>
+      <div class="rangeinfo" id="gerDataInfo">—</div>
+    </div>
+    <div class="section" id="gPeriodWrap">
+      <div class="chips" id="gPresets"></div>
+      <div class="customrange" id="gCustomRange">
+        <label class="daterow"><span>Desde</span><input type="date" class="ios" id="cGStart" aria-label="Gerencial fecha inicio"></label>
+        <label class="daterow"><span>Hasta</span><input type="date" class="ios" id="cGEnd" aria-label="Gerencial fecha fin"></label>
+      </div>
+      <div class="rangeinfo" id="gRangeInfo">—</div>
+    </div>
+    <div id="gerBody" class="dash"></div>
+  </div>
+
+  <div id="tab-aseos" class="hidden">
     <div class="subseg">
       <button data-sub="lavador" class="active">Lavador</button>
       <button data-sub="conductores">Conductores</button>
@@ -1435,6 +1481,7 @@ function exportActive(){
     xlsxExport('TECC_Aseos_'+sub+sfx,sheets);
   }
   else if(tab==='taller'){ xlsxExport('TECC_Taller'+(tGrupo!=='ALL'?('_'+(tGrupo==='WG'?'WG':'TECC_Nidia_Carlos')):'')+(tTecSel.size?('_'+tTecSlug()):'')+sfx,tallerExportSheets()); }
+  else if(tab==='gerencial'){ xlsxExport('TECC_Gerencial'+(gGrupo!=='ALL'?('_'+gGrupo.replace(/\s+/g,'_')):'')+sfx,gerExportSheets()); }
   else if(tab==='llantas'){ xlsxExport('TECC_Llantas'+sfx,llExportSheets()); }
   else if(tab==='inspecciones'){ inspExport(); }
   else if(tab==='vehiculos'){ xlsxExport('TECC_Vehiculos'+sfx,[{name:'Parque automotor',rows:vehFiltrados().map(r=>Object.fromEntries(VCOLS.map(c=>[c.h,vget(r,c.k)])))}]); }
@@ -3670,7 +3717,8 @@ function vehExport(){
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
-  ['aseos','taller','llantas','vehiculos','inspecciones','empleados','peajes','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
+  ['gerencial','aseos','taller','llantas','vehiculos','inspecciones','empleados','peajes','ajustes'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
+  if(b.dataset.tab==='gerencial') renderGerencial();
   if(b.dataset.tab==='aseos' && curSub==='general') renderCalendar();
   if(b.dataset.tab==='taller') renderTaller();   // re-render para dimensionar los gráficos al hacerse visible
   if(b.dataset.tab==='llantas') renderLlantas();
@@ -4032,7 +4080,232 @@ function wireMagnetic(){
   window.addEventListener('mouseout', function(e){ if(!e.relatedTarget && cur){ reset(cur); cur=null; } });
 }
 /* ---------- init ---------- */
-buildPeriodUI(); wireEmp(); render(); wireTallerGrupo(); renderTaller(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireInspDrop(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
+/* ================================================================
+   GERENCIAL — asistente gerencial TECC (2026-07-26)
+   Fuentes que carga el usuario (drag & drop, persisten en localStorage):
+   · reporte_servicios_*.xlsx  → GER.srv  (INGRESOS: 1 fila = 1 servicio con
+     cliente, conductor, vehículo, ruta, precio y estado)
+   · Ordenes_Trabajo_*.xlsx    → GER.ot   (EGRESOS: mantenimientos externos
+     con tipo correctivo/preventivo, proveedor y costo)
+   REGLAS (usuario, 2026-07-26):
+   · Ingresos = servicios en estado "Completado" o "Finalizado".
+   · CC del vehículo: centro de costo modal en los aseos (vehCentroMap) y si
+     no existe, el "Responsable Vehículo" del reporte (WILLIAM→WG,
+     NIDYA→NIDIA GASCA, CARLOS→CARLOS GASCA); si nada aplica → "(sin CC)".
+   · Los 5 centros de costo van SEPARADOS: General/TECC/Nidia/Carlos/WG.
+   · Lavador: los JUEVES los pagan TECC+Nidia+Carlos (⅓ cada uno);
+     el resto de los días los paga WG. Brayan: 100% WG desde el 2-jul-2026.
+   · Taller fijo: % por conteo de vehículos de cada CC.
+================================================================ */
+const LS_GER_SRV='ger_servicios_v1', LS_GER_OT='ger_ot_v1';
+function lsJ(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
+const GER={srv:lsJ(LS_GER_SRV)||[], ot:lsJ(LS_GER_OT)||[]};
+let gGrupo='ALL', gSub='general', gPeriod='ALL', gCStart=null, gCEnd=null, gCliSel=null;
+const GER_ING_EST=new Set(['Completado','Finalizado']);
+
+function gerSave(){ try{ localStorage.setItem(LS_GER_SRV,JSON.stringify(GER.srv)); localStorage.setItem(LS_GER_OT,JSON.stringify(GER.ot)); }catch(e){ toast('⚠️ Almacenamiento del navegador lleno: no se pudo guardar todo'); } }
+
+let _gRespCache=null;
+function gRespMap(){ if(_gRespCache)return _gRespCache; const m={}; GER.srv.forEach(r=>{ if(r.num&&r.rcc&&!m[r.num]) m[r.num]=r.rcc; }); return _gRespCache=m; }
+function gCC(num){ const n=String(num||'').trim(); if(!n)return '(sin CC)'; const c=(vehCentroMap()[n]||'').toUpperCase(); if(c==='WG'||TNC_SET.has(c))return c; return gRespMap()[n]||'(sin CC)'; }
+function gMatchCC(num){ return gGrupo==='ALL' || gCC(num)===gGrupo; }
+
+/* ---- parseo de los XLSX (detección por encabezados) ---- */
+function gerIdx(head,name){ const t=s=>String(s||'').trim().toLowerCase(); return head.findIndex(h=>t(h)===t(name)); }
+function gerParseServicios(rows,head){
+  const N=['Estado','Día','Mes','Año','Hora Programada (COL)','Duración Real (min)','Conductor','Vehículo (Placa)','Número Interno','Responsable Vehículo','Pasajero / Ruta','Cliente','Precio','Tipo Servicio'];
+  const c={}; N.forEach(n=>c[n]=gerIdx(head,n));
+  const out=[];
+  rows.forEach(r=>{
+    const dd=String(r[c['Día']]||'').padStart(2,'0'), mm=String(r[c['Mes']]||'').padStart(2,'0'), yy=String(r[c['Año']]||'');
+    if(!(yy&&mm!=='00'&&dd!=='00')) return;
+    const placaRaw=String(r[c['Vehículo (Placa)']]||'');
+    let num=String(r[c['Número Interno']]||'').trim();
+    if(!num){ const m=placaRaw.match(/Int:\s*(\w+)/); if(m)num=m[1]; }
+    const resp=String(r[c['Responsable Vehículo']]||'').toUpperCase();
+    const rcc= resp.indexOf('WILLIAM')>=0?'WG' : (resp.indexOf('NIDYA')>=0||resp.indexOf('NIDIA')>=0)?'NIDIA GASCA' : resp.indexOf('CARLOS')>=0?'CARLOS GASCA' : '';
+    out.push({ f:yy+'-'+mm+'-'+dd, h:String(r[c['Hora Programada (COL)']]||''), est:String(r[c['Estado']]||''), cond:String(r[c['Conductor']]||'').trim(), placa:placaRaw.split(' - ')[0].trim(), num, ruta:String(r[c['Pasajero / Ruta']]||'').trim(), cli:String(r[c['Cliente']]||'').trim(), tsv:String(r[c['Tipo Servicio']]||''), dur:+r[c['Duración Real (min)']]||0, precio:+r[c['Precio']]||0, rcc });
+  });
+  return out;
+}
+function gerParseOT(rows,head){
+  const N=['ID OT','Placa','Número Interno','Tipo','Fecha','Estado','Descripción','Taller / Proveedor','Costo Mano de Obra','Costo Repuestos','Costo Total'];
+  const c={}; N.forEach(n=>c[n]=gerIdx(head,n));
+  const money=v=>parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,''))||0;
+  const out=[];
+  rows.forEach(r=>{
+    const id=String(r[c['ID OT']]||'').trim(); if(!id)return;
+    const fp=String(r[c['Fecha']]||'').split('/');
+    const f=fp.length===3?fp[2]+'-'+fp[1].padStart(2,'0')+'-'+fp[0].padStart(2,'0'):'';
+    out.push({ id, placa:String(r[c['Placa']]||'').trim(), num:String(r[c['Número Interno']]||'').trim(), tipo:String(r[c['Tipo']]||'').trim(), f, est:String(r[c['Estado']]||''), desc:String(r[c['Descripción']]||'').slice(0,180), prov:String(r[c['Taller / Proveedor']]||'').trim(), mo:money(r[c['Costo Mano de Obra']]), rep:money(r[c['Costo Repuestos']]), costo:money(r[c['Costo Total']]) });
+  });
+  return out;
+}
+function gerKeySrv(s){ return [s.f,s.h,s.num,s.cli.toUpperCase(),s.ruta,s.precio,s.est].join('|'); }
+function gerMergeSrv(list){
+  const map=new Map(); GER.srv.forEach(s=>map.set(s.k,s));
+  const cnt={};   // dentro de un mismo archivo, servicios idénticos llevan sufijo #n
+  list.forEach(s=>{ const base=gerKeySrv(s); cnt[base]=(cnt[base]||0)+1; s.k=base+'#'+cnt[base]; map.set(s.k,s); });
+  GER.srv=[...map.values()].sort((a,b)=>a.f<b.f?-1:1); _gRespCache=null;
+}
+function gerMergeOT(list){ const map=new Map(); GER.ot.forEach(o=>map.set(o.id,o)); list.forEach(o=>map.set(o.id,o)); GER.ot=[...map.values()].sort((a,b)=>a.f<b.f?-1:1); }
+async function gerHandleFiles(files){
+  let ns=0,no=0,err=0;
+  for(const f of files){
+    try{
+      const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+      let done=false;
+      wb.SheetNames.forEach(sn=>{
+        const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null});
+        if(!rows.length)return; const head=rows[0];
+        if(gerIdx(head,'ID OT')>=0){ const l=gerParseOT(rows.slice(1),head); gerMergeOT(l); no+=l.length; done=true; }
+        else if(gerIdx(head,'Precio')>=0&&gerIdx(head,'Cliente')>=0){ const l=gerParseServicios(rows.slice(1),head); gerMergeSrv(l); ns+=l.length; done=true; }
+      });
+      if(!done)err++;
+    }catch(e){ console.warn('gerencial import',e); err++; }
+  }
+  gerSave(); renderGerencial();
+  toast('Cargado: '+(ns?ns.toLocaleString('es-CO')+' servicios':'')+(ns&&no?' · ':'')+(no?no+' órdenes de trabajo':'')+(err?' · '+err+' archivo(s) no reconocidos':'')||'Nada para cargar');
+}
+
+/* ---- periodo ---- */
+const G_PRESETS=[['WEEK','Semana'],['FORTNIGHT','Quincena'],['MONTH','Mes'],['ALL','Todo'],['CUSTOM','Personalizado']];
+function gDates(){ return GER.srv.map(s=>s.f).concat(GER.ot.map(o=>o.f)).filter(Boolean).sort(); }
+function gAnchor(){const ds=gDates();const last=ds.length?parseDate(ds[ds.length-1]):null;const today=startOfDay(new Date());return(last&&last<=today)?last:today;}
+function gRange(){ const a=gAnchor();
+  if(gPeriod==='WEEK')return{start:ymdOf(addDays(a,-6)),end:ymdOf(a),label:'Última semana'};
+  if(gPeriod==='FORTNIGHT')return{start:ymdOf(addDays(a,-13)),end:ymdOf(a),label:'Última quincena'};
+  if(gPeriod==='MONTH'){const f=new Date(a.getFullYear(),a.getMonth(),1);return{start:ymdOf(f),end:ymdOf(a),label:'Mes actual · '+fmtMonth(ymOf(f))};}
+  if(gPeriod==='CUSTOM'){if(!gCStart||!gCEnd)return null;const x=gCStart,y=gCEnd;return{start:x<=y?x:y,end:x<=y?y:x,label:'Personalizado'};}
+  const ds=gDates(); if(!ds.length)return null; return{start:ds[0],end:ds[ds.length-1],label:'Todo el periodo'};
+}
+function gBuildPeriodUI(){
+  const pc=$('#gPresets');
+  if(pc){pc.innerHTML='';G_PRESETS.forEach(p=>{const b=document.createElement('button');b.className='chip-btn'+(p[0]===gPeriod?' active':'');b.textContent=p[1];b.onclick=()=>{gPeriod=p[0];if(p[0]==='CUSTOM'&&(!gCStart||!gCEnd)){const a=gAnchor();gCEnd=ymdOf(a);gCStart=ymdOf(addDays(a,-13));}renderGerencial();};pc.appendChild(b);});}
+  const cs=$('#cGStart'),ce=$('#cGEnd');
+  if(cs&&ce){const R=gRange();if(R){cs.value=R.start;ce.value=R.end;}cs.onchange=ce.onchange=()=>{if(!cs.value||!ce.value)return;gPeriod='CUSTOM';gCStart=cs.value;gCEnd=ce.value;renderGerencial();};}
+}
+
+/* ---- costos fijos prorrateados por CC (regla de jueves del lavador) ---- */
+function gShares(){ const cnt={'TECC':0,'NIDIA GASCA':0,'CARLOS GASCA':0,'WG':0}; Object.values(vehCentroMap()).forEach(c=>{const u=(c||'').toUpperCase(); if(cnt[u]!=null)cnt[u]++;}); const tot=Object.values(cnt).reduce((a,b)=>a+b,0)||1; return {cnt,tot}; }
+function gCostosFijos(R,cc){
+  if(!R)return {taller:0,lavador:0,brayan:0,total:0,dias:0,jueves:0};
+  const s=parseDate(R.start),e=parseDate(R.end);
+  let dias=0,jueves=0,otros=0,diasBrayan=0;
+  for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1)){ dias++; if(d.getDay()===4)jueves++; else otros++; if(ymdOf(d)>=BRAYAN_INICIO)diasBrayan++; }
+  const {cnt,tot}=gShares();
+  const fijoDia=COSTO_SEM/7, lavDia=brayanMensual()/30, brayDia=brayanMensual()/30;
+  const taller=fijoDia*dias*(cc==='ALL'?1:(cnt[cc]||0)/tot);
+  let lavador=0;
+  if(cc==='ALL') lavador=lavDia*dias;
+  else if(cc==='WG') lavador=lavDia*otros;          // todos los días MENOS los jueves
+  else lavador=lavDia*jueves/3;                      // TECC/Nidia/Carlos: ⅓ de los jueves c/u
+  const brayan=(cc==='ALL'||cc==='WG')?brayDia*diasBrayan:0;
+  return {taller,lavador,brayan,total:taller+lavador+brayan,dias,jueves};
+}
+
+/* ---- render ---- */
+function gerDataInfoTxt(){
+  const sN=GER.srv.length, oN=GER.ot.length;
+  if(!sN&&!oN) return 'Sin datos cargados todavía — arrastra los dos Excel para empezar.';
+  const sf=GER.srv.map(s=>s.f).sort(), of=GER.ot.map(o=>o.f).filter(Boolean).sort();
+  const p1=sN?('<b>'+sN.toLocaleString('es-CO')+'</b> servicios ('+sf[0]+' → '+sf[sf.length-1]+')'):'sin servicios';
+  const p2=oN?('<b>'+oN.toLocaleString('es-CO')+'</b> órdenes de trabajo ('+of[0]+' → '+of[of.length-1]+')'):'sin órdenes de trabajo';
+  return 'Datos cargados: '+p1+' · '+p2+'. Quedan guardados en este navegador.';
+}
+function gerStub(t,txt){ return '<div class="section span2"><div class="card"><div class="empty"><div class="ic">🏗️</div><h3>'+esc(t)+'</h3><div>'+esc(txt)+'</div></div></div></div>'; }
+function syncGSub(){ document.querySelectorAll('#gSubSeg button').forEach(x=>x.classList.toggle('active',x.dataset.gs===gSub)); }
+function renderGerencial(){
+  const body=$('#gerBody'); if(!body) return;
+  gBuildPeriodUI();
+  const info=$('#gerDataInfo'); if(info)info.innerHTML=gerDataInfoTxt();
+  const ac=document.querySelector('#gSubSeg [data-gs="acobrar"]'); if(ac)ac.style.display=(gGrupo==='WG')?'':'none';
+  if(gSub==='acobrar'&&gGrupo!=='WG'){gSub='general';syncGSub();}
+  const ri=$('#gRangeInfo');
+  if(!GER.srv.length&&!GER.ot.length){
+    body.innerHTML='<div class="section span2"><div class="card"><div class="empty"><div class="ic">📊</div><h3>El asistente gerencial necesita sus datos</h3><div>Arrastra arriba el <b>reporte de servicios</b> (ingresos) y las <b>órdenes de trabajo</b> (mantenimientos externos).<br>Quedan guardados en el navegador y puedes acumular periodos.</div></div></div></div>';
+    if(ri)ri.textContent='—'; return;
+  }
+  const R=gRange();
+  const inR=f=>!R||(f>=R.start&&f<=R.end);
+  const srvP=GER.srv.filter(s=>inR(s.f)&&gMatchCC(s.num));
+  const ing=srvP.filter(s=>GER_ING_EST.has(s.est));
+  const otP=GER.ot.filter(o=>o.est!=='Cancelado'&&inR(o.f)&&gMatchCC(o.num));
+  if(ri&&R) ri.innerHTML='<b>'+fmtDLong(R.start)+' – '+fmtDLong(R.end)+'</b> · '+dCount(R)+' días · '+ing.length.toLocaleString('es-CO')+' servicios facturables · '+otP.length+' OTs';
+  if(gSub==='general') body.innerHTML=gerVistaGeneral(ing,otP,R);
+  else if(gSub==='aseostaller') body.innerHTML=gerStub('Aseos y taller','La visión de rentabilidad de aseos + taller con calendarios coloreados por centro de costo es la siguiente fase — dímelo y la construyo.');
+  else body.innerHTML=gerStub('A cobrar','El módulo de cobros de WG a TECC/Nidia/Carlos por los trabajos de Brayan es la siguiente fase — dímelo y lo construyo.');
+  document.querySelectorAll('#gerBody [data-gcli]').forEach(b=>b.onclick=()=>{ gCliSel=b.dataset.gcli||null; renderGerencial(); });
+}
+function gerVistaGeneral(ing,otP,R){
+  const H=[];
+  const ingTot=ing.reduce((s,x)=>s+x.precio,0);
+  const otTot=otP.reduce((s,x)=>s+x.costo,0);
+  const fj=gCostosFijos(R,gGrupo);
+  const egreso=otTot+fj.total, res=ingTot-egreso, marg=ingTot>0?res/ingTot*100:0;
+  const corr=otP.filter(o=>/correc/i.test(o.tipo)).length, prev=otP.filter(o=>/prevent/i.test(o.tipo)).length;
+  const ccLabel=gGrupo==='ALL'?'TECC · todos los centros de costo':gGrupo;
+  H.push('<div class="section span2"><div class="hero"><div class="chip">'+(R?R.label:'—')+'</div>'+
+    '<div class="cap">Ingresos · '+esc(ccLabel)+'</div><div class="num">'+COP(ingTot)+'</div>'+
+    '<div class="sub">'+ing.length.toLocaleString('es-CO')+' servicios facturables (Completado + Finalizado) · '+new Set(ing.map(s=>s.num).filter(Boolean)).size+' vehículos · '+new Set(ing.map(s=>s.cond).filter(Boolean)).size+' conductores</div></div>'+
+  '<div class="kpis">'+
+    '<div class="kpi"><div class="k">Mantenimiento externo (OTs)</div><div class="v">'+COP(otTot)+'</div><div class="k" style="text-transform:none">'+otP.length+' OTs · '+corr+' correctivas / '+prev+' preventivas</div></div>'+
+    '<div class="kpi"><div class="k">Costos fijos del periodo</div><div class="v">'+COP(fj.total)+'</div><div class="k" style="text-transform:none">Taller '+COP(fj.taller)+' · Lavador '+COP(fj.lavador)+' · Brayan '+COP(fj.brayan)+'</div></div>'+
+    '<div class="kpi"><div class="k">Egreso operativo</div><div class="v">'+COP(egreso)+'</div><div class="k" style="text-transform:none">OTs externas + fijos prorrateados</div></div>'+
+    '<div class="kpi"><div class="k">Rentabilidad operativa</div><div class="v" style="color:'+(res>=0?'var(--green)':'var(--red)')+'">'+COP(res)+'</div><div class="k" style="text-transform:none">margen '+marg.toFixed(1)+'%</div></div>'+
+  '</div></div>');
+  /* --- desglose por cliente --- */
+  const porCli={};
+  ing.forEach(s=>{const k=(s.cli||'(SIN CLIENTE)').toUpperCase(); (porCli[k]=porCli[k]||{n:0,v:0}); porCli[k].n++; porCli[k].v+=s.precio;});
+  if(gCliSel&&!porCli[gCliSel]) gCliSel=null;
+  const clis=Object.entries(porCli).sort((a,b)=>b[1].v-a[1].v);
+  const chips=['<button class="chip-btn'+(!gCliSel?' active':'')+'" data-gcli="">🏢 Todos los clientes</button>']
+    .concat(clis.map(([k,v])=>'<button class="chip-btn'+(gCliSel===k?' active':'')+'" data-gcli="'+esc(k)+'">'+esc(capNombre(k))+' · '+COP(v.v)+'</button>')).join('');
+  H.push('<div class="section span2"><div class="section-hero">Desglose por cliente</div><div class="chips" style="flex-wrap:wrap">'+chips+'</div></div>');
+  /* --- tabla de vehículos: ingresos del cliente + mantenimiento atribuido por % --- */
+  const vehIngTot={}, vehIngCli={}, vehSrvCli={}, vehClis={};
+  ing.forEach(s=>{ const v=s.num||s.placa||'—'; vehIngTot[v]=(vehIngTot[v]||0)+s.precio; const k=(s.cli||'(SIN CLIENTE)').toUpperCase(); (vehClis[v]=vehClis[v]||new Set()).add(k); if(!gCliSel||k===gCliSel){ vehIngCli[v]=(vehIngCli[v]||0)+s.precio; vehSrvCli[v]=(vehSrvCli[v]||0)+1; } });
+  const mantVeh={};
+  otP.forEach(o=>{ const v=o.num||o.placa||'—'; mantVeh[v]=(mantVeh[v]||0)+o.costo; });
+  (DATA.taller.records||[]).forEach(r=>{ if(!r.fecha)return; if(R&&(r.fecha<R.start||r.fecha>R.end))return; const v=(r.placa||'').trim(); if(!v||!gMatchCC(v))return; mantVeh[v]=(mantVeh[v]||0)+(tCostOf(r)||0); });
+  const rows=Object.keys(vehIngCli).map(v=>{
+    const it=vehIngCli[v], tt=vehIngTot[v]||it, share=tt>0?it/tt:0, ma=(mantVeh[v]||0)*share, rs=it-ma;
+    return {v,n:vehSrvCli[v]||0,it,share,ma,rs,rent:it>0?rs/it*100:0,nc:vehClis[v]?vehClis[v].size:0};
+  }).sort((a,b)=>b.it-a.it);
+  const tt={n:0,it:0,ma:0,rs:0}; rows.forEach(r=>{tt.n+=r.n;tt.it+=r.it;tt.ma+=r.ma;tt.rs+=r.rs;});
+  const trs=rows.map(r=>'<tr><td><b>'+esc(r.v)+'</b>'+(r.nc>1?' <small>· '+r.nc+' clientes</small>':'')+'</td><td>'+r.n+'</td><td>'+COP(r.it)+'</td><td>'+(gCliSel?(r.share*100).toFixed(0)+'%':'100%')+'</td><td>'+COP(r.ma)+'</td><td class="'+(r.rs>=0?'ok':'bad')+'">'+COP(r.rs)+'</td><td class="'+(r.rs>=0?'ok':'bad')+'"><b>'+r.rent.toFixed(1)+'%</b></td></tr>').join('');
+  H.push('<div class="section span2"><div class="section-hero">Rentabilidad por vehículo'+(gCliSel?' · '+esc(capNombre(gCliSel)):'')+'</div><div class="card pad"><div class="gtabwrap"><table class="gtab">'+
+    '<thead><tr><th>Vehículo</th><th>Serv.</th><th>Ingresos'+(gCliSel?' del cliente':'')+'</th><th>% del vehículo</th><th>Mant. atribuido</th><th>Resultado</th><th>Rentab.</th></tr></thead>'+
+    '<tbody>'+trs+'</tbody>'+
+    '<tfoot><tr><td>Total</td><td>'+tt.n+'</td><td>'+COP(tt.it)+'</td><td></td><td>'+COP(tt.ma)+'</td><td class="'+(tt.rs>=0?'ok':'bad')+'">'+COP(tt.rs)+'</td><td class="'+(tt.rs>=0?'ok':'bad')+'">'+(tt.it>0?(tt.rs/tt.it*100).toFixed(1):'0.0')+'%</td></tr></tfoot>'+
+  '</table></div><div class="note" style="margin-top:9px">El <b>mantenimiento atribuido</b> del vehículo = (OTs externas + trabajo del taller propio valorado a precio de mercado) del periodo × el <b>% de los ingresos</b> del vehículo que corresponde al cliente filtrado — así un carro compartido entre 2-3 clientes reparte su mantenimiento en la misma proporción de sus ingresos.</div></div></div>');
+  return H.join('');
+}
+function gerExportSheets(){
+  const R=gRange(); const inR=f=>!R||(f>=R.start&&f<=R.end);
+  const ing=GER.srv.filter(s=>inR(s.f)&&gMatchCC(s.num)&&GER_ING_EST.has(s.est));
+  const ots=GER.ot.filter(o=>o.est!=='Cancelado'&&inR(o.f)&&gMatchCC(o.num));
+  const porCli={}; ing.forEach(s=>{const k=capNombre((s.cli||'(sin cliente)').toUpperCase()); (porCli[k]=porCli[k]||{Cliente:k,Servicios:0,Ingresos:0}); porCli[k].Servicios++; porCli[k].Ingresos+=s.precio;});
+  return [
+    {name:'Servicios (ingresos)',rows:ing.map(s=>({Fecha:s.f,Hora:s.h,Estado:s.est,Cliente:s.cli,Ruta:s.ruta,Conductor:s.cond,'N° interno':s.num,Placa:s.placa,'Centro de costo':gCC(s.num),Precio:s.precio}))},
+    {name:'Órdenes de trabajo',rows:ots.map(o=>({Fecha:o.f,'ID OT':o.id,'N° interno':o.num,Placa:o.placa,Tipo:o.tipo,Proveedor:o.prov,'Centro de costo':gCC(o.num),'Descripción':o.desc,Costo:o.costo}))},
+    {name:'Por cliente',rows:Object.values(porCli).sort((a,b)=>b.Ingresos-a.Ingresos)}
+  ];
+}
+function wireGerencial(){
+  document.querySelectorAll('#gGrupoSeg button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#gGrupoSeg button').forEach(x=>x.classList.toggle('active',x===b)); gGrupo=b.dataset.gg; renderGerencial(); });
+  document.querySelectorAll('#gSubSeg button').forEach(b=>b.onclick=()=>{ gSub=b.dataset.gs; syncGSub(); renderGerencial(); });
+  const drop=$('#gerDrop'), inp=$('#gerFile');
+  if(drop){
+    drop.addEventListener('click',()=>inp&&inp.click());
+    drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag');});
+    drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
+    drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag'); if(e.dataTransfer.files.length) gerHandleFiles([...e.dataTransfer.files]);});
+  }
+  if(inp) inp.onchange=()=>{ if(inp.files.length) gerHandleFiles([...inp.files]); inp.value=''; };
+}
+
+buildPeriodUI(); wireEmp(); render(); wireTallerGrupo(); renderTaller(); wireGerencial(); renderGerencial(); renderPrices(); wireLive(); wireLlantaDrop(); renderLlantas(); wireInspDrop(); wireIntro(); liveClocks(); cursorTrail(); wireMagnetic();
 </script>
 </body>
 </html>
