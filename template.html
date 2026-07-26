@@ -822,7 +822,9 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
   <div class="seg">
     <button data-tab="gerencial" class="active">Gerencial</button>
     <button data-tab="aseos">Aseos</button>
-    <button data-tab="taller">Taller</button>
+    <!-- Taller CERRADO (2026-07-26): su contenido vive en Gerencial → Aseos y taller.
+         El código del módulo queda intacto por si hay que reabrirlo. -->
+    <button data-tab="taller" style="display:none">Taller</button>
     <button data-tab="llantas">Llantas</button>
     <button data-tab="vehiculos" style="display:none">Vehículos</button>
     <button data-tab="inspecciones" style="display:none">Inspecciones</button>
@@ -4106,7 +4108,7 @@ function wireMagnetic(){
 const LS_GER_SRV='ger_servicios_v1', LS_GER_OT='ger_ot_v1';
 function lsJ(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
 const GER={srv:lsJ(LS_GER_SRV)||[], ot:lsJ(LS_GER_OT)||[]};
-let gGrupo='ALL', gSub='general', gPeriod='ALL', gCStart=null, gCEnd=null, gCliSel=null;
+let gGrupo='ALL', gSub='general', gPeriod='ALL', gCStart=null, gCEnd=null, gCliSel=null, gTecSel=new Set();
 const GER_ING_EST=new Set(['Completado','Finalizado']);
 
 function gerSave(){ try{ localStorage.setItem(LS_GER_SRV,JSON.stringify(GER.srv)); localStorage.setItem(LS_GER_OT,JSON.stringify(GER.ot)); }catch(e){ toast('⚠️ Almacenamiento del navegador lleno: no se pudo guardar todo'); } }
@@ -4282,6 +4284,7 @@ function renderGerencial(){
   document.querySelectorAll('#gerBody [data-gccsel]').forEach(s=>s.onchange=()=>{ setGCCVeh(s.dataset.gccsel,s.value); renderGerencial(); toast(s.value?('Vehículo '+s.dataset.gccsel+' asignado a '+capNombre(s.value)):'Asignación quitada'); });
   document.querySelectorAll('#gerBody input[data-gtk]').forEach(inp=>inp.onchange=()=>{ setTCostByKey(decodeURIComponent(inp.dataset.gtk),inp.dataset.base,inp.value); renderGerencial(); });
   document.querySelectorAll('#gerBody input[data-gscan]').forEach(inp=>inp.onchange=()=>{ setGScanVal(decodeURIComponent(inp.dataset.gscan),inp.value); renderGerencial(); });
+  document.querySelectorAll('#gerBody [data-gtec]').forEach(b=>b.onclick=()=>{ const t=b.dataset.gtec; if(!t) gTecSel.clear(); else { gTecSel.has(t)?gTecSel.delete(t):gTecSel.add(t); } renderGerencial(); });
   document.querySelectorAll('#gerBody [data-gcob]').forEach(b=>b.onclick=()=>{ setGCobro(decodeURIComponent(b.dataset.gcob), ymdOf(startOfDay(new Date()))); renderGerencial(); toast('Cobro marcado con fecha de hoy'); });
   document.querySelectorAll('#gerBody [data-gcobf]').forEach(i=>i.onchange=()=>{ if(i.value) setGCobro(decodeURIComponent(i.dataset.gcobf), i.value); renderGerencial(); });
   document.querySelectorAll('#gerBody [data-gcobx]').forEach(b=>b.onclick=()=>{ setGCobro(decodeURIComponent(b.dataset.gcobx), null); renderGerencial(); toast('Cobro quitado'); });
@@ -4400,49 +4403,73 @@ function gerVistaAseosTaller(R){
   /* sin Excel gerenciales cargados, el rango "Todo" sale de los propios aseos/taller */
   if(!R){ const ds=(DATA.aseos.records||[]).map(r=>r.fecha).concat((DATA.taller.records||[]).map(r=>r.fecha)).filter(Boolean).sort(); if(ds.length) R={start:ds[0],end:ds[ds.length-1],label:'Todo el periodo'}; }
   const inR=f=>!R||(f>=R.start&&f<=R.end);
-  /* trabajo del taller propio (Eucarin + Brayan) del CC activo, VALORADO a precio de mercado */
-  const ints=(DATA.taller.records||[]).filter(r=>r.fecha&&inR(r.fecha)&&gMatchCC(r.placa));
-  const intVal=ints.reduce((s,r)=>s+(tCostOf(r)||0),0);
+  /* trabajo del taller propio del CC activo + filtro de técnicos (heredado del viejo módulo Taller) */
+  const intsAll=(DATA.taller.records||[]).filter(r=>r.fecha&&inR(r.fecha)&&gMatchCC(r.placa));
+  const tecs=[...new Set(intsAll.map(r=>tecnicoEfectivo(r)))].sort();
+  [...gTecSel].forEach(t=>{ if(tecs.indexOf(t)<0) gTecSel.delete(t); });
+  if(gTecSel.size&&gTecSel.size===tecs.length) gTecSel.clear();
+  const ints=gTecSel.size?intsAll.filter(r=>gTecSel.has(tecnicoEfectivo(r))):intsAll;
+  /* REGLA CONTABLE (corrección del usuario 2026-07-26): en las vistas TECC/Nidia/Carlos,
+     lo que WG les cobra (trabajo de Brayan + escáner) es COSTO del CC — va al costo del
+     día y del periodo, NUNCA al total facturado ni a la productividad. Lo de Eucarin sí
+     es producción valorada del CC. */
+  const esVistaCobrada=['TECC','NIDIA GASCA','CARLOS GASCA'].indexOf(gGrupo)>=0;
+  const cobroDe=r=>esVistaCobrada?((tecnicoEfectivo(r)==='Brayan Carabalí'?(tCostOf(r)||0):0)+(r.escaner?gScanVal(tKey(r)):0)):0;
+  const genDe=r=>(esVistaCobrada&&tecnicoEfectivo(r)==='Brayan Carabalí')?0:(tCostOf(r)||0);
+  const intVal=ints.reduce((s,r)=>s+genDe(r),0);
+  const cobrosWG=ints.reduce((s,r)=>s+cobroDe(r),0);
   const valBrayan=ints.filter(r=>tecnicoEfectivo(r)==='Brayan Carabalí').reduce((s,r)=>s+(tCostOf(r)||0),0);
-  const valEucarin=intVal-valBrayan;
+  const valEucarin=ints.filter(r=>tecnicoEfectivo(r)!=='Brayan Carabalí').reduce((s,r)=>s+(tCostOf(r)||0),0);
   /* aseos del LAVADOR (Finca / Piscuiso) del CC activo, valorados por tipo */
   const aseos=(DATA.aseos.records||[]).filter(r=>r.fecha&&inR(r.fecha)&&esLavador(r)&&gMatchCentroAseo(r));
   const aseoVal=aseos.reduce((s,r)=>s+(valorAseo(r)||0),0);
   const gen=intVal+aseoVal;
   const fj=gCostosFijos(R,gGrupo);
-  const dif=gen-fj.total, pct=fj.total>0?gen/fj.total*100:0;
+  const costosTot=fj.total+cobrosWG;
+  const dif=gen-costosTot, pct=costosTot>0?gen/costosTot*100:0;
   const ccLabel=gGrupo==='ALL'?'todos los centros de costo':gGrupo;
   const H=[];
   H.push('<div class="section span2"><div class="hero"><div class="chip">'+(R?R.label:'—')+'</div>'+
     '<div class="cap">Aseos y taller propio · valor generado (tercerizado) · '+esc(ccLabel)+'</div>'+
     '<div class="num">'+COP(gen)+'</div>'+
-    '<div class="sub">'+aseos.length+' aseos '+COP(aseoVal)+' · Eucarin '+COP(valEucarin)+' · Brayan '+COP(valBrayan)+' ('+ints.length+' intervenciones)</div></div>'+
+    '<div class="sub">'+aseos.length+' aseos '+COP(aseoVal)+' · Eucarin '+COP(valEucarin)+(esVistaCobrada?' — cobros de WG '+COP(cobrosWG)+' (Brayan/escáner) van al COSTO':' · Brayan '+COP(valBrayan))+' · '+ints.length+' intervenciones</div></div>'+
   '<div class="kpis">'+
-    '<div class="kpi"><div class="k">Costos del periodo</div><div class="v">'+COP(fj.total)+'</div><div class="k" style="text-transform:none">Taller '+COP(fj.taller)+' · Lavador '+COP(fj.lavador)+' · Brayan '+COP(fj.brayan)+'</div></div>'+
+    '<div class="kpi"><div class="k">Costos del periodo</div><div class="v">'+COP(costosTot)+'</div><div class="k" style="text-transform:none">Taller '+COP(fj.taller)+' · Lavador '+COP(fj.lavador)+' · Brayan '+COP(fj.brayan)+(esVistaCobrada&&cobrosWG?' · <b style="color:#c0392b">Cobros WG '+COP(cobrosWG)+'</b>':'')+'</div></div>'+
     '<div class="kpi"><div class="k">Balance</div><div class="v" style="color:'+(dif>=0?'var(--green)':'var(--red)')+'">'+COP(dif)+'</div><div class="k" style="text-transform:none">valor generado − costos</div></div>'+
     '<div class="kpi"><div class="k">Productividad</div><div class="v" style="color:'+(pct>=100?'var(--green)':'var(--red)')+'">'+pct.toFixed(0)+'%</div><div class="k" style="text-transform:none">valor ÷ costo del periodo</div></div>'+
     '<div class="kpi"><div class="k">Regla de costos de esta vista</div><div class="v" style="font-size:15px;line-height:1.35">'+
       (gGrupo==='WG'?'Brayan completo + '+'lavador todos los días <b>menos jueves</b> + su % del taller'
       :gGrupo==='ALL'?'Taller completo + lavador completo + Brayan completo'
-      :'⅓ de los <b>jueves</b> del lavador + su % del taller · sin Brayan')+'</div></div>'+
+      :'⅓ de los <b>jueves</b> del lavador + su % del taller · sin Brayan · <b>+ lo que WG le cobra</b> (Brayan/escáner)')+'</div></div>'+
   '</div></div>');
   /* calendario de intervenciones, coloreado por CC. En las vistas TECC/Nidia/Carlos,
-     lo que WG les COBRA (trabajos de Brayan y usos del escáner) va en ROSADO y con el
-     valor del cobro real — no es tercerización, es plata que se les está cobrando. */
-  const esVistaCobrada=['TECC','NIDIA GASCA','CARLOS GASCA'].indexOf(gGrupo)>=0;
+     lo que WG les COBRA (trabajos de Brayan y usos del escáner) va en ROSADO y su valor
+     SE SUMA AL COSTO DEL DÍA (no al total facturado ni a la productividad). */
   const esCobroWG=r=>esVistaCobrada&&(tecnicoEfectivo(r)==='Brayan Carabalí'||!!r.escaner);
-  const valInt=r=>(tCostOf(r)||0)+((esVistaCobrada&&r.escaner)?gScanVal(tKey(r)):0);
+  const cobroDia={}; ints.forEach(r=>{ const c=cobroDe(r); if(c&&r.fecha) cobroDia[r.fecha]=(cobroDia[r.fecha]||0)+c; });
+  const cdFijoInt=gerCostDiaTaller(gGrupo);
   _gerCalDet.gint=list=>list.sort((a,b)=>(+a.hora||0)-(+b.hora||0)).map(r=>'<div class="cd-row int">'+
     '<div class="cd-hd"><b>'+esc(r.placa||'—')+'</b><span class="cd-time">'+esc(gCC(r.placa))+' · 👤 '+esc(tecnicoEfectivo(r))+(r.escaner?' · 🔎 escáner':'')+'</span></div>'+
     '<div class="cd-line"><span class="cd-k">Trabajo</span><span class="cd-v">'+esc((r.tipo||r.categoria||'')+((r.descripcionTrabajo||r.desc)?' · '+String(r.descripcionTrabajo||r.desc).slice(0,120):''))+'</span></div>'+
-    (esCobroWG(r)
-      ? '<div class="cd-line"><span class="cd-k">Cobro WG</span><span class="cd-v" style="color:#c0392b;font-weight:700">'+COP(valInt(r))+(r.escaner?' (incluye escáner '+COP(gScanVal(tKey(r)))+')':'')+' · cobro real, no tercerizado</span></div>'
-      : '<div class="cd-line"><span class="cd-k">Valor</span><span class="cd-v">'+COP(valInt(r))+'</span></div>')+
+    (genDe(r)>0?'<div class="cd-line"><span class="cd-k">Valor</span><span class="cd-v">'+COP(genDe(r))+'</span></div>':'')+
+    (cobroDe(r)>0?'<div class="cd-line"><span class="cd-k">Cobro WG</span><span class="cd-v" style="color:#c0392b;font-weight:700">'+COP(cobroDe(r))+(r.escaner&&gScanVal(tKey(r))?' (incluye escáner '+COP(gScanVal(tKey(r)))+')':'')+' · va al costo del día</span></div>':'')+
     '</div>').join('');
+  const tchips=['<button class="chip-btn'+(gTecSel.size===0?' active':'')+'" data-gtec="">👥 Todos los técnicos</button>']
+    .concat(tecs.map(t=>'<button class="chip-btn'+(gTecSel.has(t)?' active':'')+'" data-gtec="'+esc(t)+'">👤 '+esc(t)+'</button>')).join('');
   H.push('<div class="section span2"><div class="section-hero">Calendario de intervenciones · color = centro de costo</div>'+
-    '<div class="gleg"><span><i style="background:#9CE0B4"></i>TECC</span><span><i style="background:#FFD9A8"></i>Nidia Gasca</span><span><i style="background:#E4C6F0"></i>Carlos Gasca</span><span><i style="background:#A9C7FF"></i>WG</span><span><i style="background:var(--tecc-amarillo)"></i>Sin CC</span>'+(esVistaCobrada?'<span><i style="background:#FFB3B3"></i><b>Cobro real de WG</b> (Brayan / escáner)</span>':'')+'</div>'+
-    '<div class="card pad">'+gerCal('gint',ints,R,{hourOf:r=>(r.hora!=null&&r.hora!=='')?+r.hora:null, cls:r=>esCobroWG(r)?'gcc-cob':gccCls(r.placa), txt:r=>r.placa||'—', val:valInt, costOf:gerCostDiaTaller(gGrupo), vacio:'Sin intervenciones del taller propio en el periodo.'})+'</div>'+
+    '<div class="chips" style="margin:0 4px 8px">'+tchips+'</div>'+
+    '<div class="gleg"><span><i style="background:#9CE0B4"></i>TECC</span><span><i style="background:#FFD9A8"></i>Nidia Gasca</span><span><i style="background:#E4C6F0"></i>Carlos Gasca</span><span><i style="background:#A9C7FF"></i>WG</span><span><i style="background:var(--tecc-amarillo)"></i>Sin CC</span>'+(esVistaCobrada?'<span><i style="background:#FFB3B3"></i><b>Cobro real de WG</b> (Brayan / escáner) → suma al costo del día</span>':'')+'</div>'+
+    '<div class="card pad">'+gerCal('gint',ints,R,{hourOf:r=>(r.hora!=null&&r.hora!=='')?+r.hora:null, cls:r=>esCobroWG(r)?'gcc-cob':gccCls(r.placa), txt:r=>r.placa||'—', val:genDe, costOf:d=>cdFijoInt(d)+(cobroDia[d]||0), vacio:'Sin intervenciones del taller propio en el periodo.'})+'</div>'+
     '<div class="tcal-detail" id="gintDetail">Toca una celda para ver el detalle de las intervenciones.</div></div>');
+  /* lista de mantenimientos (heredada del viejo módulo Taller): valor editable */
+  const lista=ints.slice().sort((a,b)=>a.fecha<b.fecha?1:-1).map(r=>{const k=tKey(r),base=tBaseCost(r),v=tCostOf(r)||0;
+    return '<tr><td>'+esc(r.fecha)+'</td><td><b>'+esc(r.placa||'—')+'</b></td>'+(gGrupo==='ALL'?'<td>'+esc(capNombre(gCC(r.placa)))+'</td>':'')+
+    '<td>'+esc(tecnicoEfectivo(r))+(r.escaner?' 🔎':'')+(cobroDe(r)?' <small style="color:#c0392b">cobro WG</small>':'')+'</td>'+
+    '<td style="text-align:left;white-space:normal;max-width:320px">'+esc(String(r.descripcionTrabajo||r.especifique||r.tipo||'').slice(0,110))+'</td>'+
+    '<td><input type="number" class="tlx-cost'+(tIsEdited(r)?' edited':'')+'" data-gtk="'+encodeURIComponent(k)+'" data-base="'+base+'" value="'+v+'" min="0" step="1000"></td></tr>';}).join('');
+  H.push('<div class="section span2"><div class="section-hero">Mantenimientos del periodo · valor editable</div><div class="card pad"><div class="gtabwrap"><table class="gtab">'+
+    '<thead><tr><th>Fecha</th><th>Vehículo</th>'+(gGrupo==='ALL'?'<th>CC</th>':'')+'<th>Técnico</th><th>Trabajo</th><th>Valor</th></tr></thead><tbody>'+lista+'</tbody></table></div>'+
+    '<div class="note" style="margin-top:8px">Editar un valor aquí lo actualiza en toda la app (incluido «A cobrar»).</div></div></div>');
   /* calendario de aseos del lavador, coloreado por lugar */
   _gerCalDet.gase=list=>list.sort((a,b)=>String(a.horaIni||'').localeCompare(String(b.horaIni||''))).map(r=>{const L=lavLugarTag(r);return '<div class="cd-row int">'+
     '<div class="cd-hd"><b>'+esc(vehTitulo(r.vehiculo||r.placa||'—'))+'</b>'+(aseoHorario(r)?'<span class="cd-time">🕒 '+esc(aseoHorario(r))+'</span>':'')+'</div>'+
