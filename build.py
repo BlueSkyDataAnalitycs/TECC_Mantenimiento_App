@@ -453,6 +453,13 @@ def process_taller(rows):
                 if base + 3 < n_cols:
                     bloques.append((base, base + 1, base + 2, base + 3))
         iVideoPrevia, iVideoDespues, iNoved = _detectar_video_novedades(h, rows)
+        # preguntas AGREGADAS al Form después (Google las anexa al final de la hoja):
+        # escáner previo a la intervención (el escáner es de WG → se cobra en "A cobrar")
+        # y kilometraje al ingreso
+        iScan = _col(h, "scanner")
+        if iScan < 0:
+            iScan = _col(h, "escaner")
+        iKm = _col(h, "kilometraje")
 
         recs = []
         for row in rows[1:]:
@@ -504,6 +511,12 @@ def process_taller(rows):
             nov = (row[iNoved].strip() if 0 <= iNoved < len(row) else "")
             if nov:
                 rec["novedades"] = nov
+            scan = (row[iScan].strip() if 0 <= iScan < len(row) else "")
+            if scan and scan.lower().startswith("s"):   # "Sí"/"Si" (No → n)
+                rec["escaner"] = True
+            km = (row[iKm].strip() if 0 <= iKm < len(row) else "")
+            if km:
+                rec["km"] = km
             vp = (row[iVideoPrevia].strip() if 0 <= iVideoPrevia < len(row) else "")
             vd = (row[iVideoDespues].strip() if 0 <= iVideoDespues < len(row) else "")
             if vp:

@@ -227,6 +227,7 @@ input[type=date].ios{min-width:128px;color-scheme:light;flex:1;}
 /* chips del gerencial: color por CENTRO DE COSTO del vehículo */
 .tcal-pl.gcc-t{background:#9CE0B4;color:#0A2342;} .tcal-pl.gcc-n{background:#FFD9A8;color:#0A2342;}
 .tcal-pl.gcc-c{background:#E4C6F0;color:#0A2342;} .tcal-pl.gcc-w{background:#A9C7FF;color:#0A2342;}
+.tcal-pl.gcc-cob{background:#FFB3B3;color:#5B1212;}   /* cobro REAL de WG al CC (trabajo de Brayan / escáner) */
 .gleg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ios-label2);margin:4px 4px 10px;}
 .gleg i{width:13px;height:13px;border-radius:4px;display:inline-block;vertical-align:-2px;margin-right:5px;}
 .lavloc.lav-finca{color:#0a8a3f;} .lavloc.lav-piscu{color:#2E6FB8;} .lavloc.lav-otro{color:#9c6100;}
@@ -4118,11 +4119,18 @@ const LS_GER_CCVEH='ger_cc_veh_v1';
 let _gCCmanCache=null;
 function gCCman(){ return _gCCmanCache||(_gCCmanCache=lsJ(LS_GER_CCVEH)||{}); }
 function setGCCVeh(num,cc){ const m=gCCman(); const n=String(num||'').trim(); if(cc)m[n]=cc; else delete m[n]; localStorage.setItem(LS_GER_CCVEH,JSON.stringify(m)); }
-/* cobros de "A cobrar": {tKey de la intervención: 'YYYY-MM-DD' fecha de cobro} */
+/* cobros de "A cobrar": {tKey de la intervención: 'YYYY-MM-DD' fecha de cobro}
+   (los cobros de ESCÁNER usan la llave 'scan|'+tKey) */
 const LS_GER_COBROS='ger_cobros_v1';
 let _gCobCache=null;
 function gCobros(){ return _gCobCache||(_gCobCache=lsJ(LS_GER_COBROS)||{}); }
 function setGCobro(k,fecha){ const m=gCobros(); if(fecha)m[k]=fecha; else delete m[k]; localStorage.setItem(LS_GER_COBROS,JSON.stringify(m)); }
+/* valor a cobrar por USO DEL ESCÁNER (el escáner es de WG): {tKey: valor} */
+const LS_GER_SCANVAL='ger_scanval_v1';
+let _gScanCache=null;
+function gScanVals(){ return _gScanCache||(_gScanCache=lsJ(LS_GER_SCANVAL)||{}); }
+function gScanVal(k){ return +(gScanVals()[k])||0; }
+function setGScanVal(k,v){ const m=gScanVals(); if(v===''||v==null||+v===0){ delete m[k]; } else { m[k]=+v||0; } localStorage.setItem(LS_GER_SCANVAL,JSON.stringify(m)); }
 function gCC(num){ const n=String(num||'').trim(); if(!n)return '(sin CC)'; const man=gCCman()[n]; if(man)return man; const c=(vehCentroMap()[n]||'').toUpperCase(); if(c==='WG'||TNC_SET.has(c))return c; return gRespMap()[n]||'(sin CC)'; }
 function gMatchCC(num){ return gGrupo==='ALL' || gCC(num)===gGrupo; }
 
@@ -4273,6 +4281,7 @@ function renderGerencial(){
   document.querySelectorAll('#gerBody [data-gcal]').forEach(c=>c.onclick=()=>gerShowCalDetail(c.dataset.gcal,c.dataset.gkey));
   document.querySelectorAll('#gerBody [data-gccsel]').forEach(s=>s.onchange=()=>{ setGCCVeh(s.dataset.gccsel,s.value); renderGerencial(); toast(s.value?('Vehículo '+s.dataset.gccsel+' asignado a '+capNombre(s.value)):'Asignación quitada'); });
   document.querySelectorAll('#gerBody input[data-gtk]').forEach(inp=>inp.onchange=()=>{ setTCostByKey(decodeURIComponent(inp.dataset.gtk),inp.dataset.base,inp.value); renderGerencial(); });
+  document.querySelectorAll('#gerBody input[data-gscan]').forEach(inp=>inp.onchange=()=>{ setGScanVal(decodeURIComponent(inp.dataset.gscan),inp.value); renderGerencial(); });
   document.querySelectorAll('#gerBody [data-gcob]').forEach(b=>b.onclick=()=>{ setGCobro(decodeURIComponent(b.dataset.gcob), ymdOf(startOfDay(new Date()))); renderGerencial(); toast('Cobro marcado con fecha de hoy'); });
   document.querySelectorAll('#gerBody [data-gcobf]').forEach(i=>i.onchange=()=>{ if(i.value) setGCobro(decodeURIComponent(i.dataset.gcobf), i.value); renderGerencial(); });
   document.querySelectorAll('#gerBody [data-gcobx]').forEach(b=>b.onclick=()=>{ setGCobro(decodeURIComponent(b.dataset.gcobx), null); renderGerencial(); toast('Cobro quitado'); });
@@ -4417,14 +4426,22 @@ function gerVistaAseosTaller(R){
       :gGrupo==='ALL'?'Taller completo + lavador completo + Brayan completo'
       :'⅓ de los <b>jueves</b> del lavador + su % del taller · sin Brayan')+'</div></div>'+
   '</div></div>');
-  /* calendario de intervenciones, coloreado por CC */
+  /* calendario de intervenciones, coloreado por CC. En las vistas TECC/Nidia/Carlos,
+     lo que WG les COBRA (trabajos de Brayan y usos del escáner) va en ROSADO y con el
+     valor del cobro real — no es tercerización, es plata que se les está cobrando. */
+  const esVistaCobrada=['TECC','NIDIA GASCA','CARLOS GASCA'].indexOf(gGrupo)>=0;
+  const esCobroWG=r=>esVistaCobrada&&(tecnicoEfectivo(r)==='Brayan Carabalí'||!!r.escaner);
+  const valInt=r=>(tCostOf(r)||0)+((esVistaCobrada&&r.escaner)?gScanVal(tKey(r)):0);
   _gerCalDet.gint=list=>list.sort((a,b)=>(+a.hora||0)-(+b.hora||0)).map(r=>'<div class="cd-row int">'+
-    '<div class="cd-hd"><b>'+esc(r.placa||'—')+'</b><span class="cd-time">'+esc(gCC(r.placa))+' · 👤 '+esc(tecnicoEfectivo(r))+'</span></div>'+
+    '<div class="cd-hd"><b>'+esc(r.placa||'—')+'</b><span class="cd-time">'+esc(gCC(r.placa))+' · 👤 '+esc(tecnicoEfectivo(r))+(r.escaner?' · 🔎 escáner':'')+'</span></div>'+
     '<div class="cd-line"><span class="cd-k">Trabajo</span><span class="cd-v">'+esc((r.tipo||r.categoria||'')+((r.descripcionTrabajo||r.desc)?' · '+String(r.descripcionTrabajo||r.desc).slice(0,120):''))+'</span></div>'+
-    '<div class="cd-line"><span class="cd-k">Valor</span><span class="cd-v">'+COP(tCostOf(r)||0)+'</span></div></div>').join('');
+    (esCobroWG(r)
+      ? '<div class="cd-line"><span class="cd-k">Cobro WG</span><span class="cd-v" style="color:#c0392b;font-weight:700">'+COP(valInt(r))+(r.escaner?' (incluye escáner '+COP(gScanVal(tKey(r)))+')':'')+' · cobro real, no tercerizado</span></div>'
+      : '<div class="cd-line"><span class="cd-k">Valor</span><span class="cd-v">'+COP(valInt(r))+'</span></div>')+
+    '</div>').join('');
   H.push('<div class="section span2"><div class="section-hero">Calendario de intervenciones · color = centro de costo</div>'+
-    '<div class="gleg"><span><i style="background:#9CE0B4"></i>TECC</span><span><i style="background:#FFD9A8"></i>Nidia Gasca</span><span><i style="background:#E4C6F0"></i>Carlos Gasca</span><span><i style="background:#A9C7FF"></i>WG</span><span><i style="background:var(--tecc-amarillo)"></i>Sin CC</span></div>'+
-    '<div class="card pad">'+gerCal('gint',ints,R,{hourOf:r=>(r.hora!=null&&r.hora!=='')?+r.hora:null, cls:r=>gccCls(r.placa), txt:r=>r.placa||'—', val:r=>tCostOf(r)||0, costOf:gerCostDiaTaller(gGrupo), vacio:'Sin intervenciones del taller propio en el periodo.'})+'</div>'+
+    '<div class="gleg"><span><i style="background:#9CE0B4"></i>TECC</span><span><i style="background:#FFD9A8"></i>Nidia Gasca</span><span><i style="background:#E4C6F0"></i>Carlos Gasca</span><span><i style="background:#A9C7FF"></i>WG</span><span><i style="background:var(--tecc-amarillo)"></i>Sin CC</span>'+(esVistaCobrada?'<span><i style="background:#FFB3B3"></i><b>Cobro real de WG</b> (Brayan / escáner)</span>':'')+'</div>'+
+    '<div class="card pad">'+gerCal('gint',ints,R,{hourOf:r=>(r.hora!=null&&r.hora!=='')?+r.hora:null, cls:r=>esCobroWG(r)?'gcc-cob':gccCls(r.placa), txt:r=>r.placa||'—', val:valInt, costOf:gerCostDiaTaller(gGrupo), vacio:'Sin intervenciones del taller propio en el periodo.'})+'</div>'+
     '<div class="tcal-detail" id="gintDetail">Toca una celda para ver el detalle de las intervenciones.</div></div>');
   /* calendario de aseos del lavador, coloreado por lugar */
   _gerCalDet.gase=list=>list.sort((a,b)=>String(a.horaIni||'').localeCompare(String(b.horaIni||''))).map(r=>{const L=lavLugarTag(r);return '<div class="cd-row int">'+
@@ -4449,13 +4466,26 @@ function gerVistaACobrar(R){
   const COBRABLES=['TECC','NIDIA GASCA','CARLOS GASCA'];
   const deWG=bry.filter(r=>gCC(r.placa)==='WG');
   const cobrar=bry.filter(r=>COBRABLES.indexOf(gCC(r.placa))>=0);
-  const sinCC=bry.filter(r=>gCC(r.placa)==='(sin CC)');
+  /* ESCÁNER (es de WG): toda intervención con escáner=Sí en vehículo ajeno a WG
+     genera un cobro aparte, sin importar el técnico */
+  const scanRecs=(DATA.taller.records||[]).filter(r=>r.fecha&&inR(r.fecha)&&r.escaner);
+  const scanCobrar=scanRecs.filter(r=>COBRABLES.indexOf(gCC(r.placa))>=0);
+  /* sin CC: trabajos de Brayan + usos de escáner, sin duplicar registros */
+  const _sinSet=new Set();
+  bry.forEach(r=>{ if(gCC(r.placa)==='(sin CC)')_sinSet.add(r); });
+  scanRecs.forEach(r=>{ if(gCC(r.placa)==='(sin CC)')_sinSet.add(r); });
+  const sinCC=[..._sinSet];
   const vWG=deWG.reduce((s,r)=>s+(tCostOf(r)||0),0);
-  const vCob=cobrar.reduce((s,r)=>s+(tCostOf(r)||0),0);
-  const porCC={}; cobrar.forEach(r=>{const c=gCC(r.placa);(porCC[c]=porCC[c]||{n:0,v:0});porCC[c].n++;porCC[c].v+=tCostOf(r)||0;});
+  const vCobTrab=cobrar.reduce((s,r)=>s+(tCostOf(r)||0),0);
+  const vCobScan=scanCobrar.reduce((s,r)=>s+gScanVal(tKey(r)),0);
+  const vCob=vCobTrab+vCobScan;
+  const porCC={};
+  cobrar.forEach(r=>{const c=gCC(r.placa);(porCC[c]=porCC[c]||{n:0,v:0});porCC[c].n++;porCC[c].v+=tCostOf(r)||0;});
+  scanCobrar.forEach(r=>{const c=gCC(r.placa);(porCC[c]=porCC[c]||{n:0,v:0});porCC[c].n++;porCC[c].v+=gScanVal(tKey(r));});
   /* cobros marcados: lo YA COBRADO se descuenta del costo de Brayan */
   const cob=gCobros();
-  const cobrado=cobrar.filter(r=>cob[tKey(r)]).reduce((s,r)=>s+(tCostOf(r)||0),0);
+  const cobrado=cobrar.filter(r=>cob[tKey(r)]).reduce((s,r)=>s+(tCostOf(r)||0),0)
+               +scanCobrar.filter(r=>cob['scan|'+tKey(r)]).reduce((s,r)=>s+gScanVal(tKey(r)),0);
   const pendiente=vCob-cobrado;
   const costoB=gCostosFijos(R,'WG').brayan;
   const costoNeto=costoB-cobrado;
@@ -4464,7 +4494,7 @@ function gerVistaACobrar(R){
   H.push('<div class="section span2"><div class="hero"><div class="chip">'+(R?R.label:'—')+'</div>'+
     '<div class="cap">A cobrar a TECC · Nidia · Carlos — trabajos de Brayan en vehículos ajenos a WG</div>'+
     '<div class="num">'+COP(vCob)+'</div>'+
-    '<div class="sub">'+cobrar.length+(cobrar.length===1?' intervención':' intervenciones')+' · '+COBRABLES.map(c=>c.split(' ')[0]+' '+COP((porCC[c]||{v:0}).v)).join(' · ')+' — ya cobrado '+COP(cobrado)+' · pendiente '+COP(pendiente)+'</div></div>'+
+    '<div class="sub">'+cobrar.length+(cobrar.length===1?' intervención':' intervenciones')+(scanCobrar.length?' + '+scanCobrar.length+' escáner ('+COP(vCobScan)+')':'')+' · '+COBRABLES.map(c=>c.split(' ')[0]+' '+COP((porCC[c]||{v:0}).v)).join(' · ')+' — ya cobrado '+COP(cobrado)+' · pendiente '+COP(pendiente)+'</div></div>'+
   '<div class="kpis">'+
     '<div class="kpi"><div class="k">1 · Tercerizado de Brayan para WG</div><div class="v">'+COP(vWG)+'</div><div class="k" style="text-transform:none">'+deWG.length+' intervenciones en vehículos WG</div></div>'+
     '<div class="kpi"><div class="k">2 · A cobrar a otros CC</div><div class="v">'+COP(pendiente)+'</div><div class="k" style="text-transform:none">pendiente de '+COP(vCob)+' facturables · ya cobrado '+COP(cobrado)+'</div></div>'+
@@ -4480,19 +4510,28 @@ function gerVistaACobrar(R){
       '<div class="note" style="margin-bottom:8px">Estos vehículos con trabajos de Brayan no tienen centro de costo conocido. Al asignarlo aquí queda guardado y manda sobre todos los módulos gerenciales.</div>'+
       '<div class="gtabwrap"><table class="gtab"><thead><tr><th>Vehículo</th><th>Interv.</th><th>Valor</th><th>Centro de costo</th></tr></thead><tbody>'+filas+'</tbody></table></div></div></div>');
   }
-  /* tabla de intervenciones a cobrar: valor EDITABLE + estado de cobro con fecha */
-  const filas=cobrar.sort((a,b)=>a.fecha<b.fecha?1:-1).map(r=>{const k=tKey(r),base=tBaseCost(r),v=tCostOf(r)||0,fc=cob[k]||'';
-    const cobCell=fc
-      ? '<span style="color:var(--green);font-weight:700">✓ Cobrado</span> <input type="date" class="ios" style="width:130px" value="'+esc(fc)+'" data-gcobf="'+encodeURIComponent(k)+'"> <button class="chip-btn" data-gcobx="'+encodeURIComponent(k)+'" title="Quitar cobro">✕</button>'
-      : '<button class="chip-btn" data-gcob="'+encodeURIComponent(k)+'">Marcar cobrado</button>';
+  /* tabla de intervenciones a cobrar: trabajos de Brayan + usos de escáner (fila aparte),
+     valor EDITABLE + estado de cobro con fecha */
+  const cobCell=(ck,fc)=>fc
+      ? '<span style="color:var(--green);font-weight:700">✓ Cobrado</span> <input type="date" class="ios" style="width:130px" value="'+esc(fc)+'" data-gcobf="'+encodeURIComponent(ck)+'"> <button class="chip-btn" data-gcobx="'+encodeURIComponent(ck)+'" title="Quitar cobro">✕</button>'
+      : '<button class="chip-btn" data-gcob="'+encodeURIComponent(ck)+'">Marcar cobrado</button>';
+  const items=cobrar.map(r=>({r,scan:false})).concat(scanCobrar.map(r=>({r,scan:true})))
+    .sort((a,b)=>a.r.fecha<b.r.fecha?1:-1);
+  const filas=items.map(({r,scan})=>{const k=tKey(r);
+    if(scan){ const ck='scan|'+k, fc=cob[ck]||'', v=gScanVal(k);
+      return '<tr'+(fc?' style="opacity:.75"':'')+'><td>'+esc(r.fecha)+'</td><td><b>'+esc(r.placa||'—')+'</b></td><td>'+esc(capNombre(gCC(r.placa)))+'</td>'+
+      '<td style="text-align:left;white-space:normal;max-width:300px">🔎 <b>Escáner</b> previo a la intervención (equipo de WG)</td>'+
+      '<td><input type="number" class="tlx-cost'+(v?' edited':'')+'" data-gscan="'+encodeURIComponent(k)+'" value="'+v+'" min="0" step="1000" placeholder="valor"></td>'+
+      '<td style="white-space:nowrap">'+cobCell(ck,fc)+'</td></tr>'; }
+    const base=tBaseCost(r),v=tCostOf(r)||0,fc=cob[k]||'';
     return '<tr'+(fc?' style="opacity:.75"':'')+'><td>'+esc(r.fecha)+'</td><td><b>'+esc(r.placa||'—')+'</b></td><td>'+esc(capNombre(gCC(r.placa)))+'</td>'+
     '<td style="text-align:left;white-space:normal;max-width:300px">'+esc(String(r.descripcionTrabajo||r.tipo||r.categoria||'').slice(0,110))+'</td>'+
     '<td><input type="number" class="tlx-cost'+(tIsEdited(r)?' edited':'')+'" data-gtk="'+encodeURIComponent(k)+'" data-base="'+base+'" value="'+v+'" min="0" step="1000"></td>'+
-    '<td style="white-space:nowrap">'+cobCell+'</td></tr>';}).join('');
+    '<td style="white-space:nowrap">'+cobCell(k,fc)+'</td></tr>';}).join('');
   H.push('<div class="section span2"><div class="section-hero">Intervenciones a cobrar · valor editable y estado de cobro</div><div class="card pad"><div class="gtabwrap"><table class="gtab">'+
     '<thead><tr><th>Fecha</th><th>Vehículo</th><th>CC a cobrar</th><th>Trabajo</th><th>Valor a cobrar</th><th>Cobro</th></tr></thead><tbody>'+filas+'</tbody>'+
     '<tfoot><tr><td colspan="4">Total</td><td>'+COP(vCob)+'</td><td>cobrado '+COP(cobrado)+' · pendiente '+COP(pendiente)+'</td></tr></tfoot></table></div>'+
-    '<div class="note" style="margin-top:9px">El valor sale de la tercerización del taller (tabla de precios o tu ajuste manual); editarlo aquí lo actualiza en TODA la app. Al <b>marcar cobrado</b> (con su fecha), ese valor se <b>descuenta del costo de Brayan</b> del periodo: costo neto = salario − lo cobrado a TECC/Nidia/Carlos.</div></div></div>');
+    '<div class="note" style="margin-top:9px">El valor de los trabajos sale de la tercerización del taller (editarlo aquí lo actualiza en TODA la app). Las filas 🔎 <b>Escáner</b> son el uso del escáner de WG registrado en el formulario — dales su valor aquí. Al <b>marcar cobrado</b> (con su fecha), ese valor se <b>descuenta del costo de Brayan</b> del periodo: costo neto = salario − lo cobrado a TECC/Nidia/Carlos. Estos cobros aparecen en el calendario de intervenciones del CC cobrado como <b>cobro real</b> (color rosado), no como valoración.</div></div></div>');
   return H.join('');
 }
 function gerExportSheets(){
