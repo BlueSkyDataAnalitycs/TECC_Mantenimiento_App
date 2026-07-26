@@ -224,6 +224,11 @@ input[type=date].ios{min-width:128px;color-scheme:light;flex:1;}
 .tcal-pl.more{background:var(--tecc-azul);color:#fff;}
 .tcal-pl.lav-finca{background:#9CE0B4;color:#0A2342;} .tcal-pl.lav-piscu{background:#A9C7FF;color:#0A2342;} .tcal-pl.lav-otro{background:var(--tecc-amarillo);color:#0A2342;}
 .tcal-pl.lav-cond{background:#FFD9A8;color:#0A2342;} .tcal-pl.lav-prov{background:#E4C6F0;color:#0A2342;}
+/* chips del gerencial: color por CENTRO DE COSTO del vehículo */
+.tcal-pl.gcc-t{background:#9CE0B4;color:#0A2342;} .tcal-pl.gcc-n{background:#FFD9A8;color:#0A2342;}
+.tcal-pl.gcc-c{background:#E4C6F0;color:#0A2342;} .tcal-pl.gcc-w{background:#A9C7FF;color:#0A2342;}
+.gleg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ios-label2);margin:4px 4px 10px;}
+.gleg i{width:13px;height:13px;border-radius:4px;display:inline-block;vertical-align:-2px;margin-right:5px;}
 .lavloc.lav-finca{color:#0a8a3f;} .lavloc.lav-piscu{color:#2E6FB8;} .lavloc.lav-otro{color:#9c6100;}
 .lavloc.lav-cond{color:#B36B00;} .lavloc.lav-prov{color:#8E44AD;}
 .lugarsum{display:flex;gap:8px;flex-wrap:wrap;margin:0 4px 9px;font-size:12.5px;font-weight:700;}
@@ -4222,7 +4227,7 @@ function renderGerencial(){
   const ac=document.querySelector('#gSubSeg [data-gs="acobrar"]'); if(ac)ac.style.display=(gGrupo==='WG')?'':'none';
   if(gSub==='acobrar'&&gGrupo!=='WG'){gSub='general';syncGSub();}
   const ri=$('#gRangeInfo');
-  if(!GER.srv.length&&!GER.ot.length){
+  if(!GER.srv.length&&!GER.ot.length&&gSub==='general'){
     body.innerHTML='<div class="section span2"><div class="card"><div class="empty"><div class="ic">📊</div><h3>El asistente gerencial necesita sus datos</h3><div>Arrastra arriba el <b>reporte de servicios</b> (ingresos) y las <b>órdenes de trabajo</b> (mantenimientos externos).<br>Quedan guardados en el navegador y puedes acumular periodos.</div></div></div></div>';
     if(ri)ri.textContent='—'; return;
   }
@@ -4233,9 +4238,10 @@ function renderGerencial(){
   const otP=GER.ot.filter(o=>o.est!=='Cancelado'&&inR(o.f)&&gMatchCC(o.num));
   if(ri&&R) ri.innerHTML='<b>'+fmtDLong(R.start)+' – '+fmtDLong(R.end)+'</b> · '+dCount(R)+' días · '+ing.length.toLocaleString('es-CO')+' servicios facturables · '+otP.length+' OTs';
   if(gSub==='general') body.innerHTML=gerVistaGeneral(ing,otP,R);
-  else if(gSub==='aseostaller') body.innerHTML=gerStub('Aseos y taller','La visión de rentabilidad de aseos + taller con calendarios coloreados por centro de costo es la siguiente fase — dímelo y la construyo.');
+  else if(gSub==='aseostaller') body.innerHTML=gerVistaAseosTaller(R);
   else body.innerHTML=gerStub('A cobrar','El módulo de cobros de WG a TECC/Nidia/Carlos por los trabajos de Brayan es la siguiente fase — dímelo y lo construyo.');
   document.querySelectorAll('#gerBody [data-gcli]').forEach(b=>b.onclick=()=>{ gCliSel=b.dataset.gcli||null; renderGerencial(); });
+  document.querySelectorAll('#gerBody [data-gcal]').forEach(c=>c.onclick=()=>gerShowCalDetail(c.dataset.gcal,c.dataset.gkey));
 }
 function gerVistaGeneral(ing,otP,R){
   const H=[];
@@ -4279,6 +4285,96 @@ function gerVistaGeneral(ing,otP,R){
     '<tbody>'+trs+'</tbody>'+
     '<tfoot><tr><td>Total</td><td>'+tt.n+'</td><td>'+COP(tt.it)+'</td><td></td><td>'+COP(tt.ma)+'</td><td class="'+(tt.rs>=0?'ok':'bad')+'">'+COP(tt.rs)+'</td><td class="'+(tt.rs>=0?'ok':'bad')+'">'+(tt.it>0?(tt.rs/tt.it*100).toFixed(1):'0.0')+'%</td></tr></tfoot>'+
   '</table></div><div class="note" style="margin-top:9px">El <b>mantenimiento atribuido</b> del vehículo = (OTs externas + trabajo del taller propio valorado a precio de mercado) del periodo × el <b>% de los ingresos</b> del vehículo que corresponde al cliente filtrado — así un carro compartido entre 2-3 clientes reparte su mantenimiento en la misma proporción de sus ingresos.</div></div></div>');
+  return H.join('');
+}
+/* ---- submódulo "Aseos y taller" (gerencial): rentabilidad tercerizada del
+   taller propio + aseos del lavador, con calendarios coloreados. Colores:
+   intervenciones POR CENTRO DE COSTO del vehículo (TECC verde · Nidia naranja ·
+   Carlos morado · WG azul · sin CC amarillo); aseos POR LUGAR (Finca verde ·
+   Piscuiso azul). Costos del periodo = gCostosFijos (regla de jueves). ---- */
+let _gerCalIdx={}, _gerCalDet={};
+function gccCls(num){ const c=gCC(num); return c==='TECC'?'gcc-t':c==='NIDIA GASCA'?'gcc-n':c==='CARLOS GASCA'?'gcc-c':c==='WG'?'gcc-w':''; }
+function gMatchCentroAseo(r){ return gGrupo==='ALL' || ((r.centro||'').toUpperCase()===gGrupo); }
+function gerCal(id, list, R, opts){
+  const idx=_gerCalIdx[id]={};
+  const dayCount={},dayVal={},slotCount={};
+  list.forEach(r=>{ const f=r.fecha; if(!f)return; const h=opts.hourOf(r); const sk=slotOf(h==null||isNaN(h)?null:h);
+    (idx[f+'|'+sk]=idx[f+'|'+sk]||[]).push(r);
+    dayCount[f]=(dayCount[f]||0)+1; dayVal[f]=(dayVal[f]||0)+(opts.val(r)||0); slotCount[sk]=(slotCount[sk]||0)+1; });
+  let dayList=null;
+  if(R&&R.start&&R.end){const s=parseDate(R.start),e=parseDate(R.end),n=Math.round((e-s)/86400000)+1;if(n>0&&n<=1500){dayList=[];for(let i=n-1;i>=0;i--)dayList.push(ymdOf(addDays(s,i)));}}
+  if(!dayList){const fs=[...new Set(list.map(r=>r.fecha).filter(Boolean))].sort();dayList=[];if(fs.length){const s=parseDate(fs[0]),e=parseDate(fs[fs.length-1]);for(let d=new Date(e);d>=s;d.setDate(d.getDate()-1))dayList.push(ymdOf(d));}}
+  if(!dayList.length) return '<div class="cal-empty">'+esc(opts.vacio)+'</div>';
+  const cols=['sh',...TCAL_SLOTS.map(String)];
+  const head='<div class="tcal-row tcal-headrow"><div class="tcal-day">Día</div>'+cols.map(c=>'<div class="tcal-ch">'+slotLabel(c)+'</div>').join('')+'<div class="tcal-ch tcal-toth">Total día</div></div>';
+  const rows=dayList.map(d=>{
+    const dow=parseDate(d).getDay(),fest=FESTIVOS_CO.has(d),dom=dow===0,sab=dow===6;
+    const dayCls=dom?' dom':(fest?' fest':''),tag=dom?'<span class="tcal-tag">Domingo</span>':(fest?'<span class="tcal-tag">Festivo</span>':(sab?'<span class="tcal-tag">Sáb ½</span>':''));
+    const cells=cols.map(c=>{ const l=idx[d+'|'+c]||[]; const nw=c!=='sh'&&(dom||fest||(sab&&+c>=12));
+      if(!l.length)return '<div class="tcal-cell'+(nw?' nw':'')+'"></div>';
+      const shown=l.slice(0,3).map(r=>'<span class="tcal-pl '+opts.cls(r)+'">'+esc(opts.txt(r))+'</span>').join('');
+      return '<div class="tcal-cell on'+(nw?' nw':'')+'" data-gcal="'+id+'" data-gkey="'+d+'|'+c+'">'+shown+(l.length>3?'<span class="tcal-pl more">+'+(l.length-3)+'</span>':'')+'</div>'; }).join('');
+    const dc=dayCount[d]||0,dv=dayVal[d]||0;
+    return '<div class="tcal-row"><div class="tcal-day'+dayCls+'">'+tCalDayLabel(d)+tag+'</div>'+cells+'<div class="tcal-tot'+(dc?'':' empty')+'">'+(dc?'<b>'+dc+'</b><span>'+COP(dv)+'</span>':'·')+'</div></div>';
+  }).join('');
+  const gC=Object.values(dayCount).reduce((a,b)=>a+b,0), gV=Object.values(dayVal).reduce((a,b)=>a+b,0);
+  const foot='<div class="tcal-row tcal-footrow"><div class="tcal-day">Total</div>'+cols.map(c=>'<div class="tcal-fcell">'+(slotCount[c]||'')+'</div>').join('')+'<div class="tcal-tot tcal-grand"><b>'+gC+'</b><span>'+COP(gV)+'</span></div></div>';
+  return '<div class="tcal-scroll">'+head+rows+foot+'</div>';
+}
+function gerShowCalDetail(id,key){
+  const box=$('#'+id+'Detail'); if(!box)return;
+  const list=((_gerCalIdx[id]||{})[key]||[]).slice(); const [d,c]=key.split('|');
+  if(!list.length){box.textContent='Sin registros en esta franja.';return;}
+  box.innerHTML='<div class="cd-top">📅 '+fmtDLong(d)+' · '+slotLabel(c)+' — '+list.length+' registro'+(list.length!==1?'s':'')+'</div>'+(_gerCalDet[id]||(()=>''))( list );
+}
+function gerVistaAseosTaller(R){
+  /* sin Excel gerenciales cargados, el rango "Todo" sale de los propios aseos/taller */
+  if(!R){ const ds=(DATA.aseos.records||[]).map(r=>r.fecha).concat((DATA.taller.records||[]).map(r=>r.fecha)).filter(Boolean).sort(); if(ds.length) R={start:ds[0],end:ds[ds.length-1],label:'Todo el periodo'}; }
+  const inR=f=>!R||(f>=R.start&&f<=R.end);
+  /* trabajo del taller propio (Eucarin + Brayan) del CC activo, VALORADO a precio de mercado */
+  const ints=(DATA.taller.records||[]).filter(r=>r.fecha&&inR(r.fecha)&&gMatchCC(r.placa));
+  const intVal=ints.reduce((s,r)=>s+(tCostOf(r)||0),0);
+  const valBrayan=ints.filter(r=>tecnicoEfectivo(r)==='Brayan Carabalí').reduce((s,r)=>s+(tCostOf(r)||0),0);
+  const valEucarin=intVal-valBrayan;
+  /* aseos del LAVADOR (Finca / Piscuiso) del CC activo, valorados por tipo */
+  const aseos=(DATA.aseos.records||[]).filter(r=>r.fecha&&inR(r.fecha)&&esLavador(r)&&gMatchCentroAseo(r));
+  const aseoVal=aseos.reduce((s,r)=>s+(valorAseo(r)||0),0);
+  const gen=intVal+aseoVal;
+  const fj=gCostosFijos(R,gGrupo);
+  const dif=gen-fj.total, pct=fj.total>0?gen/fj.total*100:0;
+  const ccLabel=gGrupo==='ALL'?'todos los centros de costo':gGrupo;
+  const H=[];
+  H.push('<div class="section span2"><div class="hero"><div class="chip">'+(R?R.label:'—')+'</div>'+
+    '<div class="cap">Aseos y taller propio · valor generado (tercerizado) · '+esc(ccLabel)+'</div>'+
+    '<div class="num">'+COP(gen)+'</div>'+
+    '<div class="sub">'+aseos.length+' aseos '+COP(aseoVal)+' · Eucarin '+COP(valEucarin)+' · Brayan '+COP(valBrayan)+' ('+ints.length+' intervenciones)</div></div>'+
+  '<div class="kpis">'+
+    '<div class="kpi"><div class="k">Costos del periodo</div><div class="v">'+COP(fj.total)+'</div><div class="k" style="text-transform:none">Taller '+COP(fj.taller)+' · Lavador '+COP(fj.lavador)+' · Brayan '+COP(fj.brayan)+'</div></div>'+
+    '<div class="kpi"><div class="k">Balance</div><div class="v" style="color:'+(dif>=0?'var(--green)':'var(--red)')+'">'+COP(dif)+'</div><div class="k" style="text-transform:none">valor generado − costos</div></div>'+
+    '<div class="kpi"><div class="k">Productividad</div><div class="v" style="color:'+(pct>=100?'var(--green)':'var(--red)')+'">'+pct.toFixed(0)+'%</div><div class="k" style="text-transform:none">valor ÷ costo del periodo</div></div>'+
+    '<div class="kpi"><div class="k">Regla de costos de esta vista</div><div class="v" style="font-size:15px;line-height:1.35">'+
+      (gGrupo==='WG'?'Brayan completo + '+'lavador todos los días <b>menos jueves</b> + su % del taller'
+      :gGrupo==='ALL'?'Taller completo + lavador completo + Brayan completo'
+      :'⅓ de los <b>jueves</b> del lavador + su % del taller · sin Brayan')+'</div></div>'+
+  '</div></div>');
+  /* calendario de intervenciones, coloreado por CC */
+  _gerCalDet.gint=list=>list.sort((a,b)=>(+a.hora||0)-(+b.hora||0)).map(r=>'<div class="cd-row int">'+
+    '<div class="cd-hd"><b>'+esc(r.placa||'—')+'</b><span class="cd-time">'+esc(gCC(r.placa))+' · 👤 '+esc(tecnicoEfectivo(r))+'</span></div>'+
+    '<div class="cd-line"><span class="cd-k">Trabajo</span><span class="cd-v">'+esc((r.tipo||r.categoria||'')+((r.descripcionTrabajo||r.desc)?' · '+String(r.descripcionTrabajo||r.desc).slice(0,120):''))+'</span></div>'+
+    '<div class="cd-line"><span class="cd-k">Valor</span><span class="cd-v">'+COP(tCostOf(r)||0)+'</span></div></div>').join('');
+  H.push('<div class="section span2"><div class="section-hero">Calendario de intervenciones · color = centro de costo</div>'+
+    '<div class="gleg"><span><i style="background:#9CE0B4"></i>TECC</span><span><i style="background:#FFD9A8"></i>Nidia Gasca</span><span><i style="background:#E4C6F0"></i>Carlos Gasca</span><span><i style="background:#A9C7FF"></i>WG</span><span><i style="background:var(--tecc-amarillo)"></i>Sin CC</span></div>'+
+    '<div class="card pad">'+gerCal('gint',ints,R,{hourOf:r=>(r.hora!=null&&r.hora!=='')?+r.hora:null, cls:r=>gccCls(r.placa), txt:r=>r.placa||'—', val:r=>tCostOf(r)||0, vacio:'Sin intervenciones del taller propio en el periodo.'})+'</div>'+
+    '<div class="tcal-detail" id="gintDetail">Toca una celda para ver el detalle de las intervenciones.</div></div>');
+  /* calendario de aseos del lavador, coloreado por lugar */
+  _gerCalDet.gase=list=>list.sort((a,b)=>String(a.horaIni||'').localeCompare(String(b.horaIni||''))).map(r=>{const L=lavLugarTag(r);return '<div class="cd-row int">'+
+    '<div class="cd-hd"><b>'+esc(vehTitulo(r.vehiculo||r.placa||'—'))+'</b>'+(aseoHorario(r)?'<span class="cd-time">🕒 '+esc(aseoHorario(r))+'</span>':'')+'</div>'+
+    '<div class="cd-line"><span class="cd-k">Lugar</span><span class="cd-v"><b class="lavloc '+L.c+'">'+esc(L.t)+'</b> · CC '+esc((r.centro||'—'))+'</span></div>'+
+    '<div class="cd-line"><span class="cd-k">Valor</span><span class="cd-v">'+COP(valorAseo(r)||0)+'</span></div></div>';}).join('');
+  H.push('<div class="section span2"><div class="section-hero">Calendario de aseos del lavador · color = lugar</div>'+
+    '<div class="gleg"><span><i style="background:#9CE0B4"></i>Finca-Zona franca</span><span><i style="background:#A9C7FF"></i>Taller Piscuiso</span><span><i style="background:var(--tecc-amarillo)"></i>Sin lugar (era vieja)</span></div>'+
+    '<div class="card pad">'+gerCal('gase',aseos,R,{hourOf:r=>{const h=(r.horaIni!=null&&r.horaIni!=='')?parseInt(String(r.horaIni).split(':')[0],10):NaN;return isNaN(h)?null:h;}, cls:r=>lavLugarTag(r).c, txt:r=>r.vehiculo||'—', val:r=>valorAseo(r)||0, vacio:'Sin aseos del lavador en el periodo.'})+'</div>'+
+    '<div class="tcal-detail" id="gaseDetail">Toca una celda para ver el detalle de los aseos.</div></div>');
   return H.join('');
 }
 function gerExportSheets(){
