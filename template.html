@@ -799,9 +799,9 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
   </div>
   <div class="ititle">
     <img class="ilogo" src="logo.png" alt="TECC" onload="this.style.display='block'">
-    <div class="ieye">Equipo de Mantenimiento</div>
-    <div class="ibig">Mantenimiento <span class="logotype">TECC</span></div>
-    <div class="isub">Mantenimiento de flota · Aseos · Taller · Llantas</div>
+    <div class="ieye">Asistente Gerencial</div>
+    <div class="ibig">Gerencia <span class="logotype">TECC</span></div>
+    <div class="isub">Ingresos · Mantenimiento · Aseos · Taller · Llantas</div>
   </div>
   <div class="ibot"><span>N 3.4516° · W 76.5320°</span><span>EST. 2026 · CALI, COLOMBIA</span></div>
   <div class="ihint">Desliza para entrar<span class="chev">⌄</span></div>
@@ -809,10 +809,10 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 
 <div class="wrap">
   <div class="top">
-    <div class="statusbar"><span class="liveclock">CALI, CO · --:--:--</span><span id="statusData">FLOTA · MANTENIMIENTO</span></div>
+    <div class="statusbar"><span class="liveclock">CALI, CO · --:--:--</span><span id="statusData">GERENCIA · FLOTA</span></div>
     <button class="refresh-btn" id="topRefresh" title="Recargar (última versión publicada)" aria-label="Recargar la última versión publicada">↻</button>
     <img class="brandlogo" src="logo.png" alt="TECC" onload="this.style.display='block'">
-    <div class="eyebrow">Equipo de Mantenimiento</div>
+    <div class="eyebrow">Grupo William Gasca</div>
     <h1 class="big">Gerencia <span class="logotype">TECC</span></h1>
     <div class="subtitle" id="subt">Asistente gerencial · Ingresos, mantenimiento y operación</div>
     <div class="brandbar"></div>
@@ -4112,7 +4112,13 @@ function gerSave(){ try{ localStorage.setItem(LS_GER_SRV,JSON.stringify(GER.srv)
 
 let _gRespCache=null;
 function gRespMap(){ if(_gRespCache)return _gRespCache; const m={}; GER.srv.forEach(r=>{ if(r.num&&r.rcc&&!m[r.num]) m[r.num]=r.rcc; }); return _gRespCache=m; }
-function gCC(num){ const n=String(num||'').trim(); if(!n)return '(sin CC)'; const c=(vehCentroMap()[n]||'').toUpperCase(); if(c==='WG'||TNC_SET.has(c))return c; return gRespMap()[n]||'(sin CC)'; }
+/* clasificación MANUAL de vehículos a un CC (hecha por el usuario en "A cobrar"):
+   manda sobre el mapa de aseos y sobre el responsable del reporte */
+const LS_GER_CCVEH='ger_cc_veh_v1';
+let _gCCmanCache=null;
+function gCCman(){ return _gCCmanCache||(_gCCmanCache=lsJ(LS_GER_CCVEH)||{}); }
+function setGCCVeh(num,cc){ const m=gCCman(); const n=String(num||'').trim(); if(cc)m[n]=cc; else delete m[n]; localStorage.setItem(LS_GER_CCVEH,JSON.stringify(m)); }
+function gCC(num){ const n=String(num||'').trim(); if(!n)return '(sin CC)'; const man=gCCman()[n]; if(man)return man; const c=(vehCentroMap()[n]||'').toUpperCase(); if(c==='WG'||TNC_SET.has(c))return c; return gRespMap()[n]||'(sin CC)'; }
 function gMatchCC(num){ return gGrupo==='ALL' || gCC(num)===gGrupo; }
 
 /* ---- parseo de los XLSX (detección por encabezados) ---- */
@@ -4239,9 +4245,11 @@ function renderGerencial(){
   if(ri&&R) ri.innerHTML='<b>'+fmtDLong(R.start)+' – '+fmtDLong(R.end)+'</b> · '+dCount(R)+' días · '+ing.length.toLocaleString('es-CO')+' servicios facturables · '+otP.length+' OTs';
   if(gSub==='general') body.innerHTML=gerVistaGeneral(ing,otP,R);
   else if(gSub==='aseostaller') body.innerHTML=gerVistaAseosTaller(R);
-  else body.innerHTML=gerStub('A cobrar','El módulo de cobros de WG a TECC/Nidia/Carlos por los trabajos de Brayan es la siguiente fase — dímelo y lo construyo.');
+  else body.innerHTML=gerVistaACobrar(R);
   document.querySelectorAll('#gerBody [data-gcli]').forEach(b=>b.onclick=()=>{ gCliSel=b.dataset.gcli||null; renderGerencial(); });
   document.querySelectorAll('#gerBody [data-gcal]').forEach(c=>c.onclick=()=>gerShowCalDetail(c.dataset.gcal,c.dataset.gkey));
+  document.querySelectorAll('#gerBody [data-gccsel]').forEach(s=>s.onchange=()=>{ setGCCVeh(s.dataset.gccsel,s.value); renderGerencial(); toast(s.value?('Vehículo '+s.dataset.gccsel+' asignado a '+capNombre(s.value)):'Asignación quitada'); });
+  document.querySelectorAll('#gerBody input[data-gtk]').forEach(inp=>inp.onchange=()=>{ setTCostByKey(decodeURIComponent(inp.dataset.gtk),inp.dataset.base,inp.value); renderGerencial(); });
 }
 function gerVistaGeneral(ing,otP,R){
   const H=[];
@@ -4375,6 +4383,55 @@ function gerVistaAseosTaller(R){
     '<div class="gleg"><span><i style="background:#9CE0B4"></i>Finca-Zona franca</span><span><i style="background:#A9C7FF"></i>Taller Piscuiso</span><span><i style="background:var(--tecc-amarillo)"></i>Sin lugar (era vieja)</span></div>'+
     '<div class="card pad">'+gerCal('gase',aseos,R,{hourOf:r=>{const h=(r.horaIni!=null&&r.horaIni!=='')?parseInt(String(r.horaIni).split(':')[0],10):NaN;return isNaN(h)?null:h;}, cls:r=>lavLugarTag(r).c, txt:r=>r.vehiculo||'—', val:r=>valorAseo(r)||0, vacio:'Sin aseos del lavador en el periodo.'})+'</div>'+
     '<div class="tcal-detail" id="gaseDetail">Toca una celda para ver el detalle de los aseos.</div></div>');
+  return H.join('');
+}
+/* ---- submódulo WG "A COBRAR" (2026-07-26): WG paga a Brayan, así que todo
+   trabajo suyo en vehículos que NO son de WG se le cobra al CC dueño del
+   vehículo (TECC / Nidia / Carlos). Los vehículos sin CC se clasifican aquí
+   mismo (persistente, manda sobre los demás mapeos). El valor de cada
+   intervención es el tercerizado editable del taller (tCostOf/setTCostByKey). */
+function gerVistaACobrar(R){
+  if(!R){ const ds=(DATA.taller.records||[]).map(r=>r.fecha).filter(Boolean).sort(); if(ds.length) R={start:ds[0],end:ds[ds.length-1],label:'Todo el periodo'}; }
+  const inR=f=>!R||(f>=R.start&&f<=R.end);
+  const bry=(DATA.taller.records||[]).filter(r=>r.fecha&&inR(r.fecha)&&tecnicoEfectivo(r)==='Brayan Carabalí');
+  const COBRABLES=['TECC','NIDIA GASCA','CARLOS GASCA'];
+  const deWG=bry.filter(r=>gCC(r.placa)==='WG');
+  const cobrar=bry.filter(r=>COBRABLES.indexOf(gCC(r.placa))>=0);
+  const sinCC=bry.filter(r=>gCC(r.placa)==='(sin CC)');
+  const vWG=deWG.reduce((s,r)=>s+(tCostOf(r)||0),0);
+  const vCob=cobrar.reduce((s,r)=>s+(tCostOf(r)||0),0);
+  const porCC={}; cobrar.forEach(r=>{const c=gCC(r.placa);(porCC[c]=porCC[c]||{n:0,v:0});porCC[c].n++;porCC[c].v+=tCostOf(r)||0;});
+  const costoB=gCostosFijos(R,'WG').brayan;
+  const gen=vWG+vCob, dif=gen-costoB, pct=costoB>0?gen/costoB*100:0;
+  const H=[];
+  H.push('<div class="section span2"><div class="hero"><div class="chip">'+(R?R.label:'—')+'</div>'+
+    '<div class="cap">A cobrar a TECC · Nidia · Carlos — trabajos de Brayan en vehículos ajenos a WG</div>'+
+    '<div class="num">'+COP(vCob)+'</div>'+
+    '<div class="sub">'+cobrar.length+(cobrar.length===1?' intervención':' intervenciones')+' · '+COBRABLES.map(c=>c.split(' ')[0]+' '+COP((porCC[c]||{v:0}).v)).join(' · ')+'</div></div>'+
+  '<div class="kpis">'+
+    '<div class="kpi"><div class="k">1 · Tercerizado de Brayan para WG</div><div class="v">'+COP(vWG)+'</div><div class="k" style="text-transform:none">'+deWG.length+' intervenciones en vehículos WG</div></div>'+
+    '<div class="kpi"><div class="k">2 · A cobrar a otros CC</div><div class="v">'+COP(vCob)+'</div><div class="k" style="text-transform:none">'+cobrar.length+' intervenciones en TECC/Nidia/Carlos</div></div>'+
+    '<div class="kpi"><div class="k">Costo de Brayan en el periodo</div><div class="v">'+COP(costoB)+'</div><div class="k" style="text-transform:none">SMLMV 2026 + aux + prestaciones, desde el 2-jul</div></div>'+
+    '<div class="kpi"><div class="k">Rentabilidad de Brayan</div><div class="v" style="color:'+(dif>=0?'var(--green)':'var(--red)')+'">'+COP(dif)+'</div><div class="k" style="text-transform:none">(1 + 2) − costo · '+pct.toFixed(0)+'% del salario cubierto</div></div>'+
+  '</div></div>');
+  /* clasificador de intervenciones de Brayan en vehículos SIN CC */
+  if(sinCC.length){
+    const porVeh={}; sinCC.forEach(r=>{const v=(r.placa||'—').trim();(porVeh[v]=porVeh[v]||[]).push(r);});
+    const filas=Object.entries(porVeh).map(([v,l])=>'<tr><td><b>'+esc(v)+'</b></td><td>'+l.length+'</td><td>'+COP(l.reduce((s,r)=>s+(tCostOf(r)||0),0))+'</td>'+
+      '<td><select class="ios" data-gccsel="'+esc(v)+'"><option value="">— asignar CC —</option>'+['TECC','NIDIA GASCA','CARLOS GASCA','WG'].map(c=>'<option value="'+c+'">'+capNombre(c)+'</option>').join('')+'</select></td></tr>').join('');
+    H.push('<div class="section span2"><div class="section-hero">Sin clasificar · asigna el centro de costo</div><div class="card pad">'+
+      '<div class="note" style="margin-bottom:8px">Estos vehículos con trabajos de Brayan no tienen centro de costo conocido. Al asignarlo aquí queda guardado y manda sobre todos los módulos gerenciales.</div>'+
+      '<div class="gtabwrap"><table class="gtab"><thead><tr><th>Vehículo</th><th>Interv.</th><th>Valor</th><th>Centro de costo</th></tr></thead><tbody>'+filas+'</tbody></table></div></div></div>');
+  }
+  /* tabla de intervenciones a cobrar, con valor EDITABLE */
+  const filas=cobrar.sort((a,b)=>a.fecha<b.fecha?1:-1).map(r=>{const k=tKey(r),base=tBaseCost(r),v=tCostOf(r)||0;
+    return '<tr><td>'+esc(r.fecha)+'</td><td><b>'+esc(r.placa||'—')+'</b></td><td>'+esc(capNombre(gCC(r.placa)))+'</td>'+
+    '<td style="text-align:left;white-space:normal;max-width:340px">'+esc(String(r.descripcionTrabajo||r.tipo||r.categoria||'').slice(0,110))+'</td>'+
+    '<td><input type="number" class="tlx-cost'+(tIsEdited(r)?' edited':'')+'" data-gtk="'+encodeURIComponent(k)+'" data-base="'+base+'" value="'+v+'" min="0" step="1000"></td></tr>';}).join('');
+  H.push('<div class="section span2"><div class="section-hero">Intervenciones a cobrar · valor editable</div><div class="card pad"><div class="gtabwrap"><table class="gtab">'+
+    '<thead><tr><th>Fecha</th><th>Vehículo</th><th>CC a cobrar</th><th>Trabajo</th><th>Valor a cobrar</th></tr></thead><tbody>'+filas+'</tbody>'+
+    '<tfoot><tr><td colspan="4">Total a cobrar</td><td>'+COP(vCob)+'</td></tr></tfoot></table></div>'+
+    '<div class="note" style="margin-top:9px">El valor sale de la tercerización del taller (tabla de precios o tu ajuste manual); editarlo aquí lo actualiza en TODA la app. Los cobros se suman a la rentabilidad de Brayan junto con su trabajo para WG.</div></div></div>');
   return H.join('');
 }
 function gerExportSheets(){
