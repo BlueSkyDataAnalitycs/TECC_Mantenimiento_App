@@ -4340,21 +4340,22 @@ function gerVistaGeneral(ing,otP,R){
   /* --- tabla de vehículos: ingresos del cliente + mantenimiento atribuido por % --- */
   const vehIngTot={}, vehIngCli={}, vehSrvCli={}, vehClis={};
   ing.forEach(s=>{ const v=s.num||s.placa||'—'; vehIngTot[v]=(vehIngTot[v]||0)+s.precio; const k=(s.cli||'(SIN CLIENTE)').toUpperCase(); (vehClis[v]=vehClis[v]||new Set()).add(k); if(!gCliSel||k===gCliSel){ vehIngCli[v]=(vehIngCli[v]||0)+s.precio; vehSrvCli[v]=(vehSrvCli[v]||0)+1; } });
-  const mantVeh={};
-  otP.forEach(o=>{ const v=o.num||o.placa||'—'; mantVeh[v]=(mantVeh[v]||0)+o.costo; });
-  (DATA.taller.records||[]).forEach(r=>{ if(!r.fecha)return; if(R&&(r.fecha<R.start||r.fecha>R.end))return; const v=(r.placa||'').trim(); if(!v||!gMatchCC(v))return; mantVeh[v]=(mantVeh[v]||0)+(tCostOf(r)||0); });
-  /* lavadas del lavador por vehículo, valoradas a tercerización */
+  /* OTs EXTERNAS por vehículo (costo real de factura) */
+  const otVeh={};
+  otP.forEach(o=>{ const v=o.num||o.placa||'—'; otVeh[v]=(otVeh[v]||0)+o.costo; });
+  /* TALLER PROPIO por vehículo, VALORADO a tercerización — el MISMO tCostOf que
+     usan los submódulos de taller y aseos (regla del usuario 2026-07-26) */
+  const talVeh={};
+  (DATA.taller.records||[]).forEach(r=>{ if(!r.fecha)return; if(R&&(r.fecha<R.start||r.fecha>R.end))return; const v=(r.placa||'').trim(); if(!v||!gMatchCC(v))return; talVeh[v]=(talVeh[v]||0)+(tCostOf(r)||0); });
+  /* TODAS las lavadas por vehículo: lavador + conductores + proveedores, valoradas
+     (proveedor a factura real; lavador/conductor a tercerización por tipo) */
   const lavVeh={};
-  (DATA.aseos.records||[]).forEach(r=>{ if(!r.fecha)return; if(R&&(r.fecha<R.start||r.fecha>R.end))return; if(!esLavador(r))return; const v=(r.vehiculo||'').trim(); if(!v)return; lavVeh[v]=(lavVeh[v]||0)+(valorAseo(r)||0); });
-  /* taller fijo del periodo que paga cada CC ÷ n° de vehículos con ingresos de ese CC */
-  const fijoCC={}, nCC={};
-  ['TECC','NIDIA GASCA','CARLOS GASCA','WG'].forEach(c=>fijoCC[c]=gCostosFijos(R,c).taller);
-  Object.keys(vehIngTot).forEach(v=>{ const c=gCC(v); nCC[c]=(nCC[c]||0)+1; });
+  (DATA.aseos.records||[]).forEach(r=>{ if(!r.fecha)return; if(R&&(r.fecha<R.start||r.fecha>R.end))return; const v=(r.vehiculo||'').trim(); if(!v)return; lavVeh[v]=(lavVeh[v]||0)+(valorAseo(r)||0); });
   const rows=Object.keys(vehIngCli).map(v=>{
     const it=vehIngCli[v], tt=vehIngTot[v]||it, share=tt>0?it/tt:0;
     const cc=gCC(v);
-    const ma=(mantVeh[v]||0)*share;
-    const ta=((fijoCC[cc]||0)/(nCC[cc]||1))*share;
+    const ma=(otVeh[v]||0)*share;
+    const ta=(talVeh[v]||0)*share;
     const lv=(lavVeh[v]||0)*share;
     const rs=it-ma-ta-lv;
     return {v,cc,n:vehSrvCli[v]||0,it,share,ma,ta,lv,rs,rent:it>0?rs/it*100:0,nc:vehClis[v]?vehClis[v].size:0};
@@ -4362,10 +4363,10 @@ function gerVistaGeneral(ing,otP,R){
   const tt={n:0,it:0,ma:0,ta:0,lv:0,rs:0}; rows.forEach(r=>{tt.n+=r.n;tt.it+=r.it;tt.ma+=r.ma;tt.ta+=r.ta;tt.lv+=r.lv;tt.rs+=r.rs;});
   const trs=rows.map(r=>'<tr><td><b>'+esc(r.v)+'</b>'+(r.nc>1?' <small>· '+r.nc+' clientes</small>':'')+(gGrupo==='ALL'?' <small>· '+esc(capNombre(r.cc))+'</small>':'')+'</td><td>'+r.n+'</td><td>'+COP(r.it)+'</td><td>'+(gCliSel?(r.share*100).toFixed(0)+'%':'100%')+'</td><td>'+COP(r.ma)+'</td><td>'+COP(r.ta)+'</td><td>'+COP(r.lv)+'</td><td class="'+(r.rs>=0?'ok':'bad')+'">'+COP(r.rs)+'</td><td class="'+(r.rs>=0?'ok':'bad')+'"><b>'+r.rent.toFixed(1)+'%</b></td></tr>').join('');
   H.push('<div class="section span2"><div class="section-hero">Rentabilidad por vehículo'+(gCliSel?' · '+esc(capNombre(gCliSel)):'')+'</div><div class="card pad"><div class="gtabwrap"><table class="gtab">'+
-    '<thead><tr><th>Vehículo</th><th>Serv.</th><th>Ingresos'+(gCliSel?' del cliente':'')+'</th><th>% del vehículo</th><th>Mant. atribuido</th><th>Taller atribuido</th><th>Lavadas (tercerizado)</th><th>Resultado</th><th>Rentab.</th></tr></thead>'+
+    '<thead><tr><th>Vehículo</th><th>Serv.</th><th>Ingresos'+(gCliSel?' del cliente':'')+'</th><th>% del vehículo</th><th>OTs externas</th><th>Taller propio (terc.)</th><th>Lavadas (lav+cond+prov)</th><th>Resultado</th><th>Rentab.</th></tr></thead>'+
     '<tbody>'+trs+'</tbody>'+
     '<tfoot><tr><td>Total</td><td>'+tt.n+'</td><td>'+COP(tt.it)+'</td><td></td><td>'+COP(tt.ma)+'</td><td>'+COP(tt.ta)+'</td><td>'+COP(tt.lv)+'</td><td class="'+(tt.rs>=0?'ok':'bad')+'">'+COP(tt.rs)+'</td><td class="'+(tt.rs>=0?'ok':'bad')+'">'+(tt.it>0?(tt.rs/tt.it*100).toFixed(1):'0.0')+'%</td></tr></tfoot>'+
-  '</table></div><div class="note" style="margin-top:9px">Costos del vehículo: <b>Mant. atribuido</b> = OTs externas + taller propio valorado; <b>Taller atribuido</b> = lo que su centro de costo paga del taller fijo en el periodo ÷ n° de vehículos con ingresos de ese CC; <b>Lavadas</b> = sus aseos del lavador valorados a tercerización. Los tres se multiplican por el <b>% de los ingresos</b> del cliente filtrado — un carro compartido entre 2-3 clientes reparte sus costos en la misma proporción.</div></div></div>');
+  '</table></div><div class="note" style="margin-top:9px">Costos del vehículo: <b>OTs externas</b> = facturas reales de proveedores; <b>Taller propio</b> = sus intervenciones internas valoradas a tercerización (el MISMO costo tercerizado de los submódulos de taller y aseos); <b>Lavadas</b> = TODAS sus lavadas valoradas — lavador + conductores + proveedores (proveedor a factura real). Los tres se multiplican por el <b>% de los ingresos</b> del cliente filtrado — un carro compartido entre 2-3 clientes reparte sus costos en la misma proporción.</div></div></div>');
   return H.join('');
 }
 /* ---- submódulo "Aseos y taller" (gerencial): rentabilidad tercerizada del
