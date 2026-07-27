@@ -821,7 +821,9 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
 
   <div class="seg">
     <button data-tab="gerencial" class="active">Gerencial</button>
-    <button data-tab="aseos">Aseos</button>
+    <!-- Aseos CERRADO (2026-07-26): sus visiones (Lavador/Conductores/Proveedores/General/
+         Consolidado) viven en Gerencial → Aseos y taller. Código intacto por si se reabre. -->
+    <button data-tab="aseos" style="display:none">Aseos</button>
     <!-- Taller CERRADO (2026-07-26): su contenido vive en Gerencial → Aseos y taller.
          El código del módulo queda intacto por si hay que reabrirlo. -->
     <button data-tab="taller" style="display:none">Taller</button>
@@ -4108,7 +4110,7 @@ function wireMagnetic(){
 const LS_GER_SRV='ger_servicios_v1', LS_GER_OT='ger_ot_v1';
 function lsJ(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
 const GER={srv:lsJ(LS_GER_SRV)||[], ot:lsJ(LS_GER_OT)||[]};
-let gGrupo='ALL', gSub='general', gPeriod='ALL', gCStart=null, gCEnd=null, gCliSel=null, gTecSel=new Set();
+let gGrupo='ALL', gSub='general', gPeriod='ALL', gCStart=null, gCEnd=null, gCliSel=null, gTecSel=new Set(), gAseoVista='lavador';
 const GER_ING_EST=new Set(['Completado','Finalizado']);
 
 function gerSave(){ try{ localStorage.setItem(LS_GER_SRV,JSON.stringify(GER.srv)); localStorage.setItem(LS_GER_OT,JSON.stringify(GER.ot)); }catch(e){ toast('⚠️ Almacenamiento del navegador lleno: no se pudo guardar todo'); } }
@@ -4301,6 +4303,7 @@ function renderGerencial(){
   document.querySelectorAll('#gerBody input[data-gtk]').forEach(inp=>inp.onchange=()=>{ setTCostByKey(decodeURIComponent(inp.dataset.gtk),inp.dataset.base,inp.value); renderGerencial(); });
   document.querySelectorAll('#gerBody input[data-gscan]').forEach(inp=>inp.onchange=()=>{ setGScanVal(decodeURIComponent(inp.dataset.gscan),inp.value); renderGerencial(); });
   document.querySelectorAll('#gerBody [data-gtec]').forEach(b=>b.onclick=()=>{ const t=b.dataset.gtec; if(!t) gTecSel.clear(); else { gTecSel.has(t)?gTecSel.delete(t):gTecSel.add(t); } renderGerencial(); });
+  document.querySelectorAll('#gerBody [data-gav]').forEach(b=>b.onclick=()=>{ gAseoVista=b.dataset.gav; renderGerencial(); });
   const ia=$('#gInvAdd'); if(ia)ia.onclick=()=>{ const n=($('#gInvNom').value||'').trim(), v=+$('#gInvVal').value, f=$('#gInvFecha').value, m=+$('#gInvMeses').value;
     if(!n||!(v>0)||!f||!(m>=1)){ toast('Completa herramienta, valor, fecha de compra y meses'); return; }
     gInvs().push({id:'inv_'+Date.now().toString(36), nombre:n, valor:v, fecha:f, meses:m}); saveGInvs(); renderGerencial(); toast('Inversión agregada: '+COP(v)+' diferidos en '+m+' meses'); };
@@ -4372,7 +4375,11 @@ function gerVistaGeneral(ing,otP,R){
    Piscuiso azul). Costos del periodo = gCostosFijos (regla de jueves). ---- */
 let _gerCalIdx={}, _gerCalDet={};
 function gccCls(num){ const c=gCC(num); return c==='TECC'?'gcc-t':c==='NIDIA GASCA'?'gcc-n':c==='CARLOS GASCA'?'gcc-c':c==='WG'?'gcc-w':''; }
-function gMatchCentroAseo(r){ return gGrupo==='ALL' || ((r.centro||'').toUpperCase()===gGrupo); }
+/* CC efectivo de un aseo: su centro registrado; si viene vacío, el CC del vehículo
+   (mapa modal + asignación manual del usuario) — así los "no encontrados" se pueden
+   clasificar una vez y aplican en toda la app */
+function centroAseoEf(r){ const c=(r.centro||'').trim().toUpperCase(); if(c==='WG'||TNC_SET.has(c))return c; return gCC((r.vehiculo||'').trim()); }
+function gMatchCentroAseo(r){ return gGrupo==='ALL' || centroAseoEf(r)===gGrupo; }
 function gerCal(id, list, R, opts){
   const idx=_gerCalIdx[id]={};
   const dayCount={},dayVal={},slotCount={};
@@ -4531,15 +4538,56 @@ function gerVistaAseosTaller(R){
   H.push('<div class="section span2"><div class="section-hero">Mantenimientos del periodo · valor editable</div><div class="card pad"><div class="gtabwrap"><table class="gtab">'+
     '<thead><tr><th>Fecha</th><th>Vehículo</th>'+(gGrupo==='ALL'?'<th>CC</th>':'')+'<th>Técnico</th><th>Trabajo</th><th>Valor</th></tr></thead><tbody>'+lista+'</tbody></table></div>'+
     '<div class="note" style="margin-top:8px">Editar un valor aquí lo actualiza en toda la app (incluido «A cobrar»).</div></div></div>');
-  /* calendario de aseos del lavador, coloreado por lugar */
+  /* ===== ASEOS por visión (el módulo Aseos vive AQUÍ ahora, 2026-07-26):
+     Lavador · Conductores · Proveedores · General · Consolidado, filtrados por el
+     CC de la vista. Versión magra por orden del usuario: calendario + rentabilidad
+     (solo lavador, regla de jueves) + cantidad por tipo + clasificador de sin CC. */
+  const aseosCC=(DATA.aseos.records||[]).filter(r=>r.fecha&&inR(r.fecha)&&gMatchCentroAseo(r));
+  const AVW={lavador:'Lavador',conductores:'Conductores',proveedores:'Proveedores',general:'General',consolidado:'Consolidado'};
+  if(!AVW[gAseoVista]) gAseoVista='lavador';
+  const avChips=Object.keys(AVW).map(k=>'<button class="chip-btn'+(gAseoVista===k?' active':'')+'" data-gav="'+k+'">'+AVW[k]+'</button>').join('');
+  const selDe=k=>k==='lavador'?aseosCC.filter(esLavador):k==='conductores'?aseosCC.filter(esConductor):k==='proveedores'?aseosCC.filter(esProveedor):aseosCC;
+  const aseosSel=selDe(gAseoVista==='consolidado'?'general':gAseoVista);
+  const aseosSelVal=aseosSel.reduce((s,r)=>s+(valorAseo(r)||0),0);
   _gerCalDet.gase=list=>list.sort((a,b)=>String(a.horaIni||'').localeCompare(String(b.horaIni||''))).map(r=>{const L=lavLugarTag(r);return '<div class="cd-row int">'+
     '<div class="cd-hd"><b>'+esc(vehTitulo(r.vehiculo||r.placa||'—'))+'</b>'+(aseoHorario(r)?'<span class="cd-time">🕒 '+esc(aseoHorario(r))+'</span>':'')+'</div>'+
-    '<div class="cd-line"><span class="cd-k">Lugar</span><span class="cd-v"><b class="lavloc '+L.c+'">'+esc(L.t)+'</b> · CC '+esc((r.centro||'—'))+'</span></div>'+
+    '<div class="cd-line"><span class="cd-k">Lugar</span><span class="cd-v"><b class="lavloc '+L.c+'">'+esc(L.t)+'</b> · CC '+esc(centroAseoEf(r))+'</span></div>'+
     '<div class="cd-line"><span class="cd-k">Valor</span><span class="cd-v">'+COP(valorAseo(r)||0)+'</span></div></div>';}).join('');
-  H.push('<div class="section span2"><div class="section-hero">Calendario de aseos del lavador · color = lugar</div>'+
-    '<div class="gleg"><span><i style="background:#9CE0B4"></i>Finca-Zona franca</span><span><i style="background:#A9C7FF"></i>Taller Piscuiso</span><span><i style="background:var(--tecc-amarillo)"></i>Sin lugar (era vieja)</span></div>'+
-    '<div class="card pad">'+gerCal('gase',aseos,R,{hourOf:r=>{const h=(r.horaIni!=null&&r.horaIni!=='')?parseInt(String(r.horaIni).split(':')[0],10):NaN;return isNaN(h)?null:h;}, cls:r=>lavLugarTag(r).c, txt:r=>r.vehiculo||'—', val:r=>valorAseo(r)||0, costOf:gerCostDiaLavador(gGrupo), vacio:'Sin aseos del lavador en el periodo.'})+'</div>'+
-    '<div class="tcal-detail" id="gaseDetail">Toca una celda para ver el detalle de los aseos.</div></div>');
+  let bloque='';
+  if(gAseoVista!=='consolidado'){
+    bloque='<div class="card pad">'+gerCal('gase',aseosSel,R,{hourOf:r=>{const h=(r.horaIni!=null&&r.horaIni!=='')?parseInt(String(r.horaIni).split(':')[0],10):NaN;return isNaN(h)?null:h;}, cls:r=>lavLugarTag(r).c, txt:r=>r.vehiculo||'—', val:r=>valorAseo(r)||0, costOf:(gAseoVista==='lavador'?gerCostDiaLavador(gGrupo):undefined), vacio:'Sin aseos en este periodo.'})+'</div>'+
+      '<div class="tcal-detail" id="gaseDetail">Toca una celda para ver el detalle de los aseos.</div>';
+  }else{
+    const cats=[['🟢 Lavador','lavador'],['🟠 Conductores','conductores'],['🟣 Proveedores','proveedores']];
+    bloque='<div class="kpis">'+cats.map(([n,k])=>{const l=selDe(k);return '<div class="kpi"><div class="k">'+n+'</div><div class="v">'+COP(l.reduce((s,r)=>s+(valorAseo(r)||0),0))+'</div><div class="k" style="text-transform:none">'+l.length+' aseos</div></div>';}).join('')+
+      '<div class="kpi"><div class="k">Total</div><div class="v">'+COP(aseosCC.reduce((s,r)=>s+(valorAseo(r)||0),0))+'</div><div class="k" style="text-transform:none">'+aseosCC.length+' aseos del CC en el periodo</div></div></div>';
+  }
+  /* rentabilidad — SOLO lavador: tercerizado vs el costo del lavador de la vista (regla de jueves) */
+  let rentab='';
+  if(gAseoVista==='lavador'){
+    const cl=fj.lavador, bal=aseosSelVal-cl, p2=cl>0?aseosSelVal/cl*100:0;
+    rentab='<div class="kpis" style="margin-top:12px">'+
+      '<div class="kpi"><div class="k">Aseos tercerizados</div><div class="v">'+COP(aseosSelVal)+'</div><div class="k" style="text-transform:none">'+aseosSel.length+' aseos del lavador</div></div>'+
+      '<div class="kpi"><div class="k">Costo del lavador · '+esc(ccLabel)+'</div><div class="v">'+COP(cl)+'</div><div class="k" style="text-transform:none">'+(gGrupo==='WG'?'su salario completo MENOS los jueves':gGrupo==='ALL'?'salario completo del periodo':'⅓ de los jueves del lavador')+'</div></div>'+
+      '<div class="kpi"><div class="k">Rentabilidad</div><div class="v" style="color:'+(bal>=0?'var(--green)':'var(--red)')+'">'+COP(bal)+'</div><div class="k" style="text-transform:none">'+(cl>0?Math.round(p2)+'% del costo cubierto':'—')+'</div></div>'+
+    '</div>';
+  }
+  /* cantidad de aseos por tipo */
+  const tiposCnt={};
+  aseosSel.forEach(r=>{ const ts=tiposDe(r); if(ts&&ts.length) ts.forEach(t=>{const k=pretty(t); tiposCnt[k]=(tiposCnt[k]||0)+1;}); else tiposCnt['(sin detalle)']=(tiposCnt['(sin detalle)']||0)+1; });
+  const tiposRows=Object.entries(tiposCnt).sort((a,b)=>b[1]-a[1]).map(([t,n])=>'<tr><td style="text-align:left">'+esc(t)+'</td><td>'+n+'</td></tr>').join('');
+  const tiposHtml=tiposRows?('<div class="card pad" style="margin-top:12px"><div class="gtabwrap" style="max-height:280px"><table class="gtab" style="min-width:320px"><thead><tr><th>Tipo de aseo</th><th>Cantidad</th></tr></thead><tbody>'+tiposRows+'</tbody></table></div></div>'):'';
+  /* clasificador: vehículos de los aseos sin centro de costo */
+  const sinCCa={};
+  (DATA.aseos.records||[]).forEach(r=>{ if(!r.fecha||!inR(r.fecha))return; const v=(r.vehiculo||'').trim(); if(!v)return; if(centroAseoEf(r)==='(sin CC)') sinCCa[v]=(sinCCa[v]||0)+1; });
+  const sinKeys=Object.keys(sinCCa).sort((a,b)=>sinCCa[b]-sinCCa[a]);
+  const clasHtml=sinKeys.length?('<div class="card pad" style="margin-top:12px"><div class="note" style="margin-bottom:8px"><b>Vehículos sin centro de costo</b> en los aseos del periodo — al asignarlos aplican en TODA la app:</div><div class="gtabwrap" style="max-height:260px"><table class="gtab" style="min-width:430px"><thead><tr><th>Vehículo</th><th>Aseos</th><th>Centro de costo</th></tr></thead><tbody>'+
+    sinKeys.map(v=>'<tr><td><b>'+esc(v)+'</b></td><td>'+sinCCa[v]+'</td><td><select class="ios" data-gccsel="'+esc(v)+'"><option value="">— asignar CC —</option>'+['TECC','NIDIA GASCA','CARLOS GASCA','WG'].map(c=>'<option value="'+c+'">'+capNombre(c)+'</option>').join('')+'</select></td></tr>').join('')+
+    '</tbody></table></div></div>'):'';
+  H.push('<div class="section span2"><div class="section-hero">Aseos · '+esc(AVW[gAseoVista])+' · '+esc(ccLabel)+'</div>'+
+    '<div class="chips" style="margin:0 4px 8px">'+avChips+'</div>'+
+    '<div class="gleg"><span><i style="background:#9CE0B4"></i>Finca-Zona franca</span><span><i style="background:#A9C7FF"></i>Taller Piscuiso</span><span><i style="background:#FFD9A8"></i>Casa Conductor</span><span><i style="background:#E4C6F0"></i>Proveedor</span><span><i style="background:var(--tecc-amarillo)"></i>Sin lugar</span></div>'+
+    bloque+rentab+tiposHtml+clasHtml+'</div>');
   return H.join('');
 }
 /* ---- submódulo WG "A COBRAR" (2026-07-26): WG paga a Brayan, así que todo
