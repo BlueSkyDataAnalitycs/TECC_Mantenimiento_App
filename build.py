@@ -217,6 +217,29 @@ def dur_min(ini, fin):
     return None
 
 
+def fix_horas_yair(row, iTec, iHIni, iHFin):
+    """Yair Puentes (mecánico WG desde nov-2026) escribía la hora en la casilla de los
+    MINUTOS: "12:08:00 a.m." = 8:00 a.m., "12:05:00 p.m." = 5:00 p.m. Solo se corrige
+    en SUS reportes y solo con hora 12 y minutos 1–12, para no tocar mediodías reales."""
+    tec = row[iTec] if 0 <= iTec < len(row) else ""
+    if "yair" not in (tec or "").lower():
+        return row
+    row = list(row)
+    for i in (iHIni, iHFin):
+        if not (0 <= i < len(row)):
+            continue
+        m = re.match(r"\s*12:(\d{2})(?::\d{2})?\s*([ap])", str(row[i] or ""), re.I)
+        if not (m and 1 <= int(m.group(1)) <= 12):
+            continue
+        h = int(m.group(1))
+        # a 24 h dentro de la jornada de taller (6 a.m.–6 p.m.): "12:05 p.m." = 17:00;
+        # "12:10 p.m." no puede ser 10 p.m. → es 10 a.m. (marcó p.m. por error).
+        h24 = h if (m.group(2).lower() == "a" or h == 12 or h >= 7) else h + 12
+        row[i] = (f"{h24}:00:00 a.m." if h24 < 12 else
+                  "12:00:00 p.m." if h24 == 12 else f"{h24 - 12}:00:00 p.m.")
+    return row
+
+
 def hhmm(x):
     """Normaliza una hora ('1:05:00 p. m.', '13:05', etc.) a 'HH:MM' 24h; '' si no se reconoce."""
     x = (x or "").strip().lower().replace("a. m.", "am").replace("p. m.", "pm")
@@ -523,6 +546,7 @@ def process_taller(rows):
                 rec["videoPrevia"] = vp
             if vd:
                 rec["videoDespues"] = vd
+            row = fix_horas_yair(row, iTec, iHIni, iHFin)
             hi = hhmm(row[iHIni] if 0 <= iHIni < len(row) else "")
             hf = hhmm(row[iHFin] if 0 <= iHFin < len(row) else "")
             if hi:
@@ -581,6 +605,7 @@ def process_taller(rows):
         tip = (row[iTipo].strip() if 0 <= iTipo < len(row) else "")
         if tip:
             rec["tipo"] = tip
+        row = fix_horas_yair(row, iTec, iHIni, iHFin)
         hi = hhmm(row[iHIni] if 0 <= iHIni < len(row) else "")
         hf = hhmm(row[iHFin] if 0 <= iHFin < len(row) else "")
         if hi:

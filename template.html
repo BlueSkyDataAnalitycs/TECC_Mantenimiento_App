@@ -227,6 +227,7 @@ input[type=date].ios{min-width:128px;color-scheme:light;flex:1;}
 /* chips del gerencial: color por CENTRO DE COSTO del vehículo */
 .tcal-pl.gcc-t{background:#9CE0B4;color:#0A2342;} .tcal-pl.gcc-n{background:#FFD9A8;color:#0A2342;}
 .tcal-pl.gcc-c{background:#E4C6F0;color:#0A2342;} .tcal-pl.gcc-w{background:#A9C7FF;color:#0A2342;}
+.tcal-pl.gcc-j{background:#FFE08A;color:#0A2342;}
 .tcal-pl.gcc-cob{background:#FFB3B3;color:#5B1212;}   /* cobro REAL de WG al CC (trabajo de Brayan / escáner) */
 .gleg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ios-label2);margin:4px 4px 10px;}
 .gleg i{width:13px;height:13px;border-radius:4px;display:inline-block;vertical-align:-2px;margin-right:5px;}
@@ -274,6 +275,9 @@ input[type=date].ios{min-width:128px;color-scheme:light;flex:1;}
 .lldrop{border:2px dashed var(--ios-sep);border-radius:18px;padding:24px 18px;text-align:center;background:var(--ios-bg2);cursor:pointer;transition:.15s;}
 .lldrop:hover,.lldrop.drag{border-color:var(--tint);background:rgba(10,35,66,.05);}
 .lldrop .ic{font-size:34px;line-height:1;}
+.gmant-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:9px;}
+.gmant-info{font-size:12.5px;color:var(--ios-gray);margin-left:auto;}
+.gmant-drop{padding:9px 12px;border-radius:12px;font-size:13px;margin-bottom:10px;}
 .lldrop h3{margin:9px 0 3px;font-size:17px;}
 .lldrop p{margin:0 auto;font-size:13px;color:var(--ios-label3);line-height:1.45;max-width:560px;}
 .lldrop .llbtn{display:inline-block;margin-top:12px;background:var(--tecc-azul);color:#fff;font-weight:700;font-size:14px;padding:9px 16px;border-radius:12px;}
@@ -854,6 +858,7 @@ h1.big{font-weight:600;letter-spacing:-1.2px;}
       <button data-gg="TECC">TECC</button>
       <button data-gg="NIDIA GASCA">Nidia Gasca</button>
       <button data-gg="CARLOS GASCA">Carlos Gasca</button>
+      <button data-gg="JULIAN GASCA">Julián Gasca</button>
       <button data-gg="WG">WG</button>
     </div>
     <div class="subseg" id="gSubSeg">
@@ -2339,7 +2344,7 @@ function renderSMMLV(total,R){
   $('#smPres').textContent=COP(presR);
 }
 
-const FIXED_CC={'NIDIA GASCA':1,'CARLOS GASCA':1,'TECC':1};
+const FIXED_CC={'NIDIA GASCA':1,'CARLOS GASCA':1,'TECC':1,'JULIAN GASCA':1};
 function renderCC(byCC,cntCC,total,R,recs){
   const f=fin(), db=diaBase(), mc=R?monthsCovered(R):0;
   // NIDIA + CARLOS + TECC comparten f.diasFijos días/mes EN CONJUNTO (los 3 juntos), repartidos por su valor de aseos.
@@ -2371,8 +2376,8 @@ function renderCC(byCC,cntCC,total,R,recs){
   renderCC404(recs);
 }
 
-const CC404_OPTS=['','WG','TECC','NIDIA GASCA','CARLOS GASCA'];
-const CC404_LABEL={'':'404','WG':'WG','TECC':'TECC','NIDIA GASCA':'NIDIA','CARLOS GASCA':'CARLOS'};
+const CC404_OPTS=['','WG','TECC','NIDIA GASCA','CARLOS GASCA','JULIAN GASCA'];
+const CC404_LABEL={'':'404','WG':'WG','TECC':'TECC','NIDIA GASCA':'NIDIA','CARLOS GASCA':'CARLOS','JULIAN GASCA':'JULIÁN'};
 function renderCC404(recs){
   const box=$('#cc404Box'); if(!box) return;
   const all=recs.filter(r=>(r.centro||'')==='404');
@@ -2508,6 +2513,74 @@ function tBaseCost(r){ const c=tallerCat(r); return c?(TALLER_TABLA[c]||0):0; } 
 function tCostOf(r){ const m=tCostMap(), k=tKey(r); return (k in m)?(+m[k]||0):tBaseCost(r); }   // ajuste manual si existe
 function tIsEdited(r){ return tKey(r) in tCostMap(); }
 function setTCostByKey(k,base,v){ const m=tCostMap(); if(v===''||v==null||(+v)===(+base)){ delete m[k]; } else { m[k]=+v||0; } localStorage.setItem(LS_TCOST,JSON.stringify(m)); invalidateTCost(); }
+/* ---- exportar / importar el listado de mantenimientos con su valor (XLSX, 2026-09-01) ----
+   El usuario exporta la tabla "Mantenimientos del periodo · valor editable", trabaja los
+   precios en Excel y vuelve a subir el archivo: solo se lee la columna "Valor" y se aplica
+   por "Clave" (tKey). Al aplicarla se invalida el caché de costos, así que el calendario de
+   intervenciones, el costo del día/periodo, la productividad y «A cobrar» se recalculan. */
+let _gMantExp=[];
+function mantXlsRow(r){ return {
+  Clave:tKey(r), Fecha:r.fecha||'', 'Vehículo':r.placa||'',
+  'Centro de costo':capNombre(gCC(r.placa)||''), 'Técnico':tecnicoEfectivo(r),
+  Trabajo:String(r.descripcionTrabajo||r.especifique||r.tipo||''),
+  'Categoría':tallerCat(r)||'(sin clasificar)',
+  'Valor sugerido':tBaseCost(r), Valor:(tCostOf(r)||0) }; }
+function mantNum(x){
+  if(typeof x==='number') return x;
+  let t=String(x==null?'':x).replace(/[^\d,.-]/g,'').trim();
+  if(!t) return NaN;
+  if(/,\d{1,2}$/.test(t)) t=t.replace(/\./g,'').replace(',','.');            /* 1.234.567,89 */
+  else if(/\.\d{1,2}$/.test(t)&&t.indexOf(',')>=0) t=t.replace(/,/g,'');     /* 1,234,567.89 */
+  else t=t.replace(/[.,]/g,'');                                             /* 120.000 · 120,000 · 120000 */
+  return parseFloat(t); }
+function mantFechaTxt(v){ if(v instanceof Date){const z=n=>String(n).padStart(2,'0');return v.getFullYear()+'-'+z(v.getMonth()+1)+'-'+z(v.getDate());} return String(v==null?'':v).slice(0,10); }
+function mantAltKey(f,pl,tr){ return String(f||'')+'|'+norm(String(pl||'')).trim()+'|'+norm(String(tr||'')).trim().slice(0,40); }
+function mantAplicarXls(rows){
+  /* se indexa TODO el taller (no solo la vista activa): así el archivo se puede subir
+     aunque el periodo, el centro de costo o el filtro de técnicos hayan cambiado */
+  const byClave={}, byAlt={}, dup={};
+  (DATA.taller.records||[]).forEach(r=>{ byClave[tKey(r)]=r;
+    const a=mantAltKey(r.fecha,r.placa,r.descripcionTrabajo||r.especifique||r.tipo);
+    if(a in byAlt) dup[a]=1; else byAlt[a]=r; });
+  const map=tCostMap(), res={ok:0,igual:0,nf:0,mal:0};
+  rows.forEach(o=>{
+    const h={}; Object.keys(o).forEach(k=>{h[norm(String(k)).trim()]=o[k];});
+    const rv=('valor' in h)?h['valor']:h['valor nuevo'];
+    if(rv==null||String(rv).trim()==='') return;
+    const v=Math.round(mantNum(rv));
+    if(!isFinite(v)||v<0){ res.mal++; return; }
+    const cl=h['clave']==null?'':String(h['clave']).trim();
+    let r=cl?(byClave[cl]||null):null;
+    if(!r){ const a=mantAltKey(mantFechaTxt(h['fecha']),h['vehiculo']||h['placa'],h['trabajo']);
+      if(byAlt[a]&&!dup[a]) r=byAlt[a]; }
+    if(!r){ res.nf++; return; }
+    if(v===(tCostOf(r)||0)){ res.igual++; return; }
+    const k=tKey(r); if(v===(tBaseCost(r)||0)) delete map[k]; else map[k]=v;
+    res.ok++; _tcostCache=map;   /* tCostOf de la siguiente fila ya ve lo aplicado */
+  });
+  try{ localStorage.setItem(LS_TCOST,JSON.stringify(map)); }catch(err){ console.error('mant save',err); toast('No se pudo guardar (almacenamiento lleno)'); }
+  invalidateTCost();
+  return res; }
+function mantExportXls(){
+  if(!_gMantExp.length){ toast('No hay mantenimientos en el periodo'); return; }
+  xlsxExport('TECC_mantenimientos_valor_'+new Date().toISOString().slice(0,10),[{name:'Mantenimientos',rows:_gMantExp}]);
+}
+async function mantImportXls(file){
+  if(!file) return;
+  if(!/\.(xlsx|xlsm|xls|csv)$/i.test(file.name)){ toast('Sube el .xlsx que exportaste (o .csv)'); return; }
+  try{
+    const wb=XLSX.read(new Uint8Array(await file.arrayBuffer()),{type:'array',cellDates:true});
+    let rows=[]; wb.SheetNames.forEach(sn=>{ rows=rows.concat(XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:null})); });
+    if(!rows.length){ toast('El archivo no tiene filas'); return; }
+    const r=mantAplicarXls(rows);
+    renderTaller(); renderGerencial();
+    const p=[]; p.push(r.ok+' valor'+(r.ok===1?'':'es')+' actualizado'+(r.ok===1?'':'s'));
+    if(r.igual) p.push(r.igual+' sin cambio');
+    if(r.nf)    p.push(r.nf+' no encontrado'+(r.nf===1?'':'s'));
+    if(r.mal)   p.push(r.mal+' inválido'+(r.mal===1?'':'s'));
+    toast(p.join(' · '));
+  }catch(e){ console.error('mantImport',e); toast('No se pudo leer el archivo'); }
+}
 function estVal(r){const m=String(r.estado||'').match(/\d+(?:[.,]\d+)?/);if(!m)return null;let v=parseFloat(m[0].replace(',','.'));if(isNaN(v))return null;if(v>10&&v<=100)v=v/10;if(v<1||v>10)return null;return v;}
 function estCls(v){return v>=7?'':(v>=5?'a':'r');}
 
@@ -2561,7 +2634,15 @@ function tBar(id,labels,data,setter,prev,opt){
    El costo fijo del taller se reparte por % de VEHÍCULOS entre los dos grupos; al grupo WG
    se le suma además el costo empleador de Brayan (mismo esquema salarial del lavador). */
 let tGrupo='ALL';
-const TNC_SET=new Set(['TECC','NIDIA GASCA','CARLOS GASCA']);
+const TNC_SET=new Set(['TECC','NIDIA GASCA','CARLOS GASCA','JULIAN GASCA']);
+/* PARQUE_CC — propietario por vehículo según "LISTADO DEL PARQUE AUTOMOTOR TECC".
+   Clave = # interno y placa (sin separadores). Criterio: PROPIETARIO REAL (el afiliador
+   legal no manda); 'ALBERTO GASCA' a secas = TECC, solo 'Carlos Alberto Gasca'
+   explícito es CARLOS GASCA; Transportes GW S.A.S. = WG; #204 = mismo carro que el #1800; los de terceros (bancos en leasing,
+   particulares ajenos) se omiten a propósito para que sigan cayendo en (sin CC). */
+const PARQUE_CC={"101":"TECC","115":"WG","1434":"WG","17":"CARLOS GASCA","1800":"WG","2":"TECC","200":"TECC","201":"WG","202":"TECC","204":"WG","207":"NIDIA GASCA","208":"TECC","211":"TECC","212":"WG","215":"TECC","216":"NIDIA GASCA","218":"TECC","219":"TECC","220":"TECC","221":"TECC","222":"WG","226":"TECC","228":"TECC","241":"TECC","243":"WG","2460":"TECC","250":"TECC","2561":"TECC","266":"TECC","275":"WG","277":"NIDIA GASCA","288":"TECC","34":"JULIAN GASCA","400":"TECC","401":"TECC","403":"TECC","404":"TECC","407":"TECC","408":"NIDIA GASCA","409":"NIDIA GASCA","413":"WG","414":"TECC","417":"TECC","418":"TECC","4197":"CARLOS GASCA","421":"TECC","425":"TECC","428":"TECC","430":"TECC","432":"TECC","433":"TECC","435":"TECC","436":"WG","443":"WG","453":"WG","460":"TECC","463":"WG","481":"WG","501":"WG","502":"TECC","504":"TECC","505":"TECC","510":"TECC","514":"WG","515":"TECC","516":"NIDIA GASCA","520":"WG","521":"WG","522":"WG","525":"WG","528":"WG","530":"WG","535":"WG","540":"WG","541":"WG","542":"WG","544":"WG","545":"TECC","548":"TECC","550":"TECC","553":"WG","555":"TECC","556":"WG","559":"WG","560":"TECC","565":"TECC","575":"WG","577":"NIDIA GASCA","590":"WG","6":"TECC","600":"TECC","7":"TECC","8":"TECC","976":"NIDIA GASCA","EQK041":"TECC","EQK671":"TECC","EQL712":"NIDIA GASCA","EQL716":"TECC","EQL717":"TECC","EQL832":"TECC","EQL833":"TECC","EQM153":"WG","EQM156":"WG","EQM818":"TECC","EQP975":"TECC","ESY678":"WG","ESY782":"WG","ESZ203":"TECC","GVT034":"JULIAN GASCA","GVT393":"TECC","GVT528":"WG","GVT717":"CARLOS GASCA","GVT757":"TECC","JYX241":"TECC","LFL249":"TECC","LFL259":"TECC","LFL267":"TECC","LFL289":"TECC","LFL304":"TECC","LFL323":"TECC","LFL324":"NIDIA GASCA","LFL325":"TECC","LFL331":"TECC","LFL351":"NIDIA GASCA","LFL375":"WG","LFL492":"TECC","LKL460":"TECC","NQL475":"WG","NWR622":"TECC","NWR906":"TECC","NWR919":"TECC","NWR920":"TECC","NYK361":"TECC","QIS275":"WG","QIS434":"WG","QOP968":"WG","SMW259":"WG","TJV525":"WG","TJW285":"WG","TJW306":"WG","TJX068":"WG","TJX130":"WG","TJX335":"WG","TJX543":"WG","TJX779":"TECC","TJX782":"WG","TJX867":"TECC","TMO578":"WG","TMO792":"WG","TTZ781":"WG","TZN163":"TECC","TZN758":"TECC","TZN759":"TECC","TZO139":"TECC","TZO228":"TECC","TZO397":"TECC","TZP150":"TECC","TZP397":"TECC","TZP995":"NIDIA GASCA","TZP996":"TECC","VCP938":"TECC","VCU060":"WG","VCX463":"WG","VCZ014":"TECC","VCZ175":"NIDIA GASCA","WCY204":"WG","WCZ566":"WG","WDL741":"WG","WDL744":"WG","WDL766":"TECC","WDL789":"TECC","WDL791":"WG","WDL843":"TECC","WDL852":"NIDIA GASCA","WDL903":"TECC","WDM021":"TECC","WDM092":"TECC","WHS779":"TECC","WHU197":"CARLOS GASCA","WHU837":"WG","WHV857":"WG","WHV858":"WG","WMX011":"TECC","WMX012":"TECC","ZNM657":"TECC","ZNN739":"NIDIA GASCA"};
+function parqueCC(num,placa){ const n=String(num||'').trim(); if(n&&PARQUE_CC[n])return PARQUE_CC[n];
+  const p=String(placa||'').toUpperCase().replace(/[^A-Z0-9]/g,''); return (p&&PARQUE_CC[p])||''; }
 const BRAYAN_INICIO='2026-07-02';
 function brayanMensual(){const f=fin();return f.sal+f.aux+f.pres;}   // costo empleador mensual (salario + aux + prestaciones)
 let _vehCentroCache=null;
@@ -2573,7 +2654,7 @@ function tCostoSemGrupo(){ const s=tShare(); if(tGrupo==='TNC')return COSTO_SEM*
 function tecnicoDe(r){ if(tGrupoDeVeh(r.placa)==='WG'){ const f=r.fecha||''; if(f>='2026-08-13') return 'Fabián Zapata'; if((f>BRAYAN_INICIO||(f===BRAYAN_INICIO&&(+r.hora||0)>=12))&&f<='2026-08-02') return 'Brayan Carabalí'; } return 'Eucarin Parra'; }
 /* Técnico EFECTIVO de una intervención: primero lo que diga el formulario (campo técnico,
    normalizado — tolera "Caicedo"/"Euclides" viejos), y si viene vacío, la regla por grupo/fecha. */
-function tecnicoEfectivo(r){ const t=(r.tecnico||'').toLowerCase(); if(t.indexOf('brayan')>=0) return 'Brayan Carabalí'; if(t.indexOf('fabian')>=0||t.indexOf('fabián')>=0||t.indexOf('zapata')>=0) return 'Fabián Zapata'; if(t.indexOf('eucarin')>=0||t.indexOf('euclides')>=0||t.indexOf('parra')>=0) return 'Eucarin Parra'; return tecnicoDe(r); }
+function tecnicoEfectivo(r){ const t=(r.tecnico||'').toLowerCase(); if(t.indexOf('brayan')>=0) return 'Brayan Carabalí'; if(t.indexOf('fabian')>=0||t.indexOf('fabián')>=0||t.indexOf('zapata')>=0) return 'Fabián Zapata'; if(t.indexOf('eucarin')>=0||t.indexOf('euclides')>=0||t.indexOf('parra')>=0) return 'Eucarin Parra'; if(t.indexOf('yair')>=0||t.indexOf('puentes')>=0) return 'Yair Puentes'; return tecnicoDe(r); }
 /* Filtro de técnico — disponible en TODAS las vistas del taller (general, TNC y WG;
    multi-selección; vacío = todos). Los chips se construyen DINÁMICAMENTE con los
    nombres que de verdad aparecen en los datos de la vista activa: si mañana
@@ -4138,7 +4219,7 @@ let _gScanCache=null;
 function gScanVals(){ return _gScanCache||(_gScanCache=lsJ(LS_GER_SCANVAL)||{}); }
 function gScanVal(k){ return +(gScanVals()[k])||0; }
 function setGScanVal(k,v){ const m=gScanVals(); if(v===''||v==null||+v===0){ delete m[k]; } else { m[k]=+v||0; } localStorage.setItem(LS_GER_SCANVAL,JSON.stringify(m)); }
-function gCC(num){ const n=String(num||'').trim(); if(!n)return '(sin CC)'; const man=gCCman()[n]; if(man)return man; const c=(vehCentroMap()[n]||'').toUpperCase(); if(c==='WG'||TNC_SET.has(c))return c; return gRespMap()[n]||'(sin CC)'; }
+function gCC(num){ const n=String(num||'').trim(); if(!n)return '(sin CC)'; const man=gCCman()[n]; if(man)return man; const c=(vehCentroMap()[n]||'').toUpperCase(); if(c==='WG'||TNC_SET.has(c))return c; return gRespMap()[n]||parqueCC(n)||'(sin CC)'; }
 function gMatchCC(num){ return gGrupo==='ALL' || gCC(num)===gGrupo; }
 
 /* ---- parseo de los XLSX (detección por encabezados) ---- */
@@ -4219,7 +4300,7 @@ function gBuildPeriodUI(){
 }
 
 /* ---- costos fijos prorrateados por CC (regla de jueves del lavador) ---- */
-function gShares(){ const cnt={'TECC':0,'NIDIA GASCA':0,'CARLOS GASCA':0,'WG':0}; Object.values(vehCentroMap()).forEach(c=>{const u=(c||'').toUpperCase(); if(cnt[u]!=null)cnt[u]++;}); const tot=Object.values(cnt).reduce((a,b)=>a+b,0)||1; return {cnt,tot}; }
+function gShares(){ const cnt={'TECC':0,'NIDIA GASCA':0,'CARLOS GASCA':0,'JULIAN GASCA':0,'WG':0}; Object.values(vehCentroMap()).forEach(c=>{const u=(c||'').toUpperCase(); if(cnt[u]!=null)cnt[u]++;}); const tot=Object.values(cnt).reduce((a,b)=>a+b,0)||1; return {cnt,tot}; }
 /* Generadores de COSTO POR DÍA (mismo esquema del módulo Taller: el costo mensual
    se reparte entre los días-equivalentes del mes — lun-vie 1, sáb ½, dom/festivo 0). */
 function _gEq(ymd){ const dt=parseDate(ymd),dow=dt.getDay(); if(dow===0||FESTIVOS_CO.has(ymd))return 0; return dow===6?0.5:1; }
@@ -4248,22 +4329,30 @@ const BRAYAN_FIN='2026-08-02';
 const BRAYAN_LIQ={valor:600000, desde:'2026-08-03', hasta:'2026-08-12'};   // prestacional de sus últimos días, diferido en la ventana sin salario
 const FABIAN_INICIO='2026-08-13';
 const FABIAN_DEV=3000000;
-function fabianMensual(){ const f=fin(); const factor=(f.sal+f.aux)>0?f.pres/(f.sal+f.aux):0.2183; return FABIAN_DEV*(1+factor); }
+/* Yair Puentes — segundo mecánico de WG (usuario, 2026-11-27); Fabián SIGUE. Mismo esquema
+   que Fabián (≈ $3.000.000 devengado + prestaciones). Ingresó el 15-oct-2026 (usuario):
+   desde esa fecha su salario entra al costo del mecánico WG. */
+const YAIR_INICIO='2026-10-15';  // fecha de ingreso de Yair Puentes (WG)
+const YAIR_DEV=FABIAN_DEV;
+function mecMensual(dev){ const f=fin(); const factor=(f.sal+f.aux)>0?f.pres/(f.sal+f.aux):0.2183; return dev*(1+factor); }
+function fabianMensual(){ return mecMensual(FABIAN_DEV); }
+function yairMensual(){ return mecMensual(YAIR_DEV); }
 let _liqEqCache=null;
 function _liqEq(){ if(_liqEqCache!=null)return _liqEqCache; let s=0; for(let d=parseDate(BRAYAN_LIQ.desde),e=parseDate(BRAYAN_LIQ.hasta);d<=e;d.setDate(d.getDate()+1)) s+=_gEq(ymdOf(d)); return _liqEqCache=s||1; }
-function gerMecDia(ymd,who){ /* costo por día del mecánico de WG; who: 'brayan'|'fabian'|undefined=ambos */
+function gerMecDia(ymd,who){ /* costo por día de los mecánicos de WG; who: 'brayan'|'fabian'|'yair'|undefined=todos */
   const e0=_gEq(ymd); if(e0<=0)return 0;
   const p=ymd.split('-').map(Number), me=_gMonthEq(p[0],p[1]); if(me<=0)return 0;
   let c=0;
-  if(who!=='fabian'){
+  if(!who||who==='brayan'){
     if(ymd>=BRAYAN_INICIO&&ymd<=BRAYAN_FIN) c+=brayanMensual()*e0/me;
     if(ymd>=BRAYAN_LIQ.desde&&ymd<=BRAYAN_LIQ.hasta) c+=BRAYAN_LIQ.valor*e0/_liqEq();
   }
-  if(who!=='brayan'&&ymd>=FABIAN_INICIO) c+=fabianMensual()*e0/me;
+  if((!who||who==='fabian')&&ymd>=FABIAN_INICIO) c+=fabianMensual()*e0/me;
+  if((!who||who==='yair')&&YAIR_INICIO&&ymd>=YAIR_INICIO) c+=yairMensual()*e0/me;
   return c;
 }
 function gerMecAcum(R,who){ if(!R)return 0; let s=0; for(let d=parseDate(R.start),e=parseDate(R.end);d<=e;d.setDate(d.getDate()+1)) s+=gerMecDia(ymdOf(d),who); return s; }
-const MEC_WG=['Brayan Carabalí','Fabián Zapata'];
+const MEC_WG=['Brayan Carabalí','Fabián Zapata','Yair Puentes'];
 function gerCostDiaTaller(cc){ /* costo fijo del taller Piscuiso + mecánico WG + inversiones diferidas, del CC de la vista */
   const {cnt,tot}=gShares(); const MONTHLY=COSTO_SEM*4*(cc==='ALL'?1:(cnt[cc]||0)/tot);
   const MEC=(cc==='ALL'||cc==='WG');
@@ -4330,6 +4419,14 @@ function renderGerencial(){
   document.querySelectorAll('#gerBody [data-gccsel]').forEach(s=>s.onchange=()=>{ setGCCVeh(s.dataset.gccsel,s.value); renderGerencial(); toast(s.value?('Vehículo '+s.dataset.gccsel+' asignado a '+capNombre(s.value)):'Asignación quitada'); });
   document.querySelectorAll('#gerBody input[data-gtk]').forEach(inp=>inp.onchange=()=>{ setTCostByKey(decodeURIComponent(inp.dataset.gtk),inp.dataset.base,inp.value); renderGerencial(); });
   document.querySelectorAll('#gerBody input[data-gscan]').forEach(inp=>inp.onchange=()=>{ setGScanVal(decodeURIComponent(inp.dataset.gscan),inp.value); renderGerencial(); });
+  const mEx=$('#gMantExp'), mIm=$('#gMantImp'), mFi=$('#gMantFile'), mDz=$('#gMantDrop');
+  if(mEx) mEx.onclick=mantExportXls;
+  if(mIm&&mFi) mIm.onclick=()=>mFi.click();
+  if(mFi) mFi.onchange=()=>{ if(mFi.files[0]) mantImportXls(mFi.files[0]); mFi.value=''; };
+  if(mDz&&mFi){ mDz.onclick=()=>mFi.click();
+    ['dragenter','dragover'].forEach(ev=>mDz.addEventListener(ev,e=>{e.preventDefault();mDz.classList.add('drag');}));
+    ['dragleave','dragend'].forEach(ev=>mDz.addEventListener(ev,()=>mDz.classList.remove('drag')));
+    mDz.addEventListener('drop',e=>{e.preventDefault();mDz.classList.remove('drag'); const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) mantImportXls(f);}); }
   document.querySelectorAll('#gerBody [data-gtec]').forEach(b=>b.onclick=()=>{ const t=b.dataset.gtec; if(!t) gTecSel.clear(); else { gTecSel.has(t)?gTecSel.delete(t):gTecSel.add(t); } renderGerencial(); });
   document.querySelectorAll('#gerBody [data-gav]').forEach(b=>b.onclick=()=>{ gAseoVista=b.dataset.gav; renderGerencial(); });
   const ia=$('#gInvAdd'); if(ia)ia.onclick=()=>{ const n=($('#gInvNom').value||'').trim(), v=+$('#gInvVal').value, f=$('#gInvFecha').value, m=+$('#gInvMeses').value;
@@ -4411,7 +4508,7 @@ function gerVistaGeneral(ing,otP,R){
    Carlos morado · WG azul · sin CC amarillo); aseos POR LUGAR (Finca verde ·
    Piscuiso azul). Costos del periodo = gCostosFijos (regla de jueves). ---- */
 let _gerCalIdx={}, _gerCalDet={};
-function gccCls(num){ const c=gCC(num); return c==='TECC'?'gcc-t':c==='NIDIA GASCA'?'gcc-n':c==='CARLOS GASCA'?'gcc-c':c==='WG'?'gcc-w':''; }
+function gccCls(num){ const c=gCC(num); return c==='TECC'?'gcc-t':c==='NIDIA GASCA'?'gcc-n':c==='CARLOS GASCA'?'gcc-c':c==='JULIAN GASCA'?'gcc-j':c==='WG'?'gcc-w':''; }
 /* CC efectivo de un aseo: su centro registrado; si viene vacío, el CC del vehículo
    (mapa modal + asignación manual del usuario) — así los "no encontrados" se pueden
    clasificar una vez y aplican en toda la app */
@@ -4477,7 +4574,7 @@ function gerVistaAseosTaller(R){
      lo que WG les cobra (trabajo de Brayan + escáner) es COSTO del CC — va al costo del
      día y del periodo, NUNCA al total facturado ni a la productividad. Lo de Eucarin sí
      es producción valorada del CC. */
-  const esVistaCobrada=['TECC','NIDIA GASCA','CARLOS GASCA'].indexOf(gGrupo)>=0;
+  const esVistaCobrada=['TECC','NIDIA GASCA','CARLOS GASCA','JULIAN GASCA'].indexOf(gGrupo)>=0;
   const cobroDe=r=>esVistaCobrada?((MEC_WG.indexOf(tecnicoEfectivo(r))>=0?(tCostOf(r)||0):0)+(r.escaner?gScanVal(tKey(r)):0)):0;
   const genDe=r=>(esVistaCobrada&&MEC_WG.indexOf(tecnicoEfectivo(r))>=0)?0:(tCostOf(r)||0);
   const intVal=ints.reduce((s,r)=>s+genDe(r),0);
@@ -4491,13 +4588,14 @@ function gerVistaAseosTaller(R){
   /* COSTO POR TÉCNICO (vista WG): Brayan = su salario del periodo MENOS lo que se va a
      cobrar a otros CC por sus trabajos; Eucarin = el % del taller fijo de la vista +
      las inversiones diferidas. Al seleccionar técnicos, los KPIs de arriba muestran SU balance. */
-  const COBRABLES_G=['TECC','NIDIA GASCA','CARLOS GASCA'];
+  const COBRABLES_G=['TECC','NIDIA GASCA','CARLOS GASCA','JULIAN GASCA'];
   const aCobrarDe=t=>(DATA.taller.records||[]).filter(r=>r.fecha&&inR(r.fecha)&&tecnicoEfectivo(r)===t&&COBRABLES_G.indexOf(gCC(r.placa))>=0).reduce((s,r)=>s+(tCostOf(r)||0),0);
-  const aCobrarBrayan=aCobrarDe('Brayan Carabalí')+aCobrarDe('Fabián Zapata');   // del mecánico WG (ambos)
+  const aCobrarBrayan=aCobrarDe('Brayan Carabalí')+aCobrarDe('Fabián Zapata')+aCobrarDe('Yair Puentes');   // de los mecánicos WG (todos)
   const costoBrayanNeto=gerMecAcum(R,'brayan')-aCobrarDe('Brayan Carabalí');     // incluye su liquidación diferida
   const costoFabianNeto=gerMecAcum(R,'fabian')-aCobrarDe('Fabián Zapata');
+  const costoYairNeto=gerMecAcum(R,'yair')-aCobrarDe('Yair Puentes');
   const costoEucarin=fj.taller+(fj.inversion||0);
-  const tecCostoDe=t=>t==='Brayan Carabalí'?costoBrayanNeto:t==='Fabián Zapata'?costoFabianNeto:t==='Eucarin Parra'?costoEucarin:0;
+  const tecCostoDe=t=>t==='Brayan Carabalí'?costoBrayanNeto:t==='Fabián Zapata'?costoFabianNeto:t==='Yair Puentes'?costoYairNeto:t==='Eucarin Parra'?costoEucarin:0;
   const modoTec=(gGrupo==='WG'&&gTecSel.size>0);
   const selTecCost=[...gTecSel].reduce((s,t)=>s+tecCostoDe(t),0);
   const gen=modoTec?intVal:(intVal+aseoVal);
@@ -4513,12 +4611,12 @@ function gerVistaAseosTaller(R){
       :(aseos.length+' aseos '+COP(aseoVal)+' · Eucarin '+COP(valEucarin)+(esVistaCobrada?' — cobros de WG '+COP(cobrosWG)+' (Brayan/escáner) van al COSTO':' · Brayan '+COP(valBrayan))+' · '+ints.length+' intervenciones'))+'</div></div>'+
   '<div class="kpis">'+
     '<div class="kpi"><div class="k">Costos del periodo</div><div class="v">'+COP(costosTot)+'</div><div class="k" style="text-transform:none">'+(modoTec
-      ?('Mecánico WG: costo del periodo − a cobrar (Brayan '+COP(costoBrayanNeto)+' · Fabián '+COP(costoFabianNeto)+') · Eucarin: % taller + inversiones = '+COP(costoEucarin))
+      ?('Mecánico WG: costo del periodo − a cobrar (Brayan '+COP(costoBrayanNeto)+' · Fabián '+COP(costoFabianNeto)+' · Yair '+COP(costoYairNeto)+(YAIR_INICIO?'':' — salario de Yair pendiente')+') · Eucarin: % taller + inversiones = '+COP(costoEucarin))
       :('Taller '+COP(fj.taller)+' · Lavador '+COP(fj.lavador)+' · Mecánico '+COP(fj.brayan)+((fj.inversion||0)>0?' · Inversiones '+COP(fj.inversion):'')+(esVistaCobrada&&cobrosWG?' · <b style="color:#c0392b">Cobros WG '+COP(cobrosWG)+'</b>':'')))+'</div></div>'+
     '<div class="kpi"><div class="k">Balance</div><div class="v" style="color:'+(dif>=0?'var(--green)':'var(--red)')+'">'+COP(dif)+'</div><div class="k" style="text-transform:none">valor generado − costos</div></div>'+
     '<div class="kpi"><div class="k">Productividad</div><div class="v" style="color:'+(pct>=100?'var(--green)':'var(--red)')+'">'+pct.toFixed(0)+'%</div><div class="k" style="text-transform:none">valor ÷ costo del periodo</div></div>'+
     '<div class="kpi"><div class="k">Regla de costos de esta vista</div><div class="v" style="font-size:15px;line-height:1.35">'+
-      (gGrupo==='WG'?'Mecánico WG completo (Brayan hasta el 2-ago · prestacional 3–12 ago · Fabián desde el 13-ago) + lavador todos los días <b>menos jueves</b> + su % del taller'
+      (gGrupo==='WG'?'Mecánico WG completo (Brayan hasta el 2-ago · prestacional 3–12 ago · Fabián desde el 13-ago · Yair '+(YAIR_INICIO?'desde el '+YAIR_INICIO:'<b>salario pendiente</b>')+') + lavador todos los días <b>menos jueves</b> + su % del taller'
       :gGrupo==='ALL'?'Taller completo + lavador completo + mecánico WG completo'
       :'⅓ de los <b>jueves</b> del lavador + su % del taller · sin Brayan · <b>+ lo que WG le cobra</b> (Brayan/escáner)')+'</div></div>'+
   '</div></div>');
@@ -4543,13 +4641,13 @@ function gerVistaAseosTaller(R){
     '<div class="tcal-detail" id="gintDetail">Toca una celda para ver el detalle de las intervenciones.</div></div>');
   if(gGrupo==='WG'){
     /* mini-KPI de rentabilidad del taller propio, según los técnicos seleccionados */
-    const costoTecTodos=costoBrayanNeto+costoFabianNeto+costoEucarin;
+    const costoTecTodos=costoBrayanNeto+costoFabianNeto+costoYairNeto+costoEucarin;
     const cSel=gTecSel.size?selTecCost:costoTecTodos;
     const bal=intVal-cSel;
-    const selLbl=gTecSel.size?[...gTecSel].join(' + '):'ambos técnicos';
+    const selLbl=gTecSel.size?[...gTecSel].join(' + '):'todos los técnicos';
     H.push('<div class="section span2"><div class="kpis">'+
       '<div class="kpi"><div class="k">Intervenciones tercerizadas · '+esc(selLbl)+'</div><div class="v">'+COP(intVal)+'</div><div class="k" style="text-transform:none">'+ints.length+' intervenciones del periodo</div></div>'+
-      '<div class="kpi"><div class="k">Costo de '+esc(selLbl)+'</div><div class="v">'+COP(cSel)+'</div><div class="k" style="text-transform:none">Mecánico WG (salario − a cobrar): Brayan <b>'+COP(costoBrayanNeto)+'</b> (incluye liquidación) · Fabián <b>'+COP(costoFabianNeto)+'</b> · Eucarin (% taller + inversiones): <b>'+COP(costoEucarin)+'</b></div></div>'+
+      '<div class="kpi"><div class="k">Costo de '+esc(selLbl)+'</div><div class="v">'+COP(cSel)+'</div><div class="k" style="text-transform:none">Mecánico WG (salario − a cobrar): Brayan <b>'+COP(costoBrayanNeto)+'</b> (incluye liquidación) · Fabián <b>'+COP(costoFabianNeto)+'</b> · Yair <b>'+COP(costoYairNeto)+'</b>'+(YAIR_INICIO?'':' (salario pendiente)')+' · Eucarin (% taller + inversiones): <b>'+COP(costoEucarin)+'</b></div></div>'+
       '<div class="kpi"><div class="k">Balance del taller propio</div><div class="v" style="color:'+(bal>=0?'var(--green)':'var(--red)')+'">'+COP(bal)+'</div><div class="k" style="text-transform:none">tercerizado − costo de '+esc(selLbl)+'</div></div>'+
     '</div></div>');
     /* inversiones y herramientas (diferidas): lista + alta */
@@ -4575,14 +4673,29 @@ function gerVistaAseosTaller(R){
       '<div class="note" style="margin-top:8px"><b>El valor y el diferido (meses) son editables</b> directamente en la tabla: al cambiarlos se recalculan la cuota, la vigencia y todos los costos. La cuota mensual (valor ÷ meses) se suma al <b>costo del día</b> y al <b>costo del periodo</b> del taller en las vistas WG y General, repartida entre los días laborables de cada mes (sáb ½, dom/festivo 0), desde el mes de compra y durante los meses del diferido.</div></div></div>');
   }
   /* lista de mantenimientos (heredada del viejo módulo Taller): valor editable */
-  const lista=ints.slice().sort((a,b)=>a.fecha<b.fecha?1:-1).map(r=>{const k=tKey(r),base=tBaseCost(r),v=tCostOf(r)||0;
+  const intsOrd=ints.slice().sort((a,b)=>a.fecha<b.fecha?1:-1);
+  _gMantExp=intsOrd.map(mantXlsRow);
+  const mantTot=intsOrd.reduce((a,r)=>a+(tCostOf(r)||0),0), mantEd=intsOrd.filter(tIsEdited).length;
+  const lista=intsOrd.map(r=>{const k=tKey(r),base=tBaseCost(r),v=tCostOf(r)||0;
     return '<tr><td>'+esc(r.fecha)+'</td><td><b>'+esc(r.placa||'—')+'</b></td>'+(gGrupo==='ALL'?'<td>'+esc(capNombre(gCC(r.placa)))+'</td>':'')+
     '<td>'+esc(tecnicoEfectivo(r))+(r.escaner?' 🔎':'')+(cobroDe(r)?' <small style="color:#c0392b">cobro WG</small>':'')+'</td>'+
     '<td style="text-align:left;white-space:normal;max-width:320px">'+esc(String(r.descripcionTrabajo||r.especifique||r.tipo||'').slice(0,110))+'</td>'+
     '<td><input type="number" class="tlx-cost'+(tIsEdited(r)?' edited':'')+'" data-gtk="'+encodeURIComponent(k)+'" data-base="'+base+'" value="'+v+'" min="0" step="1000"></td></tr>';}).join('');
-  H.push('<div class="section span2"><div class="section-hero">Mantenimientos del periodo · valor editable</div><div class="card pad"><div class="gtabwrap"><table class="gtab">'+
-    '<thead><tr><th>Fecha</th><th>Vehículo</th>'+(gGrupo==='ALL'?'<th>CC</th>':'')+'<th>Técnico</th><th>Trabajo</th><th>Valor</th></tr></thead><tbody>'+lista+'</tbody></table></div>'+
-    '<div class="note" style="margin-top:8px">Editar un valor aquí lo actualiza en toda la app (incluido «A cobrar»).</div></div></div>');
+  const mantCols=gGrupo==='ALL'?5:4;
+  H.push('<div class="section span2"><div class="section-hero">Mantenimientos del periodo · valor editable</div><div class="card pad">'+
+    '<div class="gmant-bar">'+
+      '<button class="chip-btn" id="gMantExp" title="Descarga estas '+intsOrd.length+' intervenciones a Excel para trabajar los precios">⬇︎ Exportar XLSX</button>'+
+      '<button class="chip-btn" id="gMantImp" title="Sube el Excel con los precios nuevos: se aplican y se recalcula todo">⬆︎ Importar XLSX</button>'+
+      '<input type="file" id="gMantFile" accept=".xlsx,.xlsm,.xls,.csv" style="display:none">'+
+      '<span class="gmant-info">'+intsOrd.length+' intervenciones · total '+COP(mantTot)+(mantEd?' · '+mantEd+' con precio propio':'')+'</span></div>'+
+    '<div class="lldrop gmant-drop" id="gMantDrop">⬆︎ Arrastra aquí el XLSX con los precios nuevos <b>o haz clic</b></div>'+
+    '<div class="gtabwrap"><table class="gtab">'+
+    '<thead><tr><th>Fecha</th><th>Vehículo</th>'+(gGrupo==='ALL'?'<th>CC</th>':'')+'<th>Técnico</th><th>Trabajo</th><th>Valor</th></tr></thead><tbody>'+lista+'</tbody>'+
+    '<tfoot><tr><td colspan="'+mantCols+'">Total del periodo</td><td>'+COP(mantTot)+'</td></tr></tfoot></table></div>'+
+    '<div class="note" style="margin-top:8px">Editar un valor aquí lo actualiza en toda la app (incluido «A cobrar»). '+
+    'Para trabajarlos en bloque: <b>Exportar XLSX</b> → cambia solo la columna <b>Valor</b> en Excel (no toques la columna <b>Clave</b>, es la que empareja cada fila) → <b>Importar XLSX</b>. '+
+    'Al importar se recalculan el calendario de intervenciones, el costo del día y del periodo, la productividad y «A cobrar». '+
+    'Un valor igual al de la columna <b>Valor sugerido</b> devuelve esa fila a la estimación automática de la app.</div></div></div>');
   /* ===== ASEOS por visión (el módulo Aseos vive AQUÍ ahora, 2026-07-26):
      Lavador · Conductores · Proveedores · General · Consolidado, filtrados por el
      CC de la vista. Versión magra por orden del usuario: calendario + rentabilidad
@@ -4627,7 +4740,7 @@ function gerVistaAseosTaller(R){
   (DATA.aseos.records||[]).forEach(r=>{ if(!r.fecha||!inR(r.fecha))return; const v=(r.vehiculo||'').trim(); if(!v)return; if(centroAseoEf(r)==='(sin CC)') sinCCa[v]=(sinCCa[v]||0)+1; });
   const sinKeys=Object.keys(sinCCa).sort((a,b)=>sinCCa[b]-sinCCa[a]);
   const clasHtml=sinKeys.length?('<div class="card pad" style="margin-top:12px"><div class="note" style="margin-bottom:8px"><b>Vehículos sin centro de costo</b> en los aseos del periodo — al asignarlos aplican en TODA la app:</div><div class="gtabwrap" style="max-height:260px"><table class="gtab" style="min-width:430px"><thead><tr><th>Vehículo</th><th>Aseos</th><th>Centro de costo</th></tr></thead><tbody>'+
-    sinKeys.map(v=>'<tr><td><b>'+esc(v)+'</b></td><td>'+sinCCa[v]+'</td><td><select class="ios" data-gccsel="'+esc(v)+'"><option value="">— asignar CC —</option>'+['TECC','NIDIA GASCA','CARLOS GASCA','WG'].map(c=>'<option value="'+c+'">'+capNombre(c)+'</option>').join('')+'</select></td></tr>').join('')+
+    sinKeys.map(v=>'<tr><td><b>'+esc(v)+'</b></td><td>'+sinCCa[v]+'</td><td><select class="ios" data-gccsel="'+esc(v)+'"><option value="">— asignar CC —</option>'+['TECC','NIDIA GASCA','CARLOS GASCA','JULIAN GASCA','WG'].map(c=>'<option value="'+c+'">'+capNombre(c)+'</option>').join('')+'</select></td></tr>').join('')+
     '</tbody></table></div></div>'):'';
   H.push('<div class="section span2"><div class="section-hero">Aseos · '+esc(AVW[gAseoVista])+' · '+esc(ccLabel)+'</div>'+
     '<div class="chips" style="margin:0 4px 8px">'+avChips+'</div>'+
@@ -4644,7 +4757,7 @@ function gerVistaACobrar(R){
   if(!R){ const ds=(DATA.taller.records||[]).map(r=>r.fecha).filter(Boolean).sort(); if(ds.length) R={start:ds[0],end:gCapHoy(ds[ds.length-1]),label:'Todo el periodo'}; }
   const inR=f=>!R||(f>=R.start&&f<=R.end);
   const bry=(DATA.taller.records||[]).filter(r=>r.fecha&&inR(r.fecha)&&MEC_WG.indexOf(tecnicoEfectivo(r))>=0);   // mecánico WG: Brayan y, desde el 5-ago, Fabián
-  const COBRABLES=['TECC','NIDIA GASCA','CARLOS GASCA'];
+  const COBRABLES=['TECC','NIDIA GASCA','CARLOS GASCA','JULIAN GASCA'];
   const deWG=bry.filter(r=>gCC(r.placa)==='WG');
   const cobrar=bry.filter(r=>COBRABLES.indexOf(gCC(r.placa))>=0);
   /* ESCÁNER (es de WG): toda intervención con escáner=Sí en vehículo ajeno a WG
@@ -4673,7 +4786,7 @@ function gerVistaACobrar(R){
   const dif=vWG+pendiente-costoNeto, pct=costoB>0?(vWG+vCob)/costoB*100:0;
   const H=[];
   H.push('<div class="section span2"><div class="hero"><div class="chip">'+(R?R.label:'—')+'</div>'+
-    '<div class="cap">A cobrar a TECC · Nidia · Carlos — trabajos del mecánico de WG (Brayan → Fabián) en vehículos ajenos</div>'+
+    '<div class="cap">A cobrar a TECC · Nidia · Carlos — trabajos de los mecánicos de WG (Brayan → Fabián · Yair) en vehículos ajenos</div>'+
     '<div class="num">'+COP(vCob)+'</div>'+
     '<div class="sub">'+cobrar.length+(cobrar.length===1?' intervención':' intervenciones')+(scanCobrar.length?' + '+scanCobrar.length+' escáner ('+COP(vCobScan)+')':'')+' · '+COBRABLES.map(c=>c.split(' ')[0]+' '+COP((porCC[c]||{v:0}).v)).join(' · ')+' — ya cobrado '+COP(cobrado)+' · pendiente '+COP(pendiente)+'</div></div>'+
   '<div class="kpis">'+
@@ -4686,7 +4799,7 @@ function gerVistaACobrar(R){
   if(sinCC.length){
     const porVeh={}; sinCC.forEach(r=>{const v=(r.placa||'—').trim();(porVeh[v]=porVeh[v]||[]).push(r);});
     const filas=Object.entries(porVeh).map(([v,l])=>'<tr><td><b>'+esc(v)+'</b></td><td>'+l.length+'</td><td>'+COP(l.reduce((s,r)=>s+(tCostOf(r)||0),0))+'</td>'+
-      '<td><select class="ios" data-gccsel="'+esc(v)+'"><option value="">— asignar CC —</option>'+['TECC','NIDIA GASCA','CARLOS GASCA','WG'].map(c=>'<option value="'+c+'">'+capNombre(c)+'</option>').join('')+'</select></td></tr>').join('');
+      '<td><select class="ios" data-gccsel="'+esc(v)+'"><option value="">— asignar CC —</option>'+['TECC','NIDIA GASCA','CARLOS GASCA','JULIAN GASCA','WG'].map(c=>'<option value="'+c+'">'+capNombre(c)+'</option>').join('')+'</select></td></tr>').join('');
     H.push('<div class="section span2"><div class="section-hero">Sin clasificar · asigna el centro de costo</div><div class="card pad">'+
       '<div class="note" style="margin-bottom:8px">Estos vehículos con trabajos del mecánico de WG no tienen centro de costo conocido. Al asignarlo aquí queda guardado y manda sobre todos los módulos gerenciales.</div>'+
       '<div class="gtabwrap"><table class="gtab"><thead><tr><th>Vehículo</th><th>Interv.</th><th>Valor</th><th>Centro de costo</th></tr></thead><tbody>'+filas+'</tbody></table></div></div></div>');
